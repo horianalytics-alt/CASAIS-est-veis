@@ -129,7 +129,6 @@ financas-a-dois-v2/
 │       └── rls.test.ts                       -- dois usuários, duas famílias
 ├── .env.local.example
 ├── next.config.ts
-├── tailwind.config.ts
 ├── components.json                           -- config shadcn
 └── vitest.config.ts
 ```
@@ -139,7 +138,10 @@ financas-a-dois-v2/
 ## Tarefa 1: Scaffolding do projeto e banco local
 
 **Files:**
-- Create: `next.config.ts`, `tailwind.config.ts`, `components.json`, `vitest.config.ts`
+- Create: `next.config.ts`, `components.json`, `vitest.config.ts`
+  (**NÃO** criar `tailwind.config.ts` — Tailwind 4 não tem arquivo de config;
+  ver Global Constraints. Contradição corrigida em 2026-10-11 após o Vitrine
+  apontar o risco R-3.)
 - Create: `supabase/config.toml`
 - Create: `.env.local.example`
 - Create: `.gitignore`
