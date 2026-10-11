@@ -7,13 +7,37 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
 
 ## Aguardando decisão do Heitor
 
-### P-001 — Rate limiting em `family_preview` e `join_family`
+### P-001 — Rate limiting em `family_preview` e `join_family` — BLOQUEANTE para abrir o beta
 - **Origem:** achado 3 do `security-guidance` (2026-10-11), parte não aceita.
-- **O quê:** hoje nada limita tentativas de adivinhar um `join_code`. Com
-  `member_limit = 2` e beta privado o risco é baixo; ao abrir para várias
-  famílias, vira porta de entrada para enumeração.
-- **Por que não entrou agora:** é decisão de PRODUTO (quantas tentativas por
-  hora? bloqueia por IP ou por usuário? mostra captcha?), não de schema.
+  **Reforçado** por um segundo achado do mesmo hook em 2026-10-11, agora sobre a
+  migration `00006`: "insufficient entropy for access-granting secret".
+- **O quê:** hoje nada limita tentativas de adivinhar um `join_code`. O código
+  tem 6 caracteres num alfabeto de 32 = **~30 bits** de entropia (32^6 ≈ 1,07
+  bilhão). Isso é pouco para um segredo que concede acesso, SE o atacante puder
+  tentar à vontade.
+- **Por que a entropia NÃO foi aumentada** (achado rejeitado, com motivo):
+  1. Entropia não é a defesa certa aqui. Sem limite de tentativas, um atacante
+     acha código de **qualquer** comprimento com tempo suficiente; 128 bits só
+     muda a escala do problema. Com limite de tentativas, 30 bits bastam com
+     folga. A correção real é este P-001 — o próprio revisor diz isso na segunda
+     metade da sugestão dele.
+  2. Três barreiras independentes já existem em `join_family` (`00003`, linhas
+     145-168): exige login (`anon` revogado), recusa quem já tem família
+     (`Você já faz parte de uma família`), e recusa casa cheia
+     (`v_count >= v_limit` com `FOR UPDATE` serializando entradas simultâneas).
+     Com `member_limit = 2`, quem acertar o código hoje recebe
+     `Esta família já está completa`.
+  3. Custo real sobre o usuário: o código é o **único passo manual** do
+     onboarding — digitado no celular pelo parceiro. Dobrar para 12+ caracteres
+     piora o produto, e mudar o comprimento exige `ALTER TABLE` no `CHECK` de
+     tabela já aplicada no banco do cliente.
+- **A barreira que DESAPARECE ao abrir para famílias:** a proteção nº 2 acima
+  depende de `member_limit = 2`. Numa família de 6 pessoas com 3 vagas livres,
+  acertar o código **entra de verdade**. É por isso que este item é bloqueante
+  para o passo "abrir para famílias", não para o beta do casal.
+- **Opções:** contador de tentativas por usuário dentro das funções
+  `SECURITY DEFINER` · bloqueio após N falhas · captcha no front · ou resolver
+  junto com P-006 (código de uso único, que torna a adivinhação inútil).
 - **Quando decidir:** antes de abrir o cadastro para fora do círculo de teste.
 
 ### P-006 — `join_code` não expira e não rotaciona
