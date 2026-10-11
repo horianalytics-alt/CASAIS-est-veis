@@ -4,6 +4,8 @@
 > **Escopo desta fase:** planejar. Nenhum arquivo de produção emitido aqui.
 > **Arquivo tocado nesta fase:** apenas este (`docs/design/plano-tokens.md`).
 
+> **ATUALIZAÇÃO DA FASE: EXECUÇÃO (2026-10-11).** Plano executado. A saída real, as medições do arquivo emitido, os screenshots e a lista completa de desvios estão em `docs/design/handoff.md` (seção 10). Onde este plano e o handoff divergirem, **o handoff manda**. Mudanças que alteram números deste documento: `--receita`, `--despesa` e `--transferencia` claros foram escurecidos 1-3% (o par com `--accent` reprovava 4.5:1); símbolo reaberto após o teste de 16px; S-3 (shadcn não inicializado) foi superada, pois o `shadcn init` rodou antes; as verificações marcadas NÃO VERIFICADO na seção 8 foram feitas.
+
 ## SUPOSIÇÕES declaradas
 
 | # | Suposição | Por quê |

@@ -1,0 +1,29 @@
+SERIES CLARO
+  claro S1 #2F6DB5  /background 4.96:1  /card 5.28:1  OK(>=3)
+  claro S2 #C2552F  /background 4.26:1  /card 4.53:1  OK(>=3)
+  claro S3 #0E7F78  /background 4.56:1  /card 4.85:1  OK(>=3)
+  claro S4 #7A5BC4  /background 4.79:1  /card 5.10:1  OK(>=3)
+  claro S5 #6E7A1F  /background 4.42:1  /card 4.70:1  OK(>=3)
+  claro S6 #A83A6E  /background 5.64:1  /card 6.01:1  OK(>=3)
+  claro S7 #9A6B10  /background 4.40:1  /card 4.68:1  OK(>=3)
+  claro S8 #5B4636  /background 8.31:1  /card 8.85:1  OK(>=3)
+  claro: menor contraste 4.26:1 (S2 #C2552F); menor DeltaE entre 28 pares = 29.2 (S5-S7)
+SERIES ESCURO
+  escuro S1 #6FA8E8  /background 7.44:1  /card 6.90:1  OK(>=3)
+  escuro S2 #F08A5E  /background 7.49:1  /card 6.95:1  OK(>=3)
+  escuro S3 #3FBDB2  /background 8.05:1  /card 7.47:1  OK(>=3)
+  escuro S4 #A992E8  /background 7.02:1  /card 6.51:1  OK(>=3)
+  escuro S5 #AFBE4A  /background 9.07:1  /card 8.41:1  OK(>=3)
+  escuro S6 #E87FAE  /background 7.12:1  /card 6.60:1  OK(>=3)
+  escuro S7 #D9A838  /background 8.47:1  /card 7.85:1  OK(>=3)
+  escuro S8 #C9A68A  /background 8.20:1  /card 7.61:1  OK(>=3)
+  escuro: menor contraste 7.02:1 (S4 #A992E8); menor DeltaE entre 28 pares = 27.7 (S1-S4)
+  claro receita vs despesa: normal 94.1 | deuteranopia 32.3 | protanopia 12.6 | tritanopia 106.8
+  claro receita vs pendente: normal 62.8 | deuteranopia 39.2 | protanopia 29.3 | tritanopia 63.5
+  claro despesa vs pendente: normal 42.3 | deuteranopia 8.3 | protanopia 21.0 | tritanopia 43.8
+  claro despesa vs negativo: normal 13.0 | deuteranopia 10.8 | protanopia 7.8 | tritanopia 14.4
+  escuro receita vs despesa: normal 93.2 | deuteranopia 17.8 | protanopia 11.6 | tritanopia 99.2
+  escuro receita vs pendente: normal 72.6 | deuteranopia 44.6 | protanopia 35.9 | tritanopia 80.0
+  escuro despesa vs pendente: normal 45.4 | deuteranopia 26.9 | protanopia 41.6 | tritanopia 20.4
+  escuro despesa vs negativo: normal 14.1 | deuteranopia 8.9 | protanopia 8.3 | tritanopia 16.2
+Consistencia chart-palette.ts <-> globals.css: OK (5 series + serie-outros nos dois modos)
