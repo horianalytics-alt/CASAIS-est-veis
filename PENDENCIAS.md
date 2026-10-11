@@ -16,6 +16,19 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
   hora? bloqueia por IP ou por usuário? mostra captcha?), não de schema.
 - **Quando decidir:** antes de abrir o cadastro para fora do círculo de teste.
 
+### P-006 — `join_code` não expira e não rotaciona
+- **Origem:** Estrutura, plano `00006` (2026-10-11), pergunta 2 — achado dele, não pedido.
+- **O quê:** o código de 6 caracteres que o parceiro digita para entrar na casa
+  vale **para sempre**. Um código que vazou (print, foto, WhatsApp) continua
+  válido indefinidamente. A migration `00006` corrige a FONTE de entropia
+  (`random()` → `gen_random_bytes`), mas não a permanência.
+- **Por que não bloqueia hoje:** com `member_limit = 2`, casa cheia recusa
+  entrada. A porta só abre de verdade quando famílias maiores entrarem.
+- **Mesma família de decisão que P-001** (rate limiting): as duas são sobre
+  resistência a adivinhação e vazamento do código de convite. Decidir juntas.
+- **Opções:** expirar em N horas · rotacionar a cada uso · botão "gerar novo
+  código" nos ajustes da família · código de uso único por convite.
+
 ### P-002 — URL do repositório novo no GitHub
 - **O quê:** o Heitor vai fornecer um repositório novo e vazio para receber a v2.
 - **Status:** ainda não fornecido. O projeto está em git local com histórico
