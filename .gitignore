@@ -1,0 +1,6 @@
+_referencia-v1/
+node_modules/
+.next/
+.env
+.env*.local
+.vercel/
