@@ -213,6 +213,72 @@ async function run() {
     check('A NAO transfere para conta de B', !!error, error?.code ?? 'INSERIU!')
   }
 
+  // =========================================================================
+  // Casos de regressao da migration 00006. O REVOKE do helper com parametro
+  // pode quebrar, em silencio, objetos que ainda o chamem: a RPC
+  // delete_transactions e o gerador de join_code. Sem estes casos a quebra
+  // apareceria so quando um usuario real apagasse um lancamento ou criasse
+  // uma familia.
+  // =========================================================================
+
+  console.log('\n--- T2-RPC: delete_transactions continua funcionando pos-REVOKE ---')
+  {
+    const { data: ins, error: insErr } = await A.cli.from('transactions').insert({
+      family_id: A.familyId, account_id: A.accountId, category_id: A.categoryId,
+      created_by_member_id: A.memberId, paid_by_member_id: A.memberId,
+      type: 'despesa', description: 'Para apagar', amount: 12.34,
+      date: '2026-10-07',
+    }).select('id')
+    check('T2-RPC insert de apoio', !insErr && ins?.length === 1,
+      insErr ? `${insErr.code}: ${insErr.message}` : 'ok')
+
+    if (!insErr && ins?.length === 1) {
+      const { data: del, error: delErr } = await A.cli
+        .rpc('delete_transactions', { p_id: ins[0].id, p_scope: 'single' })
+      check('T2-RPC delete_transactions apaga 1 linha',
+        !delErr && del === 1,
+        delErr ? `${delErr.code}: ${delErr.message}` : `retornou ${del}`)
+    } else {
+      check('T2-RPC delete_transactions apaga 1 linha', false, 'insert de apoio falhou')
+    }
+  }
+
+  console.log('\n--- T3-FORMATO: join_code gerado respeita ^[A-Z2-9]{6}$ ---')
+  {
+    // generate_join_code nao e chamavel de fora (REVOKE para authenticated),
+    // entao a prova e pelo efeito: criar familias de verdade e conferir o
+    // codigo emitido. Um bug neste gerador e sistematico, nao raro.
+    const codes = new Set()
+    let formatoOk = true
+    let detalhe = ''
+    for (let i = 0; i < 12; i++) {
+      const email = `codetest-${i}-${stamp}@example.com`
+      const { data: u, error: uErr } = await admin.auth.admin.createUser({
+        email, password: 'Senha!Forte123', email_confirm: true,
+      })
+      if (uErr) { formatoOk = false; detalhe = `createUser: ${uErr.message}`; break }
+      created.push(u.user.id)
+      const cli = createClient(URL, ANON, { auth: { persistSession: false } })
+      const { error: sErr } = await cli.auth.signInWithPassword({
+        email, password: 'Senha!Forte123',
+      })
+      if (sErr) { formatoOk = false; detalhe = `signIn: ${sErr.message}`; break }
+      const { data: fam, error: fErr } = await cli.rpc('create_family', {
+        p_family_name: `Casa ${i}`, p_split_rule: 'equal',
+        p_member_name: `Membro ${i}`, p_monthly_income: 1000,
+      })
+      if (fErr) { formatoOk = false; detalhe = `create_family: ${fErr.message}`; break }
+      const code = (Array.isArray(fam) ? fam[0] : fam).join_code
+      if (!/^[A-Z2-9]{6}$/.test(code)) {
+        formatoOk = false; detalhe = `codigo fora do formato: ${JSON.stringify(code)}`; break
+      }
+      codes.add(code)
+    }
+    check('T3-FORMATO 12 codigos no formato ^[A-Z2-9]{6}$', formatoOk, detalhe)
+    // 12 amostras num espaco de 1,07 bilhao: colisao aqui significa gerador preso.
+    check('T3-FORMATO 12 codigos distintos', codes.size === 12, `${codes.size} distintos`)
+  }
+
   console.log(`\n=== ${checks - failures}/${checks} verificacoes passaram ===`)
 }
 

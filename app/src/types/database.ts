@@ -708,7 +708,9 @@ export type Database = {
       };
       generate_join_code: { Args: Record<PropertyKey, never>; Returns: string };
       get_user_family_id: { Args: { uid: string }; Returns: string };
+      get_user_family_id_self: { Args: Record<PropertyKey, never>; Returns: string };
       get_user_member_id: { Args: { uid: string }; Returns: string };
+      get_user_member_id_self: { Args: Record<PropertyKey, never>; Returns: string };
       join_family: {
         Args: { p_join_code: string; p_member_name: string; p_monthly_income?: number };
         Returns: {

@@ -12,6 +12,19 @@ const admin = createClient(URL, SERVICE, { auth: { persistSession: false } })
 const stamp = Date.now()
 const created = []
 let failures = 0
+let checks = 0
+
+// Portado de rls-isolation.mjs. Antes deste check() o arquivo usava console.log
+// solto: um caso novo podia FALHAR e o processo ainda sair 0.
+function check(name, passed, detail = '') {
+  checks++
+  if (passed) {
+    console.log(`  PASS  ${name}${detail ? ' — ' + detail : ''}`)
+  } else {
+    failures++
+    console.log(`  FALHA ${name}${detail ? ' — ' + detail : ''}`)
+  }
+}
 
 async function mk(label, familyName, memberName) {
   const email = `escape-${label}-${stamp}@example.com`
@@ -85,7 +98,109 @@ try {
   else if ((u2 ?? []).length === 0) console.log('  BLOQUEADO — 0 linhas')
   else { console.log('  ESCAPOU! user_id trocado'); failures++ }
 
-  console.log(`\n=== ${failures === 0 ? 'NAO EXPLORAVEL' : 'EXPLORAVEL — ' + failures + ' falha(s)'} ===`)
+  // =========================================================================
+  // Casos da migration 00006. Os dois ataques acima ja eram bloqueados ANTES
+  // da 00006, mas por acidente (policy de SELECT + RETURNING do PostgREST).
+  // Os casos abaixo provam que agora o bloqueio e EXPLICITO, e provam que o
+  // caminho legitimo do produto nao quebrou com a defesa nova.
+  // =========================================================================
+
+  console.log('\n--- T1-ERRCODE: o bloqueio vem do trigger, com mensagem clara ---')
+  {
+    const { error: tErr } = await A.cli
+      .from('family_members')
+      .update({ family_id: B.familyId })
+      .eq('id', A.memberId)
+      .select('id')
+
+    // Antes de 00006: 42501 (RLS, bloqueio acidental).
+    // Depois de 00006: 23514 com 'Não é permitido mudar a família de um membro'.
+    const bloqueioExplicito =
+      !!tErr && (tErr.code === '23514' || /mudar a famíli/i.test(tErr.message ?? ''))
+    check('T1-ERRCODE bloqueio explicito do trigger',
+      bloqueioExplicito,
+      tErr ? `${tErr.code}: ${tErr.message}` : 'NAO BLOQUEOU')
+  }
+
+  console.log('\n--- T1-OK: o membro ainda edita o proprio perfil ---')
+  {
+    const { data: okUpd, error: okErr } = await A.cli
+      .from('family_members')
+      .update({ display_name: 'Alice Editada', monthly_income: 6100 })
+      .eq('id', A.memberId)
+      .select('display_name,monthly_income')
+    check('T1-OK edita proprio perfil',
+      !okErr && okUpd?.[0]?.display_name === 'Alice Editada',
+      okErr ? `${okErr.code}: ${okErr.message}` : JSON.stringify(okUpd))
+  }
+
+  console.log('\n--- T1-NOOP: PATCH que reenvia o MESMO family_id deve passar ---')
+  {
+    const { error: noopErr } = await A.cli
+      .from('family_members')
+      .update({ family_id: A.familyId, display_name: 'Alice' })
+      .eq('id', A.memberId)
+      .select('id')
+    check('T1-NOOP family_id igual ao proprio passa',
+      !noopErr, noopErr ? `${noopErr.code}: ${noopErr.message}` : 'ok')
+  }
+
+  console.log('\n--- T1-AVATAR: avatar_url continua editavel (decisao de produto) ---')
+  {
+    const { data: avUpd, error: avErr } = await A.cli
+      .from('family_members')
+      .update({ avatar_url: 'https://exemplo.test/a.png' })
+      .eq('id', A.memberId)
+      .select('avatar_url')
+    check('T1-AVATAR membro edita o proprio avatar_url',
+      !avErr && avUpd?.[0]?.avatar_url === 'https://exemplo.test/a.png',
+      avErr ? `${avErr.code}: ${avErr.message}` : JSON.stringify(avUpd))
+  }
+
+  console.log('\n--- T1-JOINED: joined_at e congelado pelo trigger ---')
+  {
+    const { error: jErr } = await A.cli
+      .from('family_members')
+      .update({ joined_at: '2020-01-01T00:00:00Z' })
+      .eq('id', A.memberId)
+      .select('id')
+    check('T1-JOINED troca de joined_at bloqueada',
+      !!jErr && (jErr.code === '23514' || /data de entrada/i.test(jErr.message ?? '')),
+      jErr ? `${jErr.code}: ${jErr.message}` : 'NAO BLOQUEOU')
+  }
+
+  console.log('\n--- T2-ORACULO: A nao descobre a familia de B pela funcao helper ---')
+  {
+    const { data: orc, error: orcErr } = await A.cli
+      .rpc('get_user_family_id', { uid: B.uid })
+    // Fechado = erro de permissao, ou nao devolveu o family_id de B.
+    const oraculoFechado = !!orcErr || orc !== B.familyId
+    check('T2-ORACULO get_user_family_id(uid de terceiro) negada',
+      oraculoFechado,
+      orcErr ? `${orcErr.code}: ${orcErr.message}` : `retornou ${JSON.stringify(orc)}`)
+  }
+
+  console.log('\n--- T2-SELF: a versao _self() responde sobre MIM, corretamente ---')
+  {
+    const { data: selfFam, error: selfErr } = await A.cli.rpc('get_user_family_id_self')
+    check('T2-SELF get_user_family_id_self responde a propria familia',
+      !selfErr && selfFam === A.familyId,
+      selfErr ? `${selfErr.code}: ${selfErr.message}` : `${selfFam}`)
+  }
+
+  console.log('\n--- T2-SELF-TERCEIRO: _self() nao aceita parametro de terceiro ---')
+  {
+    // Mesmo quem tentar passar uid na chamada nao consegue perguntar sobre outro:
+    // a funcao nao tem parametro, entao o PostgREST rejeita a assinatura.
+    const { data: bad, error: badErr } = await A.cli
+      .rpc('get_user_family_id_self', { uid: B.uid })
+    check('T2-SELF-TERCEIRO _self com uid de terceiro nao responde sobre B',
+      !!badErr || bad !== B.familyId,
+      badErr ? `${badErr.code}: ${badErr.message}` : `retornou ${JSON.stringify(bad)}`)
+  }
+
+  console.log(`\n=== ${checks - failures}/${checks} verificacoes passaram ===`)
+  console.log(`=== ${failures === 0 ? 'NAO EXPLORAVEL' : 'EXPLORAVEL — ' + failures + ' falha(s)'} ===`)
 } catch (e) {
   console.error('ERRO:', e.message)
   failures++

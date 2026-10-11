@@ -2,129 +2,339 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/*
+ * Finanças a Dois — fonte da verdade dos tokens visuais.
+ * Dono: Vitrine. Documentação e tabela de contrastes: docs/design/handoff.md
+ *
+ * Duas dimensões independentes:
+ *   modo    -> classe .dark no <html>
+ *   paleta  -> atributo data-paleta no <html> (cedro | ardosia | terra | ameixa)
+ * Cascata: .dark[data-paleta=X] > [data-paleta=X] > .dark > :root.
+ * A paleta só sobrescreve primary / primary-foreground / ring / accent.
+ * A semântica financeira e o chassi NUNCA mudam com a paleta.
+ */
 
+/* Dark mode por CLASSE: a escolha do usuário precisa vencer o SO. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------- */
+/* MODO CLARO + paleta Cedro (default)                              */
+/* ---------------------------------------------------------------- */
+:root {
+  /* chassi */
+  --background: #F7F8F7;
+  --foreground: #14181C;
+  --card: #FFFFFF;
+  --card-foreground: #14181C;
+  --popover: #FFFFFF;
+  --popover-foreground: #14181C;
+  --secondary: #EDF0EF;
+  --secondary-foreground: #14181C;
+  --muted: #EDF0EF;
+  --muted-foreground: #5A6670;
+  --accent-foreground: #14181C;
+  --border: #DDE2E1;          /* SÓ régua decorativa (1.23:1, isenta) */
+  --border-forte: #7D878C;    /* TODA borda de componente interativo */
+  --input: #7D878C;           /* = --border-forte */
+  --destructive: #BE352C;     /* = --despesa */
+  --destructive-foreground: #FFFFFF;
+
+  /* paleta Cedro (default) */
+  --primary: #14594A;
+  --primary-foreground: #FFFFFF;
+  --ring: #14594A;
+  --accent: #E4EDE9;
+
+  /* semântica financeira — idêntica nas 4 paletas */
+  --receita: #0F7650;
+  --despesa: #BE352C;
+  --investimento: #1F5FA8;
+  --transferencia: #6A5AB3;
+  --pendente: #8A5A00;
+  --negativo: #9A2B22;
+  --beneficio: #0A6B6B;
+
+  /* séries de gráfico: as 5 primeiras de chart-palette.ts (shadcn chart) */
+  --chart-1: #2F6DB5;
+  --chart-2: #C2552F;
+  --chart-3: #0E7F78;
+  --chart-4: #7A5BC4;
+  --chart-5: #6E7A1F;
+  --serie-outros: #7D878C;
+
+  /* sidebar (shadcn) herda do chassi */
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  /* raio: escala com motivo (cada degrau tem um uso) */
+  --radius: 0.5rem;           /* ponte shadcn: = controle */
+  --raio-chip: 4px;
+  --raio-controle: 8px;
+  --raio-card: 12px;
+  --raio-cartao: 16px;
+  --raio-pill: 9999px;
+
+  /* sombra: dois papéis, nada mais recebe sombra */
+  --sombra-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 1px rgb(0 0 0 / 0.03);
+  --sombra-cartao: 0 2px 4px rgb(0 0 0 / 0.08), 0 8px 16px -4px rgb(0 0 0 / 0.12);
+  --borda-cartao: 1px solid transparent;
+
+  /* espaçamento: base 4px */
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-5: 20px;
+  --esp-6: 24px;
+  --esp-8: 32px;
+  --esp-12: 48px;
+
+  /* motion: um momento orquestrado (entrada), o resto é resposta */
+  --motion-rapido: 120ms cubic-bezier(0.2, 0, 0.4, 1);
+  --motion-padrao: 220ms cubic-bezier(0.2, 0, 0.2, 1);
+  --motion-entrada: 420ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* tipografia: escala (tamanho / altura de linha) */
+  --texto-valor-heroi: 40px;
+  --texto-valor-heroi-lh: 44px;
+  --texto-valor-destaque: 28px;
+  --texto-valor-destaque-lh: 32px;
+  --texto-valor-linha: 16px;
+  --texto-valor-linha-lh: 24px;
+  --texto-titulo: 20px;
+  --texto-titulo-lh: 28px;
+  --texto-subtitulo: 17px;
+  --texto-subtitulo-lh: 24px;
+  --texto-corpo: 15px;
+  --texto-corpo-lh: 24px;
+  --texto-apoio: 13px;
+  --texto-apoio-lh: 18px;
+  --texto-micro: 11px;
+  --texto-micro-lh: 14px;
+  --numerico-tabular: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- */
+/* MODO ESCURO + paleta Cedro                                        */
+/* ---------------------------------------------------------------- */
+.dark {
+  --background: #101417;
+  --foreground: #E8ECEB;
+  --card: #171C20;
+  --card-foreground: #E8ECEB;
+  --popover: #1E242A;
+  --popover-foreground: #E8ECEB;
+  --secondary: #1E242A;
+  --secondary-foreground: #E8ECEB;
+  --muted: #1E242A;
+  --muted-foreground: #9BA6AC;
+  --accent-foreground: #E8ECEB;
+  --border: #2A3238;
+  --border-forte: #6E7A81;
+  --input: #6E7A81;
+  --destructive: #FF8A7A;
+  --destructive-foreground: #101417;
+
+  --primary: #5FD3B2;
+  --primary-foreground: #101417;
+  --ring: #5FD3B2;
+  --accent: #1B2E2A;
+
+  --receita: #3FC68B;
+  --despesa: #FF8A7A;
+  --investimento: #74AEF0;
+  --transferencia: #A79BF0;
+  --pendente: #E0A93F;
+  --negativo: #FF6F61;
+  --beneficio: #3FC2C2;
+
+  --chart-1: #6FA8E8;
+  --chart-2: #F08A5E;
+  --chart-3: #3FBDB2;
+  --chart-4: #A992E8;
+  --chart-5: #AFBE4A;
+  --serie-outros: #6E7A81;
+
+  /* sem sombra no escuro: o cartão ganha borda fina */
+  --sombra-card: none;
+  --sombra-cartao: none;
+  --borda-cartao: 1px solid rgb(255 255 255 / 0.10);
+}
+
+/* ---------------------------------------------------------------- */
+/* PALETAS ESCOLHÍVEIS — só primary / primary-foreground / ring / accent */
+/* ---------------------------------------------------------------- */
+[data-paleta="ardosia"] {
+  --primary: #1C4F80;
+  --primary-foreground: #FFFFFF;
+  --ring: #1C4F80;
+  --accent: #E4EBF3;
+}
+.dark[data-paleta="ardosia"] {
+  --primary: #7FB8F2;
+  --primary-foreground: #101417;
+  --ring: #7FB8F2;
+  --accent: #1A2733;
+}
+
+[data-paleta="terra"] {
+  --primary: #9E3F23;
+  --primary-foreground: #FFFFFF;
+  --ring: #9E3F23;
+  --accent: #F5E6E0;
+}
+.dark[data-paleta="terra"] {
+  --primary: #F09070;
+  --primary-foreground: #101417;
+  --ring: #F09070;
+  --accent: #2E211C;
+}
+
+[data-paleta="ameixa"] {
+  --primary: #6B2A5E;
+  --primary-foreground: #FFFFFF;
+  --ring: #6B2A5E;
+  --accent: #F0E4EE;
+}
+.dark[data-paleta="ameixa"] {
+  --primary: #D98FC6;
+  --primary-foreground: #101417;
+  --ring: #D98FC6;
+  --accent: #2A1E28;
+}
+
+/* ---------------------------------------------------------------- */
+/* Mapeamento para utilitários Tailwind (bg-receita, text-despesa...) */
+/* ---------------------------------------------------------------- */
 @theme inline {
+  /*
+   * Fontes: --fonte-ui e --fonte-mono são definidas no <html> pelo next/font
+   * (layout.tsx). Sem autorreferência (--font-sans: var(--font-sans)) e sem
+   * @import de fonte em CSS.
+   */
+  --font-sans: var(--fonte-ui), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--fonte-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-heading: var(--fonte-ui), ui-sans-serif, system-ui, sans-serif;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-border-forte: var(--border-forte);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-receita: var(--receita);
+  --color-despesa: var(--despesa);
+  --color-investimento: var(--investimento);
+  --color-transferencia: var(--transferencia);
+  --color-pendente: var(--pendente);
+  --color-negativo: var(--negativo);
+  --color-beneficio: var(--beneficio);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-serie-outros: var(--serie-outros);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* raio: degraus shadcn mapeados aos usos do plano
+     sm = chip, md/lg = controle, xl = card, 2xl = cartão de conta */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
+  --radius-4xl: 24px;
+
+  --shadow-card: var(--sombra-card);
+  --shadow-cartao: var(--sombra-cartao);
+
+  --ease-rapido: cubic-bezier(0.2, 0, 0.4, 1);
+  --ease-padrao: cubic-bezier(0.2, 0, 0.2, 1);
+  --ease-entrada: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
-
+/* ---------------------------------------------------------------- */
+/* Base                                                              */
+/* ---------------------------------------------------------------- */
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
+    font-size: var(--texto-corpo);
+    line-height: var(--texto-corpo-lh);
   }
   html {
     @apply font-sans;
+  }
+  /* A-2: foco visível sempre, nunca outline: none */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Utilitários de tipo financeiro (T-1, T-2) */
+@layer utilities {
+  .valor {
+    font-family: var(--fonte-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .num-tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .texto-micro {
+    font-size: var(--texto-micro);
+    line-height: var(--texto-micro-lh);
+    font-weight: 500;
+    font-stretch: 85%;
+  }
+}
+
+/* A-3: movimento reduzido zera os três tokens */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-rapido: 1ms linear;
+    --motion-padrao: 1ms linear;
+    --motion-entrada: 1ms linear;
+  }
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
   }
 }
