@@ -18,8 +18,8 @@ PWA mobile-first para casais (e futuramente famílias) lançarem receitas, despe
 
 | Camada | Tecnologia | Justificativa (fonte) |
 |---|---|---|
-| Framework | Next.js 15 App Router + TypeScript | Renderização no servidor, Server Actions transacionais, PWA com route handlers — fonte: `vercel:nextjs` |
-| Estilo | Tailwind CSS + shadcn/ui | Componentes acessíveis, dark mode, tokens via CSS variables |
+| Framework | Next.js 16.4 App Router + React 19.3 + TypeScript | Renderização no servidor, Server Actions transacionais, PWA com route handlers — fonte: `vercel:nextjs`. **No 16 o middleware virou `proxy.ts`** (`export function proxy` + `proxyConfig`) — fonte: `vercel:nextjs`, `references/file-conventions.md` |
+| Estilo | Tailwind CSS 4 + shadcn/ui | Componentes acessíveis, dark mode, tokens via CSS variables. **Tailwind 4 não usa `tailwind.config.ts`** — tema em CSS via `@theme` |
 | Banco | Supabase Postgres | RLS por família, Realtime, Auth, Storage — fonte: `supabase:supabase-postgres-best-practices` |
 | Auth | Supabase Auth (email/senha) | Cada membro tem login próprio |
 | Tempo real | Supabase Realtime (postgres_changes + presence) | Canal por família, RLS no `realtime.messages` |
@@ -280,7 +280,11 @@ app/
   api/
     push/route.ts               -- recebe webhook do banco, despacha para Edge Function
   manifest.webmanifest/route.ts -- PWA manifest dinâmico
+
+proxy.ts                        -- RAIZ do projeto: auth guard (Next 16 renomeou middleware.ts)
 ```
+
+**APIs assíncronas (Next 15+):** `params`, `searchParams`, `cookies()` e `headers()` retornam Promise — sempre `await`.
 
 **Fronteira Server/Client:**
 - `(app)/layout.tsx`: Server Component — carrega membros, contas, categorias uma vez.

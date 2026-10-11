@@ -4,17 +4,19 @@
 
 **Goal:** Construir o MVP completo da v2 — auth, família, lançamentos, carteira, acerto de contas, tempo real e PWA — deployado na Vercel.
 
-**Architecture:** Next.js 15 App Router com Server Components para renderização e Server Actions para toda mutação. Banco Postgres com RLS por família. Realtime via Supabase Realtime no cliente. Tudo gravado ou calculado no banco — nenhum cálculo financeiro no navegador.
+**Architecture:** Next.js 16 App Router com Server Components para renderização e Server Actions para toda mutação. Banco Postgres com RLS por família. Realtime via Supabase Realtime no cliente. Tudo gravado ou calculado no banco — nenhum cálculo financeiro no navegador.
 
-**Tech Stack:** Next.js 15, TypeScript, Tailwind CSS, shadcn/ui, Supabase (Postgres + Auth + Realtime + Storage), Vercel, Vitest, supabase-js v2.
+**Tech Stack:** Next.js 16.4, React 19.3, TypeScript, Tailwind CSS 4, shadcn/ui, Supabase (Postgres + Auth + Realtime + Storage), Vercel, Vitest, supabase-js v2.
 
 **Spec:** `docs/superpowers/specs/2026-10-11-financas-a-dois-v2-design.md`
 
 ## Global Constraints
 
-- Next.js 15 com App Router — sem Pages Router
+- Next.js 16.4 com App Router — sem Pages Router
+- **Next.js 16: o middleware chama-se `proxy.ts`** na RAIZ, com `export function proxy()` e `export const proxyConfig` — `middleware.ts` NÃO é reconhecido (fonte: `vercel:nextjs`, `references/file-conventions.md`)
+- **`params`, `searchParams`, `cookies()` e `headers()` são assíncronos** — tipar como `Promise<...>` e `await` (fonte: `vercel:nextjs`, `references/async-patterns.md`)
 - TypeScript strict mode (`"strict": true`)
-- Tailwind CSS com dark mode via class (`darkMode: 'class'`)
+- **Tailwind CSS 4: não existe `tailwind.config.ts`** — tema configurado em CSS via `@theme` em `globals.css`; dark mode via `@custom-variant dark (&:where(.dark, .dark *))`
 - shadcn/ui para todos os componentes de UI primitivos
 - Valores monetários: `numeric(14,2)` no banco, `number` em TypeScript (parseado da string do Postgres), nunca `float` ou `parseFloat` de string BR
 - Datas: string `YYYY-MM-DD` pura em todo o código — sem `new Date()` para cálculo de data, sem conversão de timezone
@@ -112,9 +114,9 @@ financas-a-dois-v2/
 │   │   ├── categories.ts                     -- CRUD categorias
 │   │   ├── payment-methods.ts                -- CRUD formas de pagamento
 │   │   └── settlement.ts                     -- settle_accounts
-│   ├── types/
-│   │   └── database.ts                       -- gerado por supabase gen types
-│   └── middleware.ts                         -- auth guard via supabase/ssr
+│   └── types/
+│       └── database.ts                       -- gerado por supabase gen types
+├── proxy.ts                                  -- auth guard (Next 16: era middleware.ts)
 ├── public/
 │   ├── sw.js                                 -- service worker PWA
 │   └── icons/                                -- ícones PWA 192x192, 512x512
@@ -1226,7 +1228,7 @@ git commit -m "feat(lib): utilitários de formatação portados da v1 com testes
 **Files:**
 - Create: `src/lib/supabase/client.ts`
 - Create: `src/lib/supabase/server.ts`
-- Create: `src/middleware.ts`
+- Create: `proxy.ts` (raiz do projeto — Next 16 renomeou `middleware.ts`)
 - Create: `src/actions/auth.ts`
 - Create: `src/app/(auth)/login/page.tsx`
 - Create: `src/app/(auth)/cadastro/page.tsx`
@@ -1282,14 +1284,14 @@ export async function createClient() {
 }
 ```
 
-- [ ] **Passo 3: Criar middleware**
+- [ ] **Passo 3: Criar proxy (o middleware do Next 16)**
 
-Criar `src/middleware.ts`:
+Criar `proxy.ts` na RAIZ do projeto (não em `src/`):
 ```typescript
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -1326,7 +1328,7 @@ export async function middleware(request: NextRequest) {
   return supabaseResponse
 }
 
-export const config = {
+export const proxyConfig = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|icons|sw.js|manifest).*)'],
 }
 ```
@@ -1500,7 +1502,7 @@ Acessar `http://localhost:3000` — deve redirecionar para `/login`. Criar conta
 - [ ] **Passo 8: Commit**
 
 ```bash
-git add src/lib/supabase/ src/middleware.ts src/actions/auth.ts \
+git add src/lib/supabase/ proxy.ts src/actions/auth.ts \
         src/components/auth/ src/app/\(auth\)/
 git commit -m "feat(auth): login, cadastro e recuperação de senha"
 ```
