@@ -25,6 +25,7 @@ type Fatura = Database['public']['Views']['v_invoices']['Row']
 
 export interface CartaoContaProps {
   conta: SaldoConta
+  faturaAtual?: Fatura | null
   faturaAberta?: Fatura | null
   contasOrigem?: ContaOrigem[]
   className?: string
@@ -45,6 +46,7 @@ function iconeDoTipo(tipo: string | null) {
 
 export function CartaoConta({
   conta,
+  faturaAtual,
   faturaAberta,
   contasOrigem = [],
   className,
@@ -57,6 +59,11 @@ export function CartaoConta({
   const temPendencias = pendenteEntrada > 0 || pendenteSaida > 0
   const ehCartao = conta.type === 'cartao'
   const arquivada = Boolean(conta.archived_at)
+
+  // D-1: Para cartão, o número principal vem do ciclo corrente de v_invoices
+  const faturaDoCiclo = faturaAtual ?? faturaAberta ?? null
+  const totalFaturaAtual = faturaDoCiclo?.total_amount ?? 0
+  const emAbertoFaturaAtual = faturaDoCiclo?.open_amount ?? 0
 
   return (
     <article
@@ -101,10 +108,26 @@ export function CartaoConta({
       {/* Saldo Principal */}
       <div className="my-5 flex flex-col">
         <span className="text-muted-foreground text-xs font-medium">
-          {ehCartao ? 'Total da fatura atual' : CARTEIRA.saldoAtual}
+          {ehCartao
+            ? totalFaturaAtual > 0
+              ? 'Total da fatura atual'
+              : 'Nenhuma compra neste ciclo'
+            : CARTEIRA.saldoAtual}
         </span>
         <div className="mt-1">
-          <ValorSaldo valor={saldoAtual} tamanho="heroi" />
+          {ehCartao ? (
+            totalFaturaAtual > 0 ? (
+              <ValorMonetario
+                valor={totalFaturaAtual}
+                tipo="despesa"
+                tamanho="heroi"
+              />
+            ) : (
+              <ValorMonetario valor={0} tamanho="heroi" />
+            )
+          ) : (
+            <ValorSaldo valor={saldoAtual} tamanho="heroi" />
+          )}
         </div>
 
         {/* Linha de Saldo Previsto se houver pendências */}
@@ -128,6 +151,21 @@ export function CartaoConta({
             </div>
           </div>
         )}
+
+        {/* Linhas de apoio para cartão: total de todos os ciclos se diferente */}
+        {ehCartao && pendenteSaida > emAbertoFaturaAtual && (
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+            <span className="text-muted-foreground">
+              Total em aberto (todos os ciclos):
+            </span>
+            <ValorMonetario
+              valor={pendenteSaida}
+              tipo="despesa"
+              pago={false}
+              tamanho="linha"
+            />
+          </div>
+        )}
       </div>
 
       {/* Rodapé do Cartão */}
@@ -143,14 +181,14 @@ export function CartaoConta({
               </div>
             )}
 
-            {faturaAberta && faturaAberta.open_amount && faturaAberta.open_amount > 0 ? (
+            {faturaDoCiclo && emAbertoFaturaAtual > 0 ? (
               <div className="bg-muted/60 mt-1 flex items-center justify-between gap-2 rounded-lg p-2.5">
                 <div className="flex flex-col">
                   <span className="text-muted-foreground text-[11px]">
-                    Em aberto
+                    Em aberto nesta fatura
                   </span>
                   <ValorMonetario
-                    valor={faturaAberta.open_amount}
+                    valor={emAbertoFaturaAtual}
                     tipo="despesa"
                     tamanho="linha"
                   />
@@ -159,9 +197,9 @@ export function CartaoConta({
                   fatura={{
                     account_id: conta.account_id!,
                     account_name: conta.name,
-                    invoice_year: faturaAberta.invoice_year ?? new Date().getFullYear(),
-                    invoice_month: faturaAberta.invoice_month ?? new Date().getMonth() + 1,
-                    open_amount: faturaAberta.open_amount,
+                    invoice_year: faturaDoCiclo.invoice_year ?? new Date().getFullYear(),
+                    invoice_month: faturaDoCiclo.invoice_month ?? new Date().getMonth() + 1,
+                    open_amount: emAbertoFaturaAtual,
                   }}
                   contasOrigem={contasOrigem}
                   gatilho={
@@ -170,6 +208,11 @@ export function CartaoConta({
                     </Button>
                   }
                 />
+              </div>
+            ) : totalFaturaAtual > 0 ? (
+              <div className="text-muted-foreground mt-1 flex items-center gap-1.5 text-xs text-receita">
+                <Sparkles className="size-3" aria-hidden="true" />
+                <span>Fatura deste ciclo quitada</span>
               </div>
             ) : null}
           </div>

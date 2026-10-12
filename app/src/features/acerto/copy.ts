@@ -31,7 +31,7 @@ export const DIALOGO_ACERTO = {
   credor: 'Quem recebe',
   valor: 'Valor a transferir',
   data: 'Data da transferência',
-  botaoConfirmar: 'Confirmar acerto',
+  botaoConfirmar: 'Registrar acerto',
   botaoCancelar: 'Cancelar',
   processando: 'Registrando acerto…',
   sucesso: 'Acerto registrado com sucesso! O saldo foi liquidado.',

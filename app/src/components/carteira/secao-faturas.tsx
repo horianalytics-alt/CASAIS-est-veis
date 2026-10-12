@@ -5,8 +5,8 @@ import { ValorMonetario } from '@/components/financeiro/valor-monetario'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CARTEIRA, PAGAR_FATURA } from '@/features/carteira/copy'
-import { invoicePeriodLabel } from '@/lib/invoice'
-import { isoToBR } from '@/lib/format'
+import { invoicePeriodLabel, getInvoicePeriod } from '@/lib/invoice'
+import { isoToBR, todayISO } from '@/lib/format'
 import {
   DialogoPagarFatura,
   type ContaOrigem,
@@ -19,7 +19,11 @@ export interface SecaoFaturasProps {
   contasOrigem: ContaOrigem[]
 }
 
+import { cn } from '@/lib/utils'
+
 export function SecaoFaturas({ faturas, contasOrigem }: SecaoFaturasProps) {
+  const hoje = todayISO()
+
   if (faturas.length === 0) {
     return (
       <section
@@ -61,10 +65,21 @@ export function SecaoFaturas({ faturas, contasOrigem }: SecaoFaturasProps) {
           const aberta = (fatura.open_amount ?? 0) > 0
           const vencimentoBR = fatura.due_date ? isoToBR(fatura.due_date) : null
 
+          const closingDay = fatura.closing_day ?? 31
+          const cicloAtual = getInvoicePeriod(hoje, closingDay)
+          const idCicloAtual = cicloAtual.year * 12 + cicloAtual.month
+          const idCicloFatura = ano * 12 + mes
+          const ehCicloAtual = idCicloFatura === idCicloAtual
+          const ehCicloFuturo = idCicloFatura > idCicloAtual
+          const ehCicloPassado = idCicloFatura < idCicloAtual
+
           return (
             <div
               key={`${fatura.account_id ?? 'card'}-${ano}-${mes}-${idx}`}
-              className="bg-card border-border/80 flex flex-col gap-3 rounded-xl border p-4 transition-colors sm:flex-row sm:items-center sm:justify-between"
+              className={cn(
+                'bg-card border-border/80 flex flex-col gap-3 rounded-xl border p-4 transition-all sm:flex-row sm:items-center sm:justify-between',
+                ehCicloAtual && 'border-primary/40 ring-1 ring-primary/20 shadow-xs',
+              )}
             >
               {/* Informações da fatura */}
               <div className="flex flex-col gap-1.5">
@@ -76,10 +91,33 @@ export function SecaoFaturas({ faturas, contasOrigem }: SecaoFaturasProps) {
                     <CreditCard className="size-3" aria-hidden="true" />
                     {fatura.account_name ?? 'Cartão'}
                   </Badge>
+
+                  {/* Badge de Classificação do Ciclo */}
+                  {ehCicloAtual ? (
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs font-semibold">
+                      Fatura atual
+                    </Badge>
+                  ) : ehCicloFuturo ? (
+                    <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-xs">
+                      Ciclo futuro
+                    </Badge>
+                  ) : null}
+
+                  {/* Badge de Estado de Pagamento */}
                   {fatura.is_paid ? (
                     <Badge variant="secondary" className="bg-receita/15 text-receita border-receita/30 text-xs">
                       <Check className="size-3" aria-hidden="true" />
                       {CARTEIRA.faturaPaga}
+                    </Badge>
+                  ) : ehCicloFuturo ? (
+                    <Badge variant="secondary" className="bg-muted text-muted-foreground border-border text-xs">
+                      <Clock className="size-3" aria-hidden="true" />
+                      A vencer
+                    </Badge>
+                  ) : ehCicloPassado && aberta ? (
+                    <Badge variant="secondary" className="bg-negativo/15 text-negativo border-negativo/30 text-xs font-medium">
+                      <Clock className="size-3" aria-hidden="true" />
+                      Fechada em aberto
                     </Badge>
                   ) : (
                     <Badge variant="secondary" className="bg-pendente/15 text-pendente border-pendente/30 text-xs">
@@ -132,21 +170,38 @@ export function SecaoFaturas({ faturas, contasOrigem }: SecaoFaturasProps) {
                 </div>
 
                 {aberta && fatura.account_id && (
-                  <DialogoPagarFatura
-                    fatura={{
-                      account_id: fatura.account_id,
-                      account_name: fatura.account_name,
-                      invoice_year: ano,
-                      invoice_month: mes,
-                      open_amount: fatura.open_amount ?? 0,
-                    }}
-                    contasOrigem={contasOrigem}
-                    gatilho={
-                      <Button variant="default" size="toque" className="whitespace-nowrap">
-                        {PAGAR_FATURA.botaoConfirmar}
+                  ehCicloFuturo ? (
+                    <div className="flex flex-col items-end gap-1">
+                      <Button
+                        variant="outline"
+                        size="toque"
+                        disabled
+                        className="text-xs opacity-50 cursor-not-allowed whitespace-nowrap"
+                        title="Fatura futura ainda não fechada. Quitação disponível a partir do fechamento do ciclo."
+                      >
+                        Ciclo futuro
                       </Button>
-                    }
-                  />
+                      <span className="text-[10px] text-muted-foreground">
+                        Disponível no fechamento
+                      </span>
+                    </div>
+                  ) : (
+                    <DialogoPagarFatura
+                      fatura={{
+                        account_id: fatura.account_id,
+                        account_name: fatura.account_name,
+                        invoice_year: ano,
+                        invoice_month: mes,
+                        open_amount: fatura.open_amount ?? 0,
+                      }}
+                      contasOrigem={contasOrigem}
+                      gatilho={
+                        <Button variant="default" size="toque" className="whitespace-nowrap">
+                          {PAGAR_FATURA.botaoConfirmar}
+                        </Button>
+                      }
+                    />
+                  )
                 )}
               </div>
             </div>

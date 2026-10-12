@@ -8,7 +8,9 @@ import { hojeEmSaoPaulo, ehMesValido, limitesDoMes, rotuloDoMes, somarMeses } fr
 import { ResumoDoMes } from '@/components/inicio/resumo-do-mes'
 import { SaldoDasContas } from '@/components/inicio/saldo-das-contas'
 import { ItemTransacao } from '@/components/transacoes/item-transacao'
+import { TabelaTransacoesDesktop } from '@/components/transacoes/tabela-transacoes-desktop'
 import { PaginacaoLancamentos } from '@/components/transacoes/paginacao-lancamentos'
+import { OuvinteRealtime } from '@/components/inicio/ouvinte-realtime'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -59,7 +61,7 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
   const pagina = Number.isFinite(paginaNumero) && paginaNumero > 0 ? paginaNumero : 1
   const de = (pagina - 1) * POR_PAGINA
 
-  const [resumos, contas, lancamentos, categorias] = await Promise.all([
+  const [resumos, contas, lancamentos, categorias, resFamilia] = await Promise.all([
     supabase.from('v_monthly_summary').select('*').order('month', { ascending: false }),
     supabase
       .from('v_account_balances')
@@ -75,7 +77,10 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
       .order('created_at', { ascending: false })
       .range(de, de + POR_PAGINA - 1),
     supabase.from('categories').select('id, name'),
+    supabase.from('families').select('id').single(),
   ])
+
+  const familyId = resFamilia.data?.id ?? ''
 
   const falhouAlgo = Boolean(
     resumos.error || contas.error || lancamentos.error || categorias.error,
@@ -198,18 +203,28 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
                 descricao={INICIO.semLancamentosNoMesDica}
               />
             ) : (
-              <ul className="divide-border flex flex-col divide-y">
-                {(lancamentos.data ?? []).map((t) => (
-                  <ItemTransacao
-                    key={t.id}
-                    transacao={t}
-                    nomeConta={nomeDaConta.get(t.account_id)}
-                    nomeCategoria={
-                      t.category_id ? nomeDaCategoria.get(t.category_id) : null
-                    }
-                  />
-                ))}
-              </ul>
+              <>
+                {/* Mobile / Tablet (< 1024px): Lista em cartões */}
+                <ul className="divide-border flex flex-col divide-y lg:hidden">
+                  {(lancamentos.data ?? []).map((t) => (
+                    <ItemTransacao
+                      key={t.id}
+                      transacao={t}
+                      nomeConta={nomeDaConta.get(t.account_id)}
+                      nomeCategoria={
+                        t.category_id ? nomeDaCategoria.get(t.category_id) : null
+                      }
+                    />
+                  ))}
+                </ul>
+
+                {/* Desktop (>= 1024px): Tabela rica de lançamentos */}
+                <TabelaTransacoesDesktop
+                  transacoes={lancamentos.data ?? []}
+                  nomeConta={(id) => nomeDaConta.get(id)}
+                  nomeCategoria={(id) => (id ? nomeDaCategoria.get(id) : null)}
+                />
+              </>
             )}
             <PaginacaoLancamentos
               pagina={pagina}
@@ -219,6 +234,15 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Ouvinte em Tempo Real via Supabase Realtime (item 9.8) */}
+      {familyId && (
+        <OuvinteRealtime
+          familyId={familyId}
+          mesExibido={mes}
+          idsIniciais={(lancamentos.data ?? []).map((t) => t.id)}
+        />
+      )}
     </main>
   )
 }

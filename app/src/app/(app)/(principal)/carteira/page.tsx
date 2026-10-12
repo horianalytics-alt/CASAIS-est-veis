@@ -11,6 +11,8 @@ import { ValorMonetario } from '@/components/financeiro/valor-monetario'
 import { Button } from '@/components/ui/button'
 import { EstadoVazio } from '@/components/ui/estado-vazio'
 import { CARTEIRA } from '@/features/carteira/copy'
+import { getInvoicePeriod } from '@/lib/invoice'
+import { todayISO } from '@/lib/format'
 import type { Database } from '@/types/database'
 
 export const metadata: Metadata = {
@@ -70,7 +72,25 @@ export default async function PaginaCarteira({ searchParams }: PaginaCarteiraPro
       current_balance: c.current_balance,
     }))
 
-  // Fatura aberta mais recente por cartão (para exibir no cartão correspondente)
+  // D-1: Fatura do ciclo corrente por cartão (baseado na data de fechamento e data de hoje)
+  const hoje = todayISO()
+  const faturasCorrentesPorConta = new Map<string, Fatura>()
+  for (const conta of contas) {
+    if (conta.type === 'cartao' && conta.account_id && conta.closing_day) {
+      const periodo = getInvoicePeriod(hoje, conta.closing_day)
+      const fatura = faturas.find(
+        (f) =>
+          f.account_id === conta.account_id &&
+          f.invoice_year === periodo.year &&
+          f.invoice_month === periodo.month,
+      )
+      if (fatura) {
+        faturasCorrentesPorConta.set(conta.account_id, fatura)
+      }
+    }
+  }
+
+  // Fatura aberta mais recente por cartão (para exibir no cartão correspondente se não houver corrente)
   const faturasAbertasPorConta = new Map<string, Fatura>()
   for (const fatura of faturas) {
     if (fatura.account_id && (fatura.open_amount ?? 0) > 0 && !faturasAbertasPorConta.has(fatura.account_id)) {
@@ -211,6 +231,11 @@ export default async function PaginaCarteira({ searchParams }: PaginaCarteiraPro
               <CartaoConta
                 key={conta.account_id ?? conta.name}
                 conta={conta}
+                faturaAtual={
+                  conta.account_id
+                    ? faturasCorrentesPorConta.get(conta.account_id)
+                    : null
+                }
                 faturaAberta={
                   conta.account_id
                     ? faturasAbertasPorConta.get(conta.account_id)

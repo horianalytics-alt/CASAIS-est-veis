@@ -24,7 +24,7 @@ export function NavegacaoInferior() {
   return (
     <nav
       aria-label={NAVEGACAO.rotuloDaBarra}
-      className="bg-background border-border sticky bottom-0 z-10 border-t"
+      className="bg-background/95 backdrop-blur-md border-border fixed bottom-0 inset-x-0 z-20 border-t pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <ul className="mx-auto flex h-16 max-w-[40rem] items-stretch">
         {ITENS.map(({ href, rotulo, Icone }) => {

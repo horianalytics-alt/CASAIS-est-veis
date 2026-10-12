@@ -41,6 +41,14 @@ export const AJUSTES_FAMILIA = {
   salvarRegra: 'Salvar regra de divisão',
   salvando: 'Salvando…',
   regraSalva: 'Regra de divisão atualizada.',
+  gerarNovoCodigo: 'Gerar novo código',
+  rotacionarConfirmacaoTitulo: 'Gerar novo código de convite?',
+  rotacionarConfirmacaoDescricao:
+    'O código atual deixará de funcionar imediatamente. Qualquer pessoa com o código antigo não conseguirá mais entrar na sua casa.',
+  rotacionarConfirmar: 'Sim, gerar novo código',
+  rotacionarCancelar: 'Cancelar',
+  rotacionando: 'Gerando…',
+  rotacionadoSucesso: 'Novo código gerado com sucesso!',
 } as const
 
 export const AJUSTES_PERFIL = {
