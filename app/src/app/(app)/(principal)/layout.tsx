@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { LogOut } from 'lucide-react'
 import { sair } from '@/actions/auth'
 import { NavegacaoInferior } from '@/components/navegacao/navegacao-inferior'
+import { BotaoOcultarValores } from '@/components/navegacao/botao-ocultar-valores'
 import { Button } from '@/components/ui/button'
 import { APP } from '@/features/comum/copy'
 import { NAVEGACAO } from '@/features/transacoes/copy'
@@ -25,12 +26,15 @@ export default function LayoutPrincipal({ children }: LayoutProps<'/'>) {
           <p className="text-[length:var(--texto-subtitulo)] leading-[var(--texto-subtitulo-lh)] font-semibold">
             {APP.nome}
           </p>
-          <form action={sair}>
-            <Button type="submit" variant="ghost" size="toque">
-              <LogOut aria-hidden="true" />
-              {NAVEGACAO.sair}
-            </Button>
-          </form>
+          <div className="flex items-center gap-[var(--esp-1)]">
+            <BotaoOcultarValores />
+            <form action={sair}>
+              <Button type="submit" variant="ghost" size="toque">
+                <LogOut aria-hidden="true" />
+                {NAVEGACAO.sair}
+              </Button>
+            </form>
+          </div>
         </div>
       </header>
 

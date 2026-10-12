@@ -6,13 +6,16 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { House, Plus } from 'lucide-react'
+import { House, Plus, Scale, Settings, Wallet } from 'lucide-react'
 import { NAVEGACAO } from '@/features/transacoes/copy'
 import { cn } from '@/lib/utils'
 
 const ITENS = [
   { href: '/inicio', rotulo: NAVEGACAO.inicio, Icone: House },
+  { href: '/carteira', rotulo: NAVEGACAO.carteira, Icone: Wallet },
   { href: '/lancar', rotulo: NAVEGACAO.lancar, Icone: Plus },
+  { href: '/acerto', rotulo: NAVEGACAO.acerto, Icone: Scale },
+  { href: '/ajustes', rotulo: NAVEGACAO.ajustes, Icone: Settings },
 ] as const
 
 export function NavegacaoInferior() {

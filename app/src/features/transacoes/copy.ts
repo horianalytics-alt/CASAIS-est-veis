@@ -9,7 +9,10 @@
 export const NAVEGACAO = {
   rotuloDaBarra: 'Navegação principal',
   inicio: 'Início',
+  carteira: 'Carteira',
   lancar: 'Lançar',
+  acerto: 'Acerto',
+  ajustes: 'Ajustes',
   sair: 'Sair',
 } as const
 
