@@ -1,0 +1,72 @@
+/**
+ * Copy da tela de Ajustes (/ajustes) e suas subpáginas em pt-BR.
+ */
+
+export const AJUSTES = {
+  titulo: 'Ajustes',
+  subtitulo: 'Personalização, família, perfil e configurações financeiras',
+  secaoAparencia: 'Aparência',
+  secaoAparenciaDica: 'Escolha o modo de cor e a paleta do aplicativo',
+  modo: 'Modo de exibição',
+  modoClaro: 'Claro',
+  modoEscuro: 'Escuro',
+  modoSistema: 'Sistema',
+  paleta: 'Paleta de cores',
+  secaoFamilia: 'Casa e Membros',
+  linkFamilia: 'Família e Convite',
+  linkFamiliaDica: 'Membros da casa, código de convite e regra de divisão',
+  linkPerfil: 'Meu perfil',
+  linkPerfilDica: 'Seu nome de exibição e renda mensal declarada',
+  secaoFinanceiro: 'Estrutura Financeira',
+  linkContas: 'Contas bancárias e cartões',
+  linkContasDica: 'Cadastre ou edite contas, datas de vencimento e fechamento',
+  linkCategorias: 'Categorias',
+  linkCategoriasDica: 'Categorias de despesas, receitas e investimentos',
+  linkFormasPagamento: 'Formas de pagamento',
+  linkFormasPagamentoDica: 'Métodos utilizados nos lançamentos da casa',
+} as const
+
+export const AJUSTES_FAMILIA = {
+  titulo: 'Família e Convite',
+  subtitulo: 'Gerencie os membros da sua casa e compartilhe o acesso',
+  codigoConvite: 'Código de convite',
+  codigoDica:
+    'Compartilhe este código com o seu par para que ele entre nesta mesma casa pelo onboarding.',
+  copiarCodigo: 'Copiar código',
+  codigoCopiado: 'Código copiado!',
+  membrosTitulo: 'Membros da casa',
+  regraTitulo: 'Regra de divisão das despesas compartilhadas',
+  regraIgual: 'Meio a meio (50% / 50%)',
+  regraProporcional: 'Proporcional à renda declarada',
+  salvarRegra: 'Salvar regra de divisão',
+  salvando: 'Salvando…',
+  regraSalva: 'Regra de divisão atualizada.',
+} as const
+
+export const AJUSTES_PERFIL = {
+  titulo: 'Meu perfil',
+  subtitulo: 'Atualize seus dados pessoais usados na casa',
+  nome: 'Nome de exibição',
+  nomePlaceholder: 'Como você prefere ser chamado',
+  renda: 'Renda mensal líquida (opcional)',
+  rendaDica: 'Usada para calcular a divisão proporcional de despesas da casa.',
+  salvar: 'Salvar alterações',
+  salvando: 'Salvando…',
+  sucesso: 'Perfil atualizado com sucesso.',
+} as const
+
+export const AJUSTES_CONTAS = {
+  titulo: 'Contas e cartões',
+  subtitulo: 'Gerencie as contas bancárias, cartões de crédito e benefícios',
+  novaConta: 'Nova conta',
+  editarConta: 'Editar conta',
+  nome: 'Nome da conta',
+  nomePlaceholder: 'Ex.: Nubank, Itaú Corrente, Vale Refeição',
+  tipo: 'Tipo de conta',
+  saldoInicial: 'Saldo inicial (R$)',
+  diaFechamento: 'Dia do fechamento da fatura (1 a 31)',
+  diaVencimento: 'Dia do vencimento da fatura (1 a 31)',
+  salvar: 'Salvar conta',
+  salvando: 'Salvando…',
+  sucesso: 'Conta salva com sucesso.',
+} as const
