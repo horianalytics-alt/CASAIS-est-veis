@@ -5,6 +5,24 @@
 > **Tokens:** `docs/design/handoff.md` (Vitrine) — consumidos, nunca criados. Não invoco `frontend-design`.
 > **Tarefas de referência:** 5 a 13 de `docs/superpowers/plans/2026-10-11-financas-a-dois-onda1.md`, com as correções da seção 0 abaixo.
 
+## ADENDO 2026-10-11 — recorte da primeira rodada de execução (decisão do Maestro/Heitor)
+
+Este plano continua valendo **inteiro** como referência da Onda 1 completa. O que muda é só a **ordem**: por limite de API, a primeira rodada entrega a **fatia mínima usável** — o Heitor abrir o app, criar a conta, criar a família e lançar uma despesa de verdade.
+
+**Construir nesta rodada:** (1) `/login` e `/cadastro` · (2) onboarding criar/entrar por código · (3) `/inicio` com lista de lançamentos + os indicadores que o dado já permitir · (4) `/lancar` **só receita e despesa simples** · (5) o mínimo de layout/navegação que amarre as quatro.
+
+**FORA desta rodada, construir na continuação:** carteira, fatura, pagar fatura, acerto de contas, parcelas, lote, transferência, categorias, formas de pagamento, metas, `recuperar-senha`, `nova-senha`, PWA/manifest, service worker, Realtime, seletor de paleta.
+
+**Mapeamento para a seção 8:** entram **F-1, F-2, F-5, F-7, F-8, F-9, F-10** e um **F-11 reduzido** (receita/despesa, sem parcela, lote nem transferência). Ficam para a continuação F-3, F-4, F-6, F-12, F-13, F-14, F-15. Consequência de escopo: sem F-6 nesta rodada, **o handoff de invólucros para o Dash (seção 9) não acontece agora** — e o Dash não deve ser disparado antes dele.
+
+**Commit à medida: um commit por tela que funcione.** Se o limite da API cortar no meio, o que está commitado sobrevive e a retomada parte dali. Não deixar trabalho não commitado.
+
+**Camada de servidor continua NÃO sendo minha** (fronteira do `PLANO.md` §5 mantida). O Estrutura entrega `app/proxy.ts`, `app/src/actions/{auth,familia,lancamento}.ts` e `docs/planos/estrutura-contrato-handoff.md` com a seção `## Contrato de handoff — PARA O FACHADA`. **A execução só começa depois que esses três existirem** — conferir com `ls`, não supor. Verificado às 2026-10-11 nesta sessão: os três **ainda não existem**.
+
+**P-8 encerrada, com o fato correto** (corrigido pelo Maestro contra `~/.claude/settings.json`): o `PreToolUse` registra `sentinela-independencia.cjs`, não `security-guidance`. O `security-guidance` roda como revisão automática **de commit** (já disparou 2× nesta sessão, 4 problemas reais). Portanto varredura **edit a edit não acontece**; **de commit acontece**. Não é risco meu — e, como commito à medida, cada commit meu passa por ela.
+
+---
+
 Nenhuma linha de código de produção foi escrita nesta fase. Os três arquivos que criei para medir (`src/app/twprobe/page.tsx`, dois `.mjs` de sonda) foram removidos; `git status --short` voltou vazio.
 
 ---
@@ -468,7 +486,7 @@ Sobem pelo Maestro, não direto ao Estrutura. Antes de abrir, rodo `vercel:verif
 
 ### Do Vitrine (seção 11 do handoff)
 P-1 → F-2 · P-2 → F-3 · P-3 → F-4 · P-4 → F-1 e após cada lote · P-6 → F-16 · P-7 → seção 5.
-P-5 é do Dash. P-8 (hook `security-guidance` não confirmado) é do Maestro — **registro como risco aberto**, já que não pude confirmar o hook ativo nesta sessão.
+P-5 é do Dash. **P-8 ENCERRADA** pelo Maestro (ver adendo no topo): o `security-guidance` não é hook de `PreToolUse` — roda como revisão automática **de commit**. Varredura edit a edit não acontece; de commit acontece. Não é risco meu.
 
 ### Do Radar
 Não existe `docs/pesquisa/*radar*.md`. Nenhuma referência visual externa; a direção vem do handoff e da engenharia reversa da v1. Declarado, não suposto.
@@ -534,6 +552,7 @@ Se o navegador não estiver disponível, escrevo **"VERIFICAÇÃO VISUAL NÃO EX
   5. **Sonda removida.** As 3 sondas que criei para medir foram apagadas e `git status --short` voltou **vazio** — nenhum arquivo meu fora da fronteira desta fase.
 - **Lições novas gravadas em C:/Users/Heitor PC/.claude/agents/licoes/fachada.md:** L-002 (afirmar primitivo/altura do shadcn de memória em vez de medir com `--dry-run` e `view`) · L-003 (assumir que existe utilitário Tailwind para todo token do handoff, sem conferir o `@theme`) · L-004 (escrever no bloco de Auto-Análise o resultado que eu *esperava* do comando de verificação, em vez do que ele imprimiu)
 - **Pendências abertas:**
-  - **E-1 a E-5 (bloqueantes de execução):** sem contrato do Estrutura, sem `proxy.ts` e sem `src/actions/`, as telas de mutação só saem com mock tipado. Decisão do Maestro: ou o Estrutura entrega a camada de servidor antes da minha `FASE: EXECUÇÃO`, ou ele me autoriza `src/actions/` por escrito (hoje `PLANO.md` §5 não me dá esse caminho).
-  - **Date range picker** do invólucro de dashboard: fora da Onda 1 por M-6; decidir com o Dash na Onda 2.
-  - **P-8 do Vitrine:** não pude confirmar o hook `security-guidance` ativo nesta sessão — risco repassado ao Maestro.
+  - **E-1 a E-5: RESOLVIDAS pela opção (a)** — o Maestro confirmou os três comandos e mantém a fronteira do `PLANO.md` §5: eu **não** escrevo camada de servidor. O Estrutura entrega `app/proxy.ts`, `app/src/actions/{auth,familia,lancamento}.ts` e `docs/planos/estrutura-contrato-handoff.md`. **Execução bloqueada até os três existirem** (conferido nesta sessão: ainda não existem).
+  - **Date range picker** do invólucro de dashboard: fora da Onda 1 por M-6; aceito pelo Maestro como pendência da Onda 2.
+  - **Handoff de invólucros para o Dash (seção 9):** não sai nesta rodada, porque F-6 saiu do recorte. O Dash não deve ser disparado antes dele.
+  - **P-8: ENCERRADA** com o fato correto (ver adendo no topo) — não é risco meu.
