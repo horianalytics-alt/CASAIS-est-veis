@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CampoErro } from '@/components/ui/campo-erro'
 import { LOGIN } from '@/features/auth/copy'
+import { caminhoInternoSeguro } from '@/features/auth/destino'
 
 export interface FormLoginProps {
   /**
@@ -37,10 +38,15 @@ export function FormLogin({ proximo }: FormLoginProps) {
     async (_anterior, formData) => {
       const resultado = await entrar(formData)
       if (resultado.ok) {
+        // SEGUNDA barreira contra redirect aberto: a page já validou o
+        // `?proximo=` no servidor, e revalidamos aqui porque é esta linha que
+        // navega. Defesa em profundidade — se o destino passar a ser montado
+        // por outro caminho, esta checagem continua valendo.
+        const destino = caminhoInternoSeguro(proximo) ?? '/inicio'
         // A sessão nasce num cookie escrito pela action. O refresh faz o
-        // Server Component do destino ler a sessão nova; sem ele o push
+        // Server Component do destino ler a sessão nova; sem ele a navegação
         // poderia renderizar com o estado antigo.
-        router.replace(proximo ?? '/inicio')
+        router.replace(destino)
         router.refresh()
       }
       return resultado

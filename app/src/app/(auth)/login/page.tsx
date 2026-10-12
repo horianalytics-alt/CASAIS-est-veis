@@ -1,20 +1,21 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { FormLogin } from '@/components/auth/form-login'
 import { LOGIN } from '@/features/auth/copy'
+import { caminhoInternoSeguro } from '@/features/auth/destino'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export const metadata: Metadata = { title: LOGIN.titulo }
 
 /**
- * Server Component. `searchParams` é assíncrono no Next 16 (decisão de
- * plataforma do PLANO.md): tipar como Promise e await.
+ * Server Component. O cabeçalho é estático e prerenderiza; só o formulário
+ * depende de `searchParams` e por isso fica dentro de <Suspense>.
  */
-export default async function PaginaLogin({
+export default function PaginaLogin({
   searchParams,
 }: {
   searchParams: Promise<{ proximo?: string | string[] }>
 }) {
-  const { proximo } = await searchParams
-
   return (
     <section className="flex flex-col gap-[var(--esp-5)]">
       <div className="flex flex-col gap-[var(--esp-1)]">
@@ -26,25 +27,47 @@ export default async function PaginaLogin({
         </p>
       </div>
 
-      <FormLogin proximo={caminhoInternoSeguro(proximo)} />
+      {/*
+        Ler `searchParams` fora de <Suspense> impede o prerender da rota
+        inteira (Next 16 acusa "runtime data during prerendering"). Com a
+        fronteira aqui, a casca da página é estática e só o formulário espera
+        pelo parâmetro. O fallback tem a mesma altura do formulário para a
+        página não pular quando ele chega.
+      */}
+      <Suspense fallback={<EsqueletoDoFormulario />}>
+        <FormularioComDestino searchParams={searchParams} />
+      </Suspense>
     </section>
   )
 }
 
-/**
- * Só aceita caminho INTERNO.
- *
- * O proxy grava o `?proximo=` e já se limita a caminho interno; esta função
- * é a segunda barreira, porque o parâmetro chega pela URL e qualquer um pode
- * editá-lo. Sem isto, `?proximo=https://site-falso` faria o login empurrar o
- * usuário para fora do app depois de autenticar (redirect aberto).
- *
- * Recusa: valor ausente, lista, que não comece com '/', e '//' ou '/\' que o
- * navegador interpreta como URL protocolo-relativa para outro host.
- */
-function caminhoInternoSeguro(valor: string | string[] | undefined) {
-  if (typeof valor !== 'string') return undefined
-  if (!valor.startsWith('/')) return undefined
-  if (valor.startsWith('//') || valor.startsWith('/\\')) return undefined
-  return valor
+async function FormularioComDestino({
+  searchParams,
+}: {
+  searchParams: Promise<{ proximo?: string | string[] }>
+}) {
+  const { proximo } = await searchParams
+  return <FormLogin proximo={caminhoInternoSeguro(proximo)} />
 }
+
+function EsqueletoDoFormulario() {
+  return (
+    <div className="flex flex-col gap-[var(--esp-5)]" aria-busy="true">
+      <div className="flex flex-col gap-[var(--esp-2)]">
+        <Skeleton className="h-[18px] w-16" />
+        <Skeleton className="h-[44px] w-full" />
+      </div>
+      <div className="flex flex-col gap-[var(--esp-2)]">
+        <Skeleton className="h-[18px] w-16" />
+        <Skeleton className="h-[44px] w-full" />
+      </div>
+      <Skeleton className="h-[44px] w-full" />
+      <Skeleton className="h-[18px] w-48" />
+    </div>
+  )
+}
+
+// `caminhoInternoSeguro` vive em @/features/auth/destino e é aplicada nos DOIS
+// lados (aqui no servidor e em FormLogin antes do router.replace). A versão
+// anterior, local e baseada em texto, era contornável por caractere de controle
+// — ver o comentário do módulo.
