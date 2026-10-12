@@ -380,6 +380,18 @@ Skeleton com a **mesma altura** do conteúdo final (via `EsqueletoBlocoProps.alt
 
 `global-error.tsx` cobre falha no layout raiz. `not-found.tsx` cobre rota inexistente.
 
+### O vazio de `/inicio` é a primeira tela real do produto (decisão do Maestro)
+
+No percurso desta rodada — cadastrar → criar família → **`/inicio` vazio** → lançar → `/inicio` com dado — o Heitor vê a tela vazia **antes** de existir qualquer lançamento. Ela não é polimento: é a primeira impressão do app dele. Tratamento:
+
+- **Não é erro e não parece erro.** Sem ícone de alerta, sem cor semântica de despesa, sem borda vermelha.
+- Estrutura de copy (padrão de estado vazio: o que é + por que está vazio + como começar), em `src/features/transacoes/copy.ts`:
+  título **"Tudo pronto para começar"** · descrição **"Seus lançamentos vão aparecer aqui. Comece registrando um gasto ou uma entrada."** · CTA primário **"Lançar o primeiro"** → `/lancar`.
+- O CTA é `Button` default (`--primary`) — uso legítimo de `--primary` por C-1 (ação principal, não valor financeiro) — com `TOQUE_MINIMO`.
+- Sem ilustração: o Vitrine não entregou asset de estado vazio e eu não invento um (seção 7.3 do handoff).
+- Os indicadores numéricos aparecem zerados com `ValorMonetario`, respeitando C-2 (então **"+ R$ 0,00"**, não "R$ 0,00" solto) — o zero é dado legítimo, não ausência.
+- Prova: screenshot deste estado nos 3 breakpoints + dark, porque é a tela que o cliente vê primeiro.
+
 ---
 
 ## 5. Onde C-1, C-2, C-3 e as regras do Vitrine são aplicadas
