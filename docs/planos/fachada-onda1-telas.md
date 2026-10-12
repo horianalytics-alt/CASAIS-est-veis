@@ -24,8 +24,51 @@ Este plano continua valendo **inteiro** como referência da Onda 1 completa. O q
 | Entregável | Estado |
 |---|---|
 | `app/proxy.ts` | **EXISTE** (commits `8a557f4`, `9eb1423`); `npx tsc --noEmit` exit 0 |
-| `app/src/actions/` | **ainda não existe** |
+| `app/src/actions/` | **PARCIAL** — `auth.ts` e `resultado.ts` existem (commit `fa73964`); **faltam `familia.ts` e `lancamento.ts`** |
 | `docs/planos/estrutura-contrato-handoff.md` | **ainda não existe** |
+
+### O que eu li em `auth.ts` + `resultado.ts` (commit `fa73964`) — e o ajuste que exige
+
+Forma única de retorno, que eu consumo e de mais nenhuma (`src/actions/resultado.ts`):
+
+```ts
+type ResultadoAction<T = void> =
+  | { ok: true; dados: T }
+  | { ok: false; erro: string; camposComErro?: Record<string, string[]> }
+```
+
+`erro` já vem em português pronto para a tela e `camposComErro` mapeia campo → mensagens (saída de `.flatten().fieldErrors` do Zod v3, como eu havia previsto em M-10). Mensagem crua do Postgres **nunca** chega: só passa o que está na lista de mensagens de negócio das RPCs; o resto cai em genérica por SQLSTATE. **Portanto eu exibo `erro` como vem e não reescrevo** — e meu `copy.ts` não duplica essas mensagens.
+
+**AJUSTE OBRIGATÓRIO — assinatura incompatível com `useActionState` (medido, não suposto):**
+
+As actions são `(formData: FormData) => Promise<ResultadoAction<...>>` — **um** argumento. O `useActionState` chama `(state, payload)` (verificado em M-11, `@types/react:1982`). Passar a action direta dá erro de tipo. Então o adaptador é meu, no componente client:
+
+```ts
+const [estado, enviar, pendente] = useActionState(
+  async (_anterior: ResultadoAction<void> | null, formData: FormData) => entrar(formData),
+  null,
+)
+```
+
+Isto **não** reimplementa a action e **não** cruza a fronteira: é só adequação de aridade no lado client. Fica registrado porque é a diferença entre compilar e não compilar.
+
+**Nomes de campo são em português** e o `<input name=>` tem de casar exatamente: `email`, `senha`, `confirmacao`. Errar o nome faz o Zod acusar campo obrigatório com o formulário visualmente preenchido.
+
+**Assinaturas disponíveis** (as de família e lançamento ficam pendentes do contrato):
+
+| Action | Entrada | Retorno |
+|---|---|---|
+| `entrar` | `email`, `senha` | `ResultadoAction<void>` |
+| `cadastrar` | `email`, `senha`, `confirmacao` | `ResultadoAction<{ precisaConfirmarEmail: boolean }>` |
+| `sair` | — | `Promise<never>` (faz `redirect('/login')` por dentro) |
+| `pedirRecuperacaoDeSenha` | `email` | `ResultadoAction<void>` |
+| `definirNovaSenha` | `senha`, `confirmacao` | `ResultadoAction<void>` |
+
+Três consequências de UI que eu não teria adivinhado:
+
+1. **`cadastrar` pode NÃO criar sessão.** Com confirmação de e-mail ligada, `precisaConfirmarEmail: true`. Nesse caso **não** navego para `/onboarding`: mostro "confira seu e-mail". O fluxo do Heitor hoje depende de qual está ligado no projeto Supabase — **verificar no primeiro teste real** e tratar os dois caminhos.
+2. **`sair` retorna `never`.** Não trato retorno nem ponho `try/catch` em volta (o `redirect` lança de propósito — risco R-7).
+3. **`pedirRecuperacaoDeSenha` devolve sucesso mesmo com e-mail inexistente**, de propósito (não entregar quais contas existem). A tela mostra **sempre** a mesma confirmação — não devo "melhorar" isso com "e-mail não encontrado". Fora do recorte desta rodada, mas registrado.
 
 Cuidado de leitura: `grep -rln "Contrato de handoff — PARA O FACHADA" docs/` **casa com este próprio plano** (onde eu cito o nome da seção). Não é o contrato. A conferência válida é pelo **arquivo do Estrutura**, não pelo grep.
 
