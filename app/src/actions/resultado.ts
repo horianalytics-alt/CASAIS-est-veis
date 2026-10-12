@@ -1,4 +1,76 @@
-import type { ZodError } from 'zod'
+import { z, type ZodError } from 'zod'
+
+/**
+ * Rede de segurança em português para o Zod.
+ *
+ * Toda mensagem deste projeto deveria ser declarada no próprio esquema. Quando
+ * uma escapa — campo novo, tipo inesperado vindo de um request forjado — o
+ * padrão do Zod é inglês ('Invalid input', 'Required', 'Expected boolean,
+ * received string') e esse texto chegaria à tela do usuário via
+ * `camposComErro`. Este mapa garante que o pior caso ainda seja português.
+ *
+ * Registrado uma vez, no módulo que TODA action importa.
+ */
+const mapaDeErrosEmPortugues: z.ZodErrorMap = (issue, ctx) => {
+  switch (issue.code) {
+    case z.ZodIssueCode.invalid_type:
+      if (issue.received === 'undefined' || issue.received === 'null') {
+        return { message: 'Campo obrigatório.' }
+      }
+      return { message: 'Valor inválido.' }
+
+    case z.ZodIssueCode.invalid_enum_value:
+    case z.ZodIssueCode.invalid_union_discriminator:
+      return { message: 'Escolha uma das opções válidas.' }
+
+    case z.ZodIssueCode.invalid_union:
+      return { message: 'Valor inválido.' }
+
+    case z.ZodIssueCode.invalid_string:
+      if (issue.validation === 'email') return { message: 'E-mail inválido.' }
+      if (issue.validation === 'uuid') return { message: 'Escolha uma opção válida.' }
+      return { message: 'Formato inválido.' }
+
+    case z.ZodIssueCode.too_small:
+      if (issue.type === 'string') {
+        return issue.minimum === 1
+          ? { message: 'Campo obrigatório.' }
+          : { message: `Use ao menos ${issue.minimum} caracteres.` }
+      }
+      if (issue.type === 'number') {
+        return { message: `O valor mínimo é ${issue.minimum}.` }
+      }
+      if (issue.type === 'array') {
+        return { message: `Informe ao menos ${issue.minimum} item(ns).` }
+      }
+      return { message: 'Valor baixo demais.' }
+
+    case z.ZodIssueCode.too_big:
+      if (issue.type === 'string') {
+        return { message: `Use no máximo ${issue.maximum} caracteres.` }
+      }
+      if (issue.type === 'number') {
+        return { message: `O valor máximo é ${issue.maximum}.` }
+      }
+      if (issue.type === 'array') {
+        return { message: `Informe no máximo ${issue.maximum} item(ns).` }
+      }
+      return { message: 'Valor alto demais.' }
+
+    case z.ZodIssueCode.not_multiple_of:
+      return { message: 'Valor com precisão inválida.' }
+
+    case z.ZodIssueCode.unrecognized_keys:
+      return { message: 'Há campos não reconhecidos no formulário.' }
+
+    default:
+      // `ctx.defaultError` só é usado quando nada acima cobriu; o teste de
+      // vazamento cobre os casos alcançáveis.
+      return { message: ctx.defaultError }
+  }
+}
+
+z.setErrorMap(mapaDeErrosEmPortugues)
 
 /**
  * Forma única de retorno de TODA Server Action deste projeto.
