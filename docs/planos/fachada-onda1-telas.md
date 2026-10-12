@@ -24,8 +24,44 @@ Este plano continua valendo **inteiro** como referência da Onda 1 completa. O q
 | Entregável | Estado |
 |---|---|
 | `app/proxy.ts` | **EXISTE** (commits `8a557f4`, `9eb1423`); `npx tsc --noEmit` exit 0 |
-| `app/src/actions/` | **PARCIAL** — `auth.ts` e `resultado.ts` existem (commit `fa73964`); **faltam `familia.ts` e `lancamento.ts`** |
-| `docs/planos/estrutura-contrato-handoff.md` | **ainda não existe** |
+| `app/src/actions/` | **COMPLETO** — `auth.ts`, `familia.ts`, `lancamento.ts`, `resultado.ts` (`fa73964`, `b899084`); `npx tsc --noEmit` exit 0; 167 testes |
+| `docs/planos/estrutura-contrato-handoff.md` | **ainda não existe** — único bloqueio restante |
+
+### ACHADO: as actions têm TRÊS convenções de chamada diferentes
+
+Li os quatro arquivos (não o resumo). As actions **não** compartilham uma assinatura única, e cada grupo encaixa de um jeito diferente no formulário. Mesmo tipo de incompatibilidade da aridade do `useActionState` — encontrado **antes** de construir:
+
+| Grupo | Assinatura real | Como eu consumo |
+|---|---|---|
+| `entrar`, `cadastrar`, `pedirRecuperacaoDeSenha`, `definirNovaSenha`, `criarFamilia`, `entrarNaFamilia` | `(formData: FormData)` | `useActionState` **com adaptador de aridade** |
+| `salvarLancamento` | `(input: EntradaDeLancamento \| EntradaDeLancamento[])` — **objeto tipado, não `FormData`** | **não** dá `<form action={...}>` nem `useActionState` direto. Monto o objeto no client (RHF) e chamo em `startTransition`, guardando o `ResultadoAction` em `useState` |
+| `excluirLancamento` | `(id: string, escopo?: 'single' \| 'series')` | dois argumentos posicionais; chamo de handler |
+| `verPreviaDaFamilia` | `(codigo: string)` | chamo ao sair do campo do código |
+| `sair` | `()` → `Promise<never>` | `<form action={sair}>` direto, sem `try/catch` (R-7) |
+
+**Por que importa:** eu havia planejado **todos** os formulários no mesmo padrão `useActionState` + `FormData`. Para `/lancar` isso **não compila** — `salvarLancamento` espera objeto já tipado. O form de lançamento passa a ser RHF controlado + chamada imperativa, que por sorte é o que eu já queria para o rótulo de fatura ao vivo (R-2).
+
+**Nomes de campo EXATOS** (o `name=` tem de casar, senão o Zod acusa campo vazio com o form preenchido):
+
+- `entrar`: `email`, `senha`
+- `cadastrar`: `email`, `senha`, `confirmacao`
+- `criarFamilia`: `nomeDaFamilia`, `regraDeDivisao`, `nomeDoMembro`, `renda`
+- `entrarNaFamilia`: `codigo`, `nomeDoMembro`, `renda`
+- `salvarLancamento` (chaves do objeto): `tipo`, `descricao`, `valor`, `data`, `contaId`, `categoriaId?`, `formaDePagamentoId?`, `responsavelId?`, `cotaDoResponsavel?`, `pagoPorId?`, `estaPago`, `dataDoPagamento?`, `observacao?`, `ehBeneficio`, `ehFutil`, `rotuloDoFutil?`
+
+**Regras de negócio que a MINHA UI tem de refletir** (da leitura, não do resumo):
+
+1. **`regraDeDivisao` só aceita `'equal'` | `'proportional'`** — `value` em inglês, rótulo em português ("Meio a meio" / "Pela renda de cada um").
+2. **Renda vira obrigatória na divisão proporcional** (erro no campo `renda`). O form de criar família revela/exige renda ao escolher proporcional.
+3. **Renda vazia = `null`, não `0`** — "sem informar" ≠ "renda zero". Não pré-preencho com 0.
+4. **`estaPago` exige `dataDoPagamento`; não-pago exige nula.** CHECK do banco. Só mostro o campo de data quando "já pago" estiver marcado, e limpo ao desmarcar.
+5. **`valor` é sempre POSITIVO; o sinal vem do `tipo`.** Confirma C-2 na origem: nunca mando `-50`. O parser aceita `"4.500,00"` e `"4500.00"`.
+6. **`tipo` nesta fatia é só `'receita' | 'despesa'`** — o Estrutura escopou igual ao recorte, por decisão dele também.
+7. **`codigo` é `[A-Z2-9]{6}`** (sem `0`,`1`,`I`,`O`). A action já faz `.toUpperCase()`; meu input usa `autoCapitalize="characters"`, `maxLength={6}` e **não** revalida o alfabeto por conta própria.
+8. **`entrarNaFamilia` devolve erro NO CAMPO `codigo`** quando o convite não existe → destaco o input, não só o `Alert`.
+9. **`criarFamilia` devolve `codigoDeConvite`** → depois de criar, mostro o código para o Heitor repassar à Carol. É a razão de a tela existir.
+10. **`verPreviaDaFamilia` devolve `sucesso(null)`** para código inexistente (zero linhas, não erro). `dados === null` é "não encontrei essa casa", não falha.
+11. **As actions já chamam `revalidatePath`** (`'/'`,`layout` no onboarding; `/inicio` e `/lancar` ao salvar/excluir). **Não** preciso de `router.refresh()` depois, e não devo empilhar os dois.
 
 ### O que eu li em `auth.ts` + `resultado.ts` (commit `fa73964`) — e o ajuste que exige
 
