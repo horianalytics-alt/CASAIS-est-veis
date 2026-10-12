@@ -39,6 +39,7 @@ const casos = [
   ['/icons/apple-touch-icon.png', false],
   ['/og.png', false],
   ['/manifest.webmanifest', false],
+  ['/sw.js', false],
   ['/next.svg', false],
   ['/qualquer/foto.jpg', false],
 ]

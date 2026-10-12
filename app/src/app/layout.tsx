@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Instrument_Sans, IBM_Plex_Mono } from "next/font/google";
+import { SwRegistro } from "@/components/pwa/sw-registro";
 import { TemaScript } from "@/components/providers/tema-script";
 import { APP } from "@/features/comum/copy";
 import "./globals.css";
@@ -29,6 +30,7 @@ export const metadata: Metadata = {
   title: APP.nome,
   description: APP.descricao,
   applicationName: APP.nome,
+  manifest: "/manifest.webmanifest",
   // Dá URL absoluta ao og:image mesmo em local/preview.
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ??
@@ -94,7 +96,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <TemaScript />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <SwRegistro />
+        {children}
+      </body>
     </html>
   );
 }

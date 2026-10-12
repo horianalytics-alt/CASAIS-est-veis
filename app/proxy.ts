@@ -112,10 +112,10 @@ function copiaCookies(
 }
 
 export const proxyConfig = {
-  // Intercepta tudo, MENOS: os estáticos do Next, os assets de PWA/ícone e
+  // Intercepta tudo, MENOS: os estáticos do Next, os assets de PWA/ícone, service worker e
   // qualquer arquivo com extensão de imagem. O grupo (?!...) é uma negativa:
   // o caminho só casa quando NÃO começa por nenhum dos nomes listados.
   matcher: [
-    '/((?!_next/static|_next/image|favicon\\.ico|icons/|og\\.png|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico)$).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|icons/|og\\.png|sw\\.js|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico)$).*)',
   ],
 }
