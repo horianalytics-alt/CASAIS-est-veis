@@ -59,6 +59,24 @@ contador — alternar entre elas não dobra o orçamento (verificado, caso T2).
 Tentativa **bem-sucedida não conta**. Quem digita o código certo nunca é
 bloqueado, nem depois de 15 consultas seguidas (verificado, caso T4).
 
+### Por que 10/hora basta (números conferidos)
+
+```
+32^6                        = 1.073.741.824 combinações  (~30 bits)
+10/hora durante um ano      =        87.600 tentativas
+cobertura por conta-ano     =       0,00816% do espaço
+expectativa para 1 acerto   =         6.129 anos por conta
+contas-ano para 10% de chance =       1.226
+```
+
+> **Errata do comentário da migration `00007`** (linha 126): lá está escrito
+> `~12.260 contas-ano para 10% de chance`. O valor correto é **1.226** — erro
+> de uma ordem de grandeza, meu. A `00007` já está aplicada e é imutável, por
+> isso a correção vive aqui e não no SQL. **A conclusão não muda**: 1.226
+> contas-ano, cada conta exigindo e-mail confirmado, continua inviável para o
+> atacante — e é por isso que o limite, não o comprimento do código, é a defesa
+> certa. Os outros números do comentário conferem.
+
 ### A forma exata do erro do limite — é esta que o front precisa tratar
 
 ```ts
