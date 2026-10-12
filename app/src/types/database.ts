@@ -273,6 +273,31 @@ export type Database = {
           },
         ];
       };
+      join_attempts: {
+        Row: {
+          id: number;
+          origem: string;
+          tentado_em: string;
+          tentou_code: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          id?: never;
+          origem: string;
+          tentado_em?: string;
+          tentou_code: string;
+          user_id: string;
+        };
+        Update: {
+          id?: never;
+          origem?: string;
+          tentado_em?: string;
+          tentou_code?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       payment_methods: {
         Row: {
           archived_at: string | null;
@@ -728,6 +753,8 @@ export type Database = {
         };
         Returns: string;
       };
+      registrar_tentativa_join: { Args: { p_code: string; p_origem: string }; Returns: undefined };
+      rotacionar_join_code: { Args: Record<PropertyKey, never>; Returns: string };
       save_transactions: {
         Args: { p_items: Json };
         Returns: {
@@ -776,6 +803,7 @@ export type Database = {
         };
         Returns: string;
       };
+      tentativas_join_estouradas: { Args: Record<PropertyKey, never>; Returns: boolean };
     };
     Enums: {
       [_ in never]: never;
