@@ -5,7 +5,7 @@
 // data) e chama a action de forma imperativa. É folha: a page continua Server
 // Component e passa só props serializáveis (arrays de objetos planos).
 
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Controller, useForm } from 'react-hook-form'
@@ -71,8 +71,9 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
   const router = useRouter()
   const [pendente, iniciarEnvio] = useTransition()
   const [resultado, setResultado] = useState<ResultadoAction<Lancamento[]> | null>(null)
+  const [concluido, setConcluido] = useState(false)
 
-  const { register, control, handleSubmit, watch, setValue } =
+  const { register, control, handleSubmit, watch, setValue, getValues } =
     useForm<Campos>({
       defaultValues: {
         tipo: 'despesa',
@@ -89,6 +90,25 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
   // true quando a pessoa mexeu na data do pagamento: dali em diante ela não
   // segue mais a data do lançamento.
   const pagamentoEditado = useRef(false)
+
+  // Mexeu num campo: o erro DAQUELE campo já não descreve o que está na tela
+  // (ficaria "Valor inválido" embaixo de um valor corrigido). Os erros dos
+  // outros campos continuam; quando não sobra nenhum, o aviso geral some junto.
+  // Os nomes do formulário são os mesmos que a action devolve em camposComErro.
+  useEffect(() => {
+    const assinatura = watch((_valores, { name }) => {
+      if (!name) return
+      setResultado((anterior) => {
+        if (!anterior || anterior.ok || !anterior.camposComErro) return anterior
+        if (!(name in anterior.camposComErro)) return anterior
+        const { [name]: _removido, ...restantes } = anterior.camposComErro
+        return Object.keys(restantes).length === 0
+          ? null
+          : { ...anterior, camposComErro: restantes }
+      })
+    })
+    return () => assinatura.unsubscribe()
+  }, [watch])
 
   const tipo = watch('tipo')
   const estaPago = watch('estaPago')
@@ -116,25 +136,26 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
       })
       setResultado(resposta)
       if (resposta.ok) {
-        // Volta para o mês do lançamento, senão ele "sumiria" se a data for de outro mês.
+        // `pendente` volta a false quando a action termina, antes de a
+        // navegação acabar: sem esta trava um segundo toque duplicaria o lançamento.
+        setConcluido(true)
+        // Volta para o mês do lançamento, senão ele "sumiria" se a data for de
+        // outro mês. A action já revalidou /inicio; não precisa de router.refresh.
         router.replace(`/inicio?mes=${valores.data.slice(0, 7)}`)
-        router.refresh()
       }
     })
   })
 
-  const pago = tipo === 'despesa' ? LANCAR.statusPagoDespesa : LANCAR.statusPagoReceita
-
   return (
     <form onSubmit={aoEnviar} className="flex flex-col gap-[var(--esp-4)]" noValidate>
       <fieldset className="flex flex-col gap-[var(--esp-2)]">
-        <legend className="text-sm font-medium">{LANCAR.tipoRotulo}</legend>
+        <legend className="text-[length:var(--texto-corpo)] leading-[var(--texto-corpo-lh)] font-medium">{LANCAR.tipoRotulo}</legend>
         <div className="mt-[var(--esp-2)] grid grid-cols-2 gap-[var(--esp-2)]">
           {OPCOES_DE_TIPO.map((opcao) => (
             <label
               key={opcao.valor}
               className={cn(
-                'border-input has-[:focus-visible]:ring-ring/50 has-[:focus-visible]:border-ring flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border px-3 text-sm font-medium has-[:focus-visible]:ring-3',
+                'border-input has-[:focus-visible]:ring-ring/50 has-[:focus-visible]:border-ring flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border px-[var(--esp-3)] text-[length:var(--texto-corpo)] leading-[var(--texto-corpo-lh)] font-medium has-[:focus-visible]:ring-3',
                 tipo === opcao.valor
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'bg-background',
@@ -145,8 +166,15 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
                 value={opcao.valor}
                 className="sr-only"
                 {...register('tipo', {
-                  // Trocar o tipo invalida a categoria escolhida (outra lista).
-                  onChange: () => setValue('categoriaId', SEM_CATEGORIA),
+                  // Trocar o tipo só descarta a categoria se ela não existe na
+                  // outra lista (as de tipo "todos" servem aos dois).
+                  onChange: (e) => {
+                    const novoTipo = e.target.value
+                    const atual = categorias.find((c) => c.id === getValues('categoriaId'))
+                    if (atual && atual.tipo !== novoTipo && atual.tipo !== 'todos') {
+                      setValue('categoriaId', SEM_CATEGORIA)
+                    }
+                  },
                 })}
               />
               {opcao.rotulo}
@@ -156,7 +184,7 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
         <CampoErro id="erro-tipo" mensagens={erros?.tipo} />
       </fieldset>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-[var(--esp-2)]">
         <Label htmlFor="descricao">{LANCAR.descricaoLabel}</Label>
         <Input
           id="descricao"
@@ -170,7 +198,7 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
         <CampoErro id="erro-descricao" mensagens={erros?.descricao} />
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-[var(--esp-2)]">
         <Label htmlFor="valor">{LANCAR.valorLabel}</Label>
         <Input
           id="valor"
@@ -194,7 +222,7 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
         <CampoErro id="erro-valor" mensagens={erros?.valor} />
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-[var(--esp-2)]">
         <Label htmlFor="data">{LANCAR.dataLabel}</Label>
         <Input
           id="data"
@@ -205,7 +233,7 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
           {...register('data', {
             // A data do pagamento acompanha a data enquanto a pessoa não a mexeu.
             onChange: (e) => {
-              if (!pagamentoEditado.current) {
+              if (!pagamentoEditado.current && e.target.value) {
                 setValue('dataDoPagamento', e.target.value)
               }
             },
@@ -214,7 +242,7 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
         <CampoErro id="erro-data" mensagens={erros?.data} />
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-[var(--esp-2)]">
         <Label htmlFor="contaId">{LANCAR.contaLabel}</Label>
         <Controller
           control={control}
@@ -242,7 +270,7 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
         <CampoErro id="erro-contaId" mensagens={erros?.contaId} />
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-[var(--esp-2)]">
         <Label htmlFor="categoriaId">
           {LANCAR.categoriaLabel}{' '}
           <span className="text-muted-foreground font-normal">{LANCAR.categoriaOpcional}</span>
@@ -274,22 +302,19 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
         <CampoErro id="erro-categoriaId" mensagens={erros?.categoriaId} />
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-[var(--esp-2)]">
         <Controller
           control={control}
           name="estaPago"
           render={({ field }) => (
-            <label className="border-input flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg border px-3">
+            <label className="border-input flex min-h-[44px] cursor-pointer items-center gap-[var(--esp-3)] rounded-lg border px-[var(--esp-3)]">
               <Checkbox
                 checked={field.value}
                 onCheckedChange={(marcado) => field.onChange(marcado === true)}
                 disabled={pendente}
               />
-              <span className="text-sm">
-                {tipo === 'despesa' ? LANCAR.statusRotuloDespesa : LANCAR.statusRotuloReceita}{' '}
-                <span className="text-muted-foreground">
-                  {field.value ? pago : LANCAR.statusPendente}
-                </span>
+              <span className="text-[length:var(--texto-corpo)] leading-[var(--texto-corpo-lh)]">
+                {tipo === 'despesa' ? LANCAR.statusRotuloDespesa : LANCAR.statusRotuloReceita}
               </span>
             </label>
           )}
@@ -298,7 +323,7 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
       </div>
 
       {estaPago ? (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-[var(--esp-2)]">
           <Label htmlFor="dataDoPagamento">
             {tipo === 'despesa'
               ? LANCAR.dataPagamentoLabelDespesa
@@ -327,8 +352,8 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
       ) : null}
 
       <div className="flex flex-col gap-[var(--esp-2)]">
-        <Button type="submit" size="toque" disabled={pendente} className="w-full">
-          {pendente ? LANCAR.enviando : LANCAR.enviar}
+        <Button type="submit" size="toque" disabled={pendente || concluido} className="w-full">
+          {pendente || concluido ? LANCAR.enviando : LANCAR.enviar}
         </Button>
         <Link
           href="/inicio"

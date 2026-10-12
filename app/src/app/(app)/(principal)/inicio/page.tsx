@@ -90,13 +90,18 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
   )
   const nomeDaCategoria = new Map((categorias.data ?? []).map((c) => [c.id, c.name]))
 
-  const total = lancamentos.count ?? 0
-  const totalDePaginas = Math.max(1, Math.ceil(total / POR_PAGINA))
-  if (pagina > totalDePaginas && total > 0) {
-    redirect(`/inicio?mes=${mes}&pagina=${totalDePaginas}`)
+  const hrefDoMes = (m: string) => (m === mesAtual ? '/inicio' : `/inicio?mes=${m}`)
+
+  // Página além do fim: o PostgREST responde 416 (vira `lancamentos.error`) ou
+  // devolve vazio. Em vez de mostrar "página 99 de 1" ou um alerta de erro,
+  // volta à primeira página do mês. Sem laço: a primeira página não cai aqui.
+  if (pagina > 1 && (lancamentos.error || (lancamentos.data ?? []).length === 0)) {
+    redirect(hrefDoMes(mes))
   }
 
-  const hrefDoMes = (m: string) => (m === mesAtual ? '/inicio' : `/inicio?mes=${m}`)
+  const total = lancamentos.count ?? 0
+  const totalDePaginas = Math.max(1, Math.ceil(total / POR_PAGINA))
+
   const hrefDaPagina = (p: number) =>
     p === 1 ? hrefDoMes(mes) : `/inicio?mes=${mes}&pagina=${p}`
 

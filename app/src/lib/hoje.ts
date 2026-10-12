@@ -14,7 +14,9 @@ export function hojeEmSaoPaulo(): string {
   }).format(new Date())
 }
 
-const MES_ISO = /^(\d{4})-(0[1-9]|1[0-2])$/
+// Só 1900-2099: `Date.UTC` trata anos 0-99 como 1900-1999 e calcularia o fim do
+// mês errado para um `?mes=0004-02` forjado na URL.
+const MES_ISO = /^((?:19|20)\d{2})-(0[1-9]|1[0-2])$/
 
 export function ehMesValido(valor: string | undefined): valor is string {
   return valor !== undefined && MES_ISO.test(valor)
