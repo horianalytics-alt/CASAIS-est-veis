@@ -121,3 +121,60 @@ produção — esse está ativo.
 - **Dash** — gráficos são Onda 2.
 - **code-simplifier** — só depois do Sentinela aprovar.
 - **Deploy na Vercel** — depende da URL do repositório.
+
+---
+
+# ATUALIZAÇÃO — 2026-10-12, sessão em 93%
+
+## Pronto desde a última atualização
+
+- `/login` **funciona de verdade**: entrei com `horiheitor@gmail.com` / `JEDh2007`
+  no navegador e a URL foi de `/login` para `/inicio`. Cadeia inteira provada.
+- `valor-monetario.tsx` + `badge-tipo.tsx` + provider de ocultar valores.
+  **Teste de acessibilidade PASSOU**: em escala de cinza, sem cor nenhuma,
+  receita/despesa/pendente/saldo negativo continuam identificáveis.
+  Prova: `docs/auditoria/evidencias-fachada/prova-C1C2C3-grayscale.png`
+- `form-criar-casa.tsx`, `form-entrar-casa.tsx`, `(app)/onboarding/page.tsx`
+- `npx tsc --noEmit` exit 0 · 167 testes · árvore limpa
+
+## FALTA: `/lancar` e `/inicio` (`/inicio` ainda dá 404 após o login)
+
+## As DUAS coisas que mais economizam tempo na retomada
+
+### 1. Write falha dentro do OneDrive — use o scratchpad
+
+Sintoma: `ENOENT: ...arquivo.tsx.tmp.NNNNN.hash`. Não é permissão (testei) nem
+caminho longo (166 chars). É o OneDrive interferindo entre criar o `.tmp` e
+renomear. **Contorno que funciona de primeira:**
+
+```
+1. Write em  <scratchpad>/<arquivo>.tsx
+2. cp "<scratchpad>/<arquivo>.tsx" "<destino no projeto>"
+```
+
+NÃO use heredoc para TSX: o parser do Bash quebra em genérico seguido de aspas
+(`useState<Regra>('equal')`).
+
+### 2. TIRAR O PROJETO DO ONEDRIVE — é o maior ladrão de tempo
+
+Custo medido hoje: 6 tentativas de escrita perdidas pela Fachada, 4 por mim,
+lock do Git disparando alerta de 223 exclusões. Mover resolve de uma vez:
+
+```
+git status                      # tem de estar limpo
+cp -r "<projeto>" /c/dev/financas-a-dois
+cd /c/dev/financas-a-dois && git log --oneline | head -3 && git fsck
+```
+
+O histórico vai junto. Depois atualizar os caminhos nos briefings dos agentes.
+
+## Balanço honesto do que custou tempo (para não repetir)
+
+1. **OneDrive** — o maior, disparado. Fricção pura, zero qualidade.
+2. **Docker/Supabase local** — 3,7 GB baixados e descartados. Erro meu: devia
+   ter perguntado se já havia projeto no Supabase ANTES de baixar.
+3. **Meu erro de briefing** — mandei a Fachada planejar telas sem pedir as
+   Server Actions ao Estrutura. Ciclo inteiro perdido. (Lição L-004.)
+4. **Protocolo de duas fases** — dobra o custo por etapa, mas pegou as 2
+   policies que matariam o tempo real e o `shadcn init` que apagaria os tokens.
+5. **Cortes de crédito** — 3 hoje; cada retomada custa reconstruir contexto.
