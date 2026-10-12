@@ -43,8 +43,22 @@ export function caminhoInternoSeguro(
     const url = new URL(valor, BASE_INTERNA)
     // A verificação que vale: para onde isto REALMENTE aponta.
     if (url.origin !== BASE_INTERNA) return undefined
-    // Devolve normalizado, não o texto cru que entrou.
-    return url.pathname + url.search + url.hash
+
+    const destino = url.pathname + url.search + url.hash
+
+    // SEGUNDO ACHADO (security-guidance, confirmado por teste): validar a
+    // ENTRADA não basta — é preciso validar a SAÍDA. A normalização de
+    // segmentos `..` pode FABRICAR um destino protocolo-relativo a partir de
+    // entrada que passou por todas as guardas acima.
+    // Medido: `"/..//evil.com"` começa com `/`, não começa com `//`, não tem
+    // controle nem barra invertida — e `new URL` normaliza para `//evil.com`,
+    // que o navegador resolve como OUTRO SITE. Escapava.
+    // Por isso a saída passa pelas mesmas guardas da entrada, e é re-resolvida.
+    if (destino.startsWith('//') || destino.startsWith('/\\')) return undefined
+    if (!destino.startsWith('/')) return undefined
+    if (new URL(destino, BASE_INTERNA).origin !== BASE_INTERNA) return undefined
+
+    return destino
   } catch {
     return undefined
   }
