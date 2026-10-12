@@ -38,7 +38,7 @@ console do navegador em localhost:3000    → 0 erros, 0 avisos
 
 ```
 email: horiheitor@gmail.com
-senha: JEDh2007
+senha: ver SEED_SENHA em app/.env.local (git-ignored)
 user id: bfa46034-cd3d-4e9b-9944-d6b3b326f9ee
 confirmado em: 2026-10-12T00:20:08Z
 teste: POST /auth/v1/token?grant_type=password → access_token recebido, 3600s
@@ -128,7 +128,7 @@ produção — esse está ativo.
 
 ## Pronto desde a última atualização
 
-- `/login` **funciona de verdade**: entrei com `horiheitor@gmail.com` / `JEDh2007`
+- `/login` **funciona de verdade**: entrei com `horiheitor@gmail.com` (senha em `app/.env.local`)
   no navegador e a URL foi de `/login` para `/inicio`. Cadeia inteira provada.
 - `valor-monetario.tsx` + `badge-tipo.tsx` + provider de ocultar valores.
   **Teste de acessibilidade PASSOU**: em escala de cinza, sem cor nenhuma,
@@ -221,5 +221,5 @@ Estado final: **1 família, 1 membro, 1 conta, 1 usuário** — só o Heitor.
 "Casa do Heitor e Carol"   código GCX3EF   divisão: metade para cada um
 "Heitor"                   renda: null
 "Conta de Heitor"          corrente, saldo 0
-horiheitor@gmail.com       senha JEDh2007
+horiheitor@gmail.com       senha: ver app/.env.local
 ```
