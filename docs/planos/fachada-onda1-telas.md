@@ -17,7 +17,27 @@ Este plano continua valendo **inteiro** como referência da Onda 1 completa. O q
 
 **Commit à medida: um commit por tela que funcione.** Se o limite da API cortar no meio, o que está commitado sobrevive e a retomada parte dali. Não deixar trabalho não commitado.
 
-**Camada de servidor continua NÃO sendo minha** (fronteira do `PLANO.md` §5 mantida). O Estrutura entrega `app/proxy.ts`, `app/src/actions/{auth,familia,lancamento}.ts` e `docs/planos/estrutura-contrato-handoff.md` com a seção `## Contrato de handoff — PARA O FACHADA`. **A execução só começa depois que esses três existirem** — conferir com `ls`, não supor. Verificado às 2026-10-11 nesta sessão: os três **ainda não existem**.
+**Camada de servidor continua NÃO sendo minha** (fronteira do `PLANO.md` §5 mantida). O Estrutura entrega `app/proxy.ts`, `app/src/actions/{auth,familia,lancamento}.ts` e `docs/planos/estrutura-contrato-handoff.md` com a seção `## Contrato de handoff — PARA O FACHADA`. **A execução só começa depois que esses três existirem** — conferir com `ls`, não supor.
+
+**Estado do desbloqueio (reconferido no disco, 2026-10-11, regra L-005):**
+
+| Entregável | Estado |
+|---|---|
+| `app/proxy.ts` | **EXISTE** (commits `8a557f4`, `9eb1423`); `npx tsc --noEmit` exit 0 |
+| `app/src/actions/` | **ainda não existe** |
+| `docs/planos/estrutura-contrato-handoff.md` | **ainda não existe** |
+
+Cuidado de leitura: `grep -rln "Contrato de handoff — PARA O FACHADA" docs/` **casa com este próprio plano** (onde eu cito o nome da seção). Não é o contrato. A conferência válida é pelo **arquivo do Estrutura**, não pelo grep.
+
+### O que eu li no `proxy.ts` entregue, e o que isso muda em mim
+
+Verifiquei o arquivo e testei o `matcher` e a classificação de rota com `node -e` contra o regex real. Três consequências para a execução:
+
+1. **`/onboarding` é rota PRIVADA.** Só `/login`, `/cadastro`, `/recuperar-senha` e `/nova-senha` são públicas; o default é negar. Então o onboarding roda **com sessão já criada** — o fluxo é cadastrar → (sessão) → `/onboarding` → criar/entrar família → `/inicio`. Minha tela de onboarding **não** trata usuário anônimo.
+2. **`/` também é privada e hoje é a página do `create-next-app`.** Visitante sem sessão em `/` é mandado para `/login` (sem `?proximo`, porque o proxy omite o parâmetro na raiz). Com sessão, `/` **não** é redirecionada pelo proxy e cairia na página do template. Preciso resolver `/` nesta rodada — redirect para `/inicio` — senão o Heitor logado que abrir a raiz vê "Create Next App". Entra no F-8.
+3. **O login precisa honrar `?proximo=`.** O proxy grava o caminho de origem em `proximo` (só caminho interno, nunca URL absoluta — proteção contra redirect aberto que eu **não** devo afrouxar). Após entrar, destino = `proximo` se presente, senão `/inicio`. Como leio `searchParams`, isso é `Promise<...>` com `await` na page, ou `useSearchParams` **dentro de `<Suspense>`** no componente client (R-6).
+
+Observação de escopo: o `matcher` já exclui `manifest.webmanifest`, `icons/`, `og.png` e `favicon.ico` — confirmado por teste do regex. Isso é compatível com o PWA (F-3) quando ele entrar na continuação; **`/sw.js` é interceptado** e precisará ser adicionado à exclusão quando o service worker chegar. Fica anotado para a continuação, não é desta rodada.
 
 **P-8 encerrada, com o fato correto** (corrigido pelo Maestro contra `~/.claude/settings.json`): o `PreToolUse` registra `sentinela-independencia.cjs`, não `security-guidance`. O `security-guidance` roda como revisão automática **de commit** (já disparou 2× nesta sessão, 4 problemas reais). Portanto varredura **edit a edit não acontece**; **de commit acontece**. Não é risco meu — e, como commito à medida, cada commit meu passa por ela.
 
@@ -352,7 +372,7 @@ Skeleton com a **mesma altura** do conteúdo final (via `EsqueletoBlocoProps.alt
 |---|---|---|---|
 | `/login`, `/cadastro`, `/recuperar-senha`, `/nova-senha` | `isPending` do `useActionState` desabilita o botão e troca o rótulo | `Alert` inline acima dos campos, em pt-BR; erro de campo sob o campo (borda **e** texto — nunca só a borda, WCAG 1.4.1) | n/a |
 | `/onboarding` | idem | idem + erros nominais das RPCs (seção 6) | n/a |
-| `/inicio` | `loading.tsx`: 4 esqueletos de indicador + 6 linhas de extrato | `error.tsx` com `reset()` | "Nenhum lançamento ainda." + botão primário → `/lancar` |
+| `/inicio` | `loading.tsx`: 4 esqueletos de indicador + 6 linhas de extrato | `error.tsx` com `reset()` | **PRIMEIRA TELA REAL DO HEITOR** — ver nota abaixo |
 | `/carteira` | esqueleto de 2 cartões em altura de cartão real | `error.tsx` | "Nenhuma conta cadastrada." + botão → `/ajustes/contas` |
 | `/lancar` | esqueleto de formulário | `error.tsx`; erro de submit em `Alert` | se faltar conta cadastrada, bloqueia com aviso + link (não deixa o form inválido de propósito) |
 | `/acerto` | esqueleto da frase + 2 linhas | `error.tsx` | "Nada a acertar neste mês." |
@@ -437,7 +457,7 @@ Cada tarefa termina com algo verificável. Nenhuma tarefa é "parcialmente pront
 | **F-5** | `ValorMonetario`, `BadgeTipo`, `SeloPendente` | screenshot em `grayscale(1)` com receita/despesa/pendente/negativo distinguíveis (teste de aceite do Sentinela) |
 | **F-6** | Invólucro: `CartaoPainel`, `EsqueletoBloco`, `GradePainel`, `CartaoIndicador`, `TabelaDados`, `EstadoVazio`, `EstadoErro` | **handoff para o Dash** (seção 9) |
 | **F-7** | `(auth)`: 4 rotas + 4 forms + `copy.ts` | `browser_fill_form` com e-mail sem `@` e senha curta → mensagem Zod **em português** na tela |
-| **F-8** | `(app)/layout.tsx` + navegação inferior (em `Suspense`) + alternar valores + seletor de tema | Tab percorre tudo com foco visível nos 2 temas; alternar valores mascara **toda** a tela |
+| **F-8** | `(app)/layout.tsx` + navegação inferior (em `Suspense`) + alternar valores + **resolver `/`: substituir a página do `create-next-app` por `redirect('/inicio')`** · seletor de tema fica para a continuação (fora do recorte) | Tab percorre tudo com foco visível nos 2 temas; alternar valores mascara **toda** a tela; **`/` logado nunca mostra "Create Next App"** |
 | **F-9** | `/onboarding` (criar família / entrar por código) | erro nominal da RPC exibido ao usar código inexistente |
 | **F-10** | `/inicio`: indicadores + lista paginada + `loading`/`error`/vazio | 3 breakpoints + dark; paginação não torna a página CSR |
 | **F-11** | `/lancar`: 4 tipos, lote, parcelas, rótulo de fatura ao vivo | com `closing_day=25`: data 24 → fatura do mês; data 26 → mês seguinte (R-2) |
