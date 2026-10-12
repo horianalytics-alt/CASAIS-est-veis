@@ -198,8 +198,17 @@ export async function entrarNaFamilia(
     return falha(mensagem)
   }
 
+  // A partir da migration 00008, join_family NÃO levanta mais exceção para
+  // código inexistente: devolve zero linhas. O RAISE precisou sair porque
+  // abortava a transação e desfazia o registro da tentativa — sem o registro,
+  // o limite de tentativas desta porta simplesmente não existia.
+  // Zero linhas aqui é, portanto, "código não encontrado", e é erro DO CAMPO:
+  // a Fachada destaca o input do convite.
   const linha = data?.[0]
-  if (!linha) return falha('Não foi possível entrar na casa. Tente de novo.')
+  if (!linha) {
+    const naoEncontrado = 'Código de convite não encontrado'
+    return falha(naoEncontrado, { codigo: [naoEncontrado] })
+  }
 
   revalidatePath('/', 'layout')
 
