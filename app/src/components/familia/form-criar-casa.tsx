@@ -11,7 +11,9 @@ import type { ResultadoAction } from '@/actions/resultado'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CampoErro } from '@/components/ui/campo-erro'
+import { CRIAR_CASA, CASA_CRIADA } from '@/features/familia/copy'
 
 type Regra = 'equal' | 'proportional'
 
@@ -39,7 +41,7 @@ export function FormCriarCasa() {
     return (
       <div className="flex flex-col gap-4">
         <div>
-          <h2 className="text-xl font-semibold">Sua casa está criada</h2>
+          <h2 className="text-xl font-semibold">{CASA_CRIADA.titulo}</h2>
           <p className="text-muted-foreground mt-1 text-sm">
             Compartilhe este código com quem mora com você. É com ele que a
             outra pessoa entra na casa.
@@ -61,7 +63,7 @@ export function FormCriarCasa() {
           onClick={() => router.replace('/inicio')}
           className="w-full"
         >
-          Continuar
+          {CASA_CRIADA.continuar}
         </Button>
       </div>
     )
@@ -70,33 +72,35 @@ export function FormCriarCasa() {
   return (
     <form action={enviar} className="flex flex-col gap-4" noValidate>
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="nomeDaFamilia">Nome da casa</Label>
+        <Label htmlFor="nomeDaFamilia">{CRIAR_CASA.nomeDaCasaLabel}</Label>
         <Input
           id="nomeDaFamilia"
           name="nomeDaFamilia"
-          placeholder="Nossa casa"
+          placeholder={CRIAR_CASA.nomeDaCasaPlaceholder}
           autoComplete="off"
           required
           aria-invalid={erros?.nomeDaFamilia ? true : undefined}
           aria-describedby={
             erros?.nomeDaFamilia ? 'erro-nomeDaFamilia' : undefined
           }
+          disabled={pendente}
         />
         <CampoErro id="erro-nomeDaFamilia" mensagens={erros?.nomeDaFamilia} />
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="nomeDoMembro">Seu nome</Label>
+        <Label htmlFor="nomeDoMembro">{CRIAR_CASA.seuNomeLabel}</Label>
         <Input
           id="nomeDoMembro"
           name="nomeDoMembro"
-          placeholder="Como você aparece na casa"
+          placeholder={CRIAR_CASA.seuNomePlaceholder}
           autoComplete="given-name"
           required
           aria-invalid={erros?.nomeDoMembro ? true : undefined}
           aria-describedby={
             erros?.nomeDoMembro ? 'erro-nomeDoMembro' : undefined
           }
+          disabled={pendente}
         />
         <CampoErro id="erro-nomeDoMembro" mensagens={erros?.nomeDoMembro} />
       </div>
@@ -104,7 +108,7 @@ export function FormCriarCasa() {
       {/* Radio nativo em fieldset: navegação por seta e agrupamento no leitor
           de tela saem de graça, sem reimplementar um RadioGroup. */}
       <fieldset className="flex flex-col gap-1.5">
-        <legend className="text-sm font-medium">Como dividir os gastos</legend>
+        <legend className="text-sm font-medium">{CRIAR_CASA.regraLabel}</legend>
         <p className="text-muted-foreground text-sm">
           Vale para os gastos da casa. Você pode mudar depois.
         </p>
@@ -119,7 +123,7 @@ export function FormCriarCasa() {
               onChange={() => setRegra('equal')}
               className="size-4"
             />
-            <span className="text-sm">Metade para cada um</span>
+            <span className="text-sm">{CRIAR_CASA.regraIgual}</span>
           </label>
 
           <label className="border-input flex min-h-[44px] cursor-pointer items-center gap-3 rounded-md border px-3">
@@ -131,7 +135,7 @@ export function FormCriarCasa() {
               onChange={() => setRegra('proportional')}
               className="size-4"
             />
-            <span className="text-sm">Proporcional à renda de cada um</span>
+            <span className="text-sm">{CRIAR_CASA.regraProporcional}</span>
           </label>
         </div>
 
@@ -155,6 +159,7 @@ export function FormCriarCasa() {
           aria-required={regra === 'proportional' ? true : undefined}
           aria-invalid={erros?.renda ? true : undefined}
           aria-describedby="ajuda-renda"
+          disabled={pendente}
         />
         <p id="ajuda-renda" className="text-muted-foreground text-sm">
           {regra === 'proportional'
@@ -165,13 +170,13 @@ export function FormCriarCasa() {
       </div>
 
       {erroGeral ? (
-        <p role="alert" className="text-destructive text-sm">
-          {erroGeral}
-        </p>
+        <Alert variant="destructive">
+          <AlertDescription>{erroGeral}</AlertDescription>
+        </Alert>
       ) : null}
 
       <Button type="submit" size="toque" disabled={pendente} className="w-full">
-        {pendente ? 'Criando...' : 'Criar a casa'}
+        {pendente ? CRIAR_CASA.enviando : CRIAR_CASA.enviar}
       </Button>
     </form>
   )
