@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { connection } from 'next/server'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, PieChart } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { hojeEmSaoPaulo, ehMesValido, limitesDoMes, rotuloDoMes, somarMeses } from '@/lib/hoje'
 import { ResumoDoMes } from '@/components/inicio/resumo-do-mes'
@@ -14,6 +14,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EstadoVazio } from '@/components/ui/estado-vazio'
 import { INICIO, VAZIO_INICIAL } from '@/features/transacoes/copy'
+import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = { title: INICIO.titulo }
 
@@ -160,6 +161,19 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
           <AlertDescription>{INICIO.avisoErroDeLeitura}</AlertDescription>
         </Alert>
       ) : null}
+
+      <div className="flex items-center justify-between gap-[var(--esp-2)]">
+        <span className="text-muted-foreground text-[length:var(--texto-apoio)]">
+          Visão geral do mês
+        </span>
+        <Link
+          href={`/analises?mes=${mes}`}
+          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-[var(--esp-2)]')}
+        >
+          <PieChart className="size-4" aria-hidden="true" />
+          <span>Ver gráficos & análises</span>
+        </Link>
+      </div>
 
       <div className="grid gap-[var(--esp-6)] lg:grid-cols-[22rem_1fr] lg:items-start">
         <div className="flex flex-col gap-[var(--esp-6)]">
