@@ -178,3 +178,48 @@ O histórico vai junto. Depois atualizar os caminhos nos briefings dos agentes.
 4. **Protocolo de duas fases** — dobra o custo por etapa, mas pegou as 2
    policies que matariam o tempo real e o `shadcn init` que apagaria os tokens.
 5. **Cortes de crédito** — 3 hoje; cada retomada custa reconstruir contexto.
+
+---
+
+# MUDANÇA DE LOCAL — 2026-10-12
+
+## O projeto agora vive FORA do OneDrive
+
+```
+NOVO:    C:\dev\financas-a-dois          <- trabalhe AQUI
+ANTIGO:  ...\OneDrive\...\Finanças a Dois <- backup, NÃO editar
+```
+
+Validado após a cópia:
+```
+git log          -> 31 commits, histórico completo
+git fsck         -> exit 0
+npm install      -> ok
+npx next build   -> 4 rotas compiladas (/, /_not-found, /login, /onboarding)
+npx tsc --noEmit -> exit 0
+npx vitest run   -> 167/167
+Write tool       -> FUNCIONA de primeira (era o bloqueio do OneDrive)
+```
+
+**O contorno scratchpad + `cp` não é mais necessário.** Use o Write normalmente.
+
+Nota: `npx tsc --noEmit` acusa `Cannot find name 'LayoutProps'` até o primeiro
+`next build` rodar — é tipo gerado pelo Next, não erro de código.
+
+**Todo briefing de agente a partir de agora usa `C:\dev\financas-a-dois`.**
+
+## Banco limpo do lixo de teste
+
+As baterias de RLS/escape/código tinham deixado 73 famílias e 74 usuários falsos.
+Removidos na ordem que o schema exige (transactions → accounts → members →
+families), porque `transactions.created_by_member_id` é `ON DELETE RESTRICT` e
+o banco recusa apagar membro que assinou lançamento — desenho correto.
+
+Estado final: **1 família, 1 membro, 1 conta, 1 usuário** — só o Heitor.
+
+```
+"Casa do Heitor e Carol"   código GCX3EF   divisão: metade para cada um
+"Heitor"                   renda: null
+"Conta de Heitor"          corrente, saldo 0
+horiheitor@gmail.com       senha JEDh2007
+```
