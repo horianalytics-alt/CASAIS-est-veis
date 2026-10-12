@@ -106,11 +106,15 @@ export function FormLogin({ proximo }: FormLoginProps) {
         {pendente ? LOGIN.enviando : LOGIN.enviar}
       </Button>
 
+      {/* A-1 / WCAG 2.5.5: medido com getBoundingClientRect, este link dava
+          66x16px e reprovava. `inline-block` + py-[14px] leva a caixa a 44px
+          sem empurrar o texto ao redor — a linha continua lendo como frase.
+          min-h-[44px] não serviria: em elemento inline ele é ignorado. */}
       <p className="text-muted-foreground text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)]">
         {LOGIN.semConta}{' '}
         <Link
           href="/cadastro"
-          className="text-primary underline underline-offset-4"
+          className="text-primary inline-block py-[14px] underline underline-offset-4"
         >
           {LOGIN.irParaCadastro}
         </Link>
