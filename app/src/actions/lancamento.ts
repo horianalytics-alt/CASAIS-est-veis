@@ -90,9 +90,9 @@ const valor = z
  * transferência exige `to_account_id` e um par de regras próprias, que entram
  * com a tela de transferência.
  */
-const tipoDeLancamento = z.enum(['receita', 'despesa'], {
-  required_error: 'Escolha se é entrada ou saída.',
-  invalid_type_error: 'Escolha se é entrada ou saída.',
+const tipoDeLancamento = z.enum(['receita', 'despesa', 'transferencia'], {
+  required_error: 'Escolha se é entrada, saída ou transferência.',
+  invalid_type_error: 'Escolha se é entrada, saída ou transferência.',
 })
 
 const esquemaItem = z
@@ -106,6 +106,14 @@ const esquemaItem = z
     valor,
     data: dataISO,
     contaId: uuid,
+    contaDestinoId: uuid.nullish(),
+    parcelas: z.coerce
+      .number()
+      .int('Número de parcelas precisa ser inteiro.')
+      .min(1, 'Mínimo de 1 parcela.')
+      .max(120, 'Máximo de 120 parcelas.')
+      .default(1)
+      .nullish(),
     categoriaId: uuid.nullish(),
     formaDePagamentoId: uuid.nullish(),
     responsavelId: uuid.nullish(),
@@ -138,6 +146,26 @@ const esquemaItem = z
     (item) => item.cotaDoResponsavel == null || item.responsavelId != null,
     {
       message: 'Escolha de quem é a cota.',
+      path: ['responsavelId'],
+    },
+  )
+  // CHECK tx_transferencia_tem_destino: transferência exige conta diferente.
+  .refine(
+    (item) =>
+      item.tipo !== 'transferencia' ||
+      (item.contaDestinoId != null && item.contaDestinoId !== item.contaId),
+    {
+      message: 'Escolha uma conta de destino diferente da conta de origem.',
+      path: ['contaDestinoId'],
+    },
+  )
+  // CHECK tx_transferencia_sem_rateio: transferência não admite rateio.
+  .refine(
+    (item) =>
+      item.tipo !== 'transferencia' ||
+      (item.responsavelId == null && item.cotaDoResponsavel == null),
+    {
+      message: 'Transferência não aceita divisão entre membros.',
       path: ['responsavelId'],
     },
   )
@@ -192,10 +220,11 @@ export async function salvarLancamento(
     amount: item.valor,
     date: item.data,
     account_id: item.contaId,
-    category_id: item.categoriaId ?? null,
+    to_account_id: item.tipo === 'transferencia' ? item.contaDestinoId ?? null : null,
+    category_id: item.tipo === 'transferencia' ? null : (item.categoriaId ?? null),
     payment_method_id: item.formaDePagamentoId ?? null,
-    owner_member_id: item.responsavelId ?? null,
-    owner_share: item.cotaDoResponsavel ?? null,
+    owner_member_id: item.tipo === 'transferencia' ? null : (item.responsavelId ?? null),
+    owner_share: item.tipo === 'transferencia' ? null : (item.cotaDoResponsavel ?? null),
     paid_by_member_id: item.pagoPorId ?? null,
     is_paid: item.estaPago,
     paid_date: item.dataDoPagamento ?? null,
@@ -203,10 +232,7 @@ export async function salvarLancamento(
     is_benefit: item.ehBeneficio,
     is_futile: item.ehFutil,
     futile_label: item.ehFutil ? (item.rotuloDoFutil ?? null) : null,
-    // Sem parcelas nesta fatia: 1 lançamento = 1 linha.
-    recurrence_months: 1,
-    // `to_account_id` fica de fora: CHECK tx_transferencia_tem_destino exige
-    // que ele seja NULL quando o tipo não é transferência.
+    recurrence_months: item.parcelas ?? 1,
   }))
 
   const { data, error } = await supabase.rpc('save_transactions', {
@@ -217,6 +243,8 @@ export async function salvarLancamento(
 
   revalidatePath('/inicio')
   revalidatePath('/lancar')
+  revalidatePath('/carteira')
+  revalidatePath('/acerto')
 
   return sucesso(data ?? [])
 }

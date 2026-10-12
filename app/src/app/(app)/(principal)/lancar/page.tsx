@@ -36,7 +36,7 @@ export default async function PaginaLancar() {
   const [contas, categorias] = await Promise.all([
     supabase
       .from('accounts')
-      .select('id, name')
+      .select('id, name, type, closing_day, due_day')
       .is('archived_at', null)
       .order('sort_order', { ascending: true }),
     supabase
@@ -46,7 +46,13 @@ export default async function PaginaLancar() {
       .order('sort_order', { ascending: true }),
   ])
 
-  const listaDeContas = (contas.data ?? []).map((c) => ({ id: c.id, nome: c.name }))
+  const listaDeContas = (contas.data ?? []).map((c) => ({
+    id: c.id,
+    nome: c.name,
+    tipo: c.type,
+    closing_day: c.closing_day,
+    due_day: c.due_day,
+  }))
   const listaDeCategorias = (categorias.data ?? []).map((c) => ({
     id: c.id,
     nome: c.name,
