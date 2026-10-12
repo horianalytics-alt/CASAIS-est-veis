@@ -14,10 +14,20 @@ const SERVICE = process.env.SERVICE_KEY
 
 const admin = createClient(URL, SERVICE, { auth: { persistSession: false } })
 
-const CODIGO = 'GCX3EF'
-const EMAIL_HEITOR = 'horiheitor@gmail.com'
-const EMAIL_CAROL = 'carol.financas.teste@gmail.com'
-const SENHA = 'JEDh2007'
+// Credenciais vêm do ambiente, nunca do código: este arquivo vai para o
+// repositório, e senha em texto aberto num repo foi um dos defeitos da v1.
+const CODIGO = process.env.SEED_JOIN_CODE ?? 'GCX3EF'
+const EMAIL_HEITOR = process.env.SEED_EMAIL_DONO
+const EMAIL_CAROL = process.env.SEED_EMAIL_PARCEIRA ?? 'carol.financas.teste@gmail.com'
+const SENHA = process.env.SEED_SENHA
+
+if (!EMAIL_HEITOR || !SENHA) {
+  throw new Error(
+    'Faltam credenciais. Rode com:\n' +
+      '  SEED_EMAIL_DONO=... SEED_SENHA=... node tests/integration/semear.mjs\n' +
+      '(ou defina-as em app/.env.local, que é git-ignored)',
+  )
+}
 
 function log(...a) {
   console.log(...a)
