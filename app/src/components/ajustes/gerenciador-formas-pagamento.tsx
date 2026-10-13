@@ -33,194 +33,27 @@ import {
 } from '@/components/ui/dialog'
 import { AJUSTES_FORMAS } from '@/features/ajustes/copy'
 import { tocarSomErro, tocarSomSucesso } from '@/features/sons/sons'
-import { createClient } from '@/lib/supabase/client'
+import {
+  adicionarFormasPagamento,
+  renomearFormaPagamento,
+  arquivarFormaPagamento,
+  excluirFormaPagamento,
+  contarUsoFormaPagamento,
+} from '@/actions/formas-pagamento'
+import {
+  LIMITE_CARACTERES,
+  LIMITE_NOMES,
+  separarNomes,
+  chaveDeComparacao,
+} from '@/lib/lista-nomes'
 import { cn } from '@/lib/utils'
 
 type FormaPagamentoRow = Database['public']['Tables']['payment_methods']['Row']
-
-const LIMITE_CARACTERES = 40
-const LIMITE_NOMES = 50
-
-function normalizarChave(s: string): string {
-  return s
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-}
-
-function separarNomesLocal(entrada: string): { nomes: string[]; descartados: string[] } {
-  const partes = entrada.split(/[,\r\n]+/)
-  const vistos = new Set<string>()
-  const nomes: string[] = []
-  const descartados: string[] = []
-
-  for (const bruta of partes) {
-    const limpo = bruta.trim().replace(/\s+/g, ' ')
-    if (!limpo) continue
-    const chave = normalizarChave(limpo)
-    if (vistos.has(chave)) {
-      descartados.push(limpo)
-    } else {
-      vistos.add(chave)
-      nomes.push(limpo)
-    }
-  }
-
-  return { nomes, descartados }
-}
 
 interface FormLoteFormasValores {
   nomes: string
 }
 
-async function acaoAdicionarFormasPagamento(input: {
-  nomes: string
-}): Promise<
-  ResultadoAction<{
-    criadas: { id: string; nome: string }[]
-    ignoradas: string[]
-  }>
-> {
-  const { nomes } = separarNomesLocal(input.nomes)
-  if (nomes.length === 0) {
-    return {
-      ok: false,
-      erro: 'Informe ao menos uma forma de pagamento.',
-      camposComErro: { nomes: ['Informe ao menos uma forma de pagamento.'] },
-    }
-  }
-  if (nomes.length > LIMITE_NOMES) {
-    return {
-      ok: false,
-      erro: `Máximo de ${LIMITE_NOMES} formas de pagamento por vez.`,
-      camposComErro: { nomes: [`Máximo de ${LIMITE_NOMES} formas de pagamento por vez.`] },
-    }
-  }
-  const muitoLongo = nomes.find((n) => n.length > LIMITE_CARACTERES)
-  if (muitoLongo) {
-    return {
-      ok: false,
-      erro: `Cada nome pode ter no máximo ${LIMITE_CARACTERES} caracteres.`,
-      camposComErro: {
-        nomes: [`"${muitoLongo}" passa de ${LIMITE_CARACTERES} caracteres.`],
-      },
-    }
-  }
-
-  const supabase = createClient()
-  const { data: familyId } = await supabase.rpc('get_user_family_id_self')
-  if (!familyId) return { ok: false, erro: 'Você não faz parte de uma família.' }
-
-  const { data: existentes } = await supabase
-    .from('payment_methods')
-    .select('id, name')
-    .is('archived_at', null)
-
-  const mapaExistentes = new Set(
-    (existentes ?? []).map((e) => normalizarChave(e.name)),
-  )
-
-  const paraCriar: string[] = []
-  const ignoradas: string[] = []
-
-  for (const nome of nomes) {
-    if (mapaExistentes.has(normalizarChave(nome))) {
-      ignoradas.push(nome)
-    } else {
-      paraCriar.push(nome)
-    }
-  }
-
-  if (paraCriar.length === 0) {
-    return { ok: true, dados: { criadas: [], ignoradas } }
-  }
-
-  const { data: inseridas, error } = await supabase
-    .from('payment_methods')
-    .insert(
-      paraCriar.map((name) => ({
-        family_id: familyId,
-        name,
-      })),
-    )
-    .select('id, name')
-
-  if (error) return { ok: false, erro: error.message }
-
-  return {
-    ok: true,
-    dados: {
-      criadas: (inseridas ?? []).map((i) => ({ id: i.id, nome: i.name })),
-      ignoradas,
-    },
-  }
-}
-
-async function acaoRenomearFormaPagamento(input: {
-  id: string
-  nome: string
-}): Promise<ResultadoAction<void>> {
-  const limpo = input.nome.trim().replace(/\s+/g, ' ')
-  if (!limpo) return { ok: false, erro: 'Informe o nome da forma de pagamento.' }
-  if (limpo.length > LIMITE_CARACTERES) {
-    return {
-      ok: false,
-      erro: `O nome pode ter no máximo ${LIMITE_CARACTERES} caracteres.`,
-    }
-  }
-  const supabase = createClient()
-  const { error } = await supabase
-    .from('payment_methods')
-    .update({ name: limpo })
-    .eq('id', input.id)
-  if (error) return { ok: false, erro: error.message }
-  return { ok: true, dados: undefined }
-}
-
-async function acaoArquivarFormaPagamento(input: {
-  id: string
-  arquivar: boolean
-}): Promise<ResultadoAction<void>> {
-  const supabase = createClient()
-  const { error } = await supabase
-    .from('payment_methods')
-    .update({ archived_at: input.arquivar ? new Date().toISOString() : null })
-    .eq('id', input.id)
-  if (error) return { ok: false, erro: error.message }
-  return { ok: true, dados: undefined }
-}
-
-async function acaoContarUsoFormaPagamento(input: {
-  id: string
-}): Promise<ResultadoAction<{ lancamentos: number }>> {
-  const supabase = createClient()
-  const { count } = await supabase
-    .from('transactions')
-    .select('id', { count: 'exact', head: true })
-    .eq('payment_method_id', input.id)
-  return {
-    ok: true,
-    dados: {
-      lancamentos: count ?? 0,
-    },
-  }
-}
-
-async function acaoExcluirFormaPagamento(input: {
-  id: string
-}): Promise<ResultadoAction<{ lancamentosAfetados: number }>> {
-  const supabase = createClient()
-  const { count } = await supabase
-    .from('transactions')
-    .select('id', { count: 'exact', head: true })
-    .eq('payment_method_id', input.id)
-  const { error } = await supabase
-    .from('payment_methods')
-    .delete()
-    .eq('id', input.id)
-  if (error) return { ok: false, erro: error.message }
-  return { ok: true, dados: { lancamentosAfetados: count ?? 0 } }
-}
 
 export function GerenciadorFormasPagamento({
   formasIniciais,
@@ -262,12 +95,12 @@ export function GerenciadorFormasPagamento({
   const arquivadas = formasIniciais.filter((f) => Boolean(f.archived_at))
 
   const previa = React.useMemo(() => {
-    const { nomes, descartados } = separarNomesLocal(textoNomes || '')
-    const chavesExistentes = new Set(ativas.map((f) => normalizarChave(f.name)))
+    const { nomes, descartados } = separarNomes(textoNomes || '')
+    const chavesExistentes = new Set(ativas.map((f) => chaveDeComparacao(f.name)))
 
     const itens = nomes.map((nome) => ({
       nome,
-      jaExiste: chavesExistentes.has(normalizarChave(nome)),
+      jaExiste: chavesExistentes.has(chaveDeComparacao(nome)),
       muitoLongo: nome.length > LIMITE_CARACTERES,
     }))
 
@@ -281,7 +114,7 @@ export function GerenciadorFormasPagamento({
     setResultadoLote(null)
     setResumoSalvo(null)
     iniciarLote(async () => {
-      const res = await acaoAdicionarFormasPagamento({
+      const res = await adicionarFormasPagamento({
         nomes: valores.nomes,
       })
       setResultadoLote(res)
@@ -316,7 +149,7 @@ export function GerenciadorFormasPagamento({
   const salvarEdicao = (forma: FormaPagamentoRow) => {
     setErroItem(null)
     iniciarItem(async () => {
-      const res = await acaoRenomearFormaPagamento({
+      const res = await renomearFormaPagamento({
         id: forma.id,
         nome: novoNome,
       })
@@ -334,7 +167,7 @@ export function GerenciadorFormasPagamento({
   const alternarArquivamento = (forma: FormaPagamentoRow, arquivar: boolean) => {
     setErroItem(null)
     iniciarItem(async () => {
-      const res = await acaoArquivarFormaPagamento({ id: forma.id, arquivar })
+      const res = await arquivarFormaPagamento({ id: forma.id, arquivar })
       if (!res.ok) {
         setErroItem(res.erro)
         tocarSomErro()
@@ -353,7 +186,7 @@ export function GerenciadorFormasPagamento({
     setFormaParaExcluir(forma)
     setUsoExclusao(null)
     setCarregandoUso(true)
-    const res = await acaoContarUsoFormaPagamento({ id: forma.id })
+    const res = await contarUsoFormaPagamento({ id: forma.id })
     setCarregandoUso(false)
     if (res.ok) {
       setUsoExclusao(res.dados)
@@ -365,7 +198,7 @@ export function GerenciadorFormasPagamento({
   const confirmarExclusao = () => {
     if (!formaParaExcluir) return
     iniciarItem(async () => {
-      const res = await acaoExcluirFormaPagamento({ id: formaParaExcluir.id })
+      const res = await excluirFormaPagamento({ id: formaParaExcluir.id })
       if (!res.ok) {
         setErroItem(res.erro)
         tocarSomErro()
