@@ -156,7 +156,22 @@ const MENSAGENS_DE_NEGOCIO = [
   'Valor do acerto precisa ser maior que zero',
   'O acerto precisa ser entre duas pessoas diferentes',
   'Cada pessoa precisa de uma conta corrente para acertar',
+  // 00007/00008 — limite de tentativas do convite e rotação do código.
+  'Muitas tentativas. Tente de novo em alguns minutos.',
+  'Você não faz parte de uma família',
 ] as const
+
+/**
+ * 23505 de índice único conhecido -> mensagem específica.
+ *
+ * O Postgres põe o nome do índice na mensagem crua; ele é usado só para
+ * ESCOLHER o texto, nunca é exibido. Os nomes vêm da migration 00009 — não
+ * renomeie um índice sem atualizar esta tabela.
+ */
+const POR_INDICE_UNICO: Record<string, string> = {
+  categories_nome_ativo_unico: 'Já existe uma categoria ativa com esse nome.',
+  payment_methods_nome_ativo_unico: 'Já existe uma forma de pagamento ativa com esse nome.',
+}
 
 /** Mensagem genérica por SQLSTATE, quando a crua não é exibível. */
 const POR_CODIGO: Record<string, string> = {
@@ -191,6 +206,12 @@ export function traduzErroDoBanco(
 
   for (const conhecida of MENSAGENS_DE_NEGOCIO) {
     if (mensagem.startsWith(conhecida)) return mensagem
+  }
+
+  if (e.code === '23505') {
+    for (const [indice, texto] of Object.entries(POR_INDICE_UNICO)) {
+      if (mensagem.includes(`"${indice}"`)) return texto
+    }
   }
 
   if (e.code && POR_CODIGO[e.code]) return POR_CODIGO[e.code]

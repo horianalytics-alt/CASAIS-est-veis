@@ -10,6 +10,7 @@
 // mensagens em português) é testado em tests/integration/acoes-cadastro.int.test.ts,
 // porque um .mjs não consegue importar o TypeScript das actions.
 import { createClient } from '@supabase/supabase-js'
+import { limparTeste } from './limpeza-utils.mjs'
 
 const URL = 'https://wxhfgstgjjlmqauogeid.supabase.co'
 const ANON = process.env.ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -280,40 +281,11 @@ async function run() {
   console.log(`\n=== ${checks - failures}/${checks} verificacoes passaram ===`)
 }
 
-// Limpeza que CONTA O QUE DE FATO SAIU. A versão anterior dos testes contava
-// tentativas e engolia o erro (.catch(() => {})): o relatório dizia "22
-// removidos" enquanto os usuários ficavam no banco.
-//
-// Ordem obrigatória: lançamentos -> famílias -> usuários.
-//   - transactions.created_by_member_id é ON DELETE RESTRICT: com lançamento
-//     vivo, nem a família nem o usuário saem.
-//   - família sai e leva membros, contas, categorias, formas e orçamentos.
-//   - por fim o usuário, já sem linha de membro.
+// Limpeza: ver limpeza-utils.mjs (conta o que de fato saiu; ordem lançamentos ->
+// famílias -> usuários).
 async function cleanup() {
-  let tx = 0, fams = 0, users = 0
-  const erros = []
-  for (const fid of createdFamilies) {
-    const { data, error } = await admin.from('transactions').delete().eq('family_id', fid).select('id')
-    if (error) erros.push(`transactions ${fid.slice(0, 8)}: ${error.message}`)
-    else tx += data.length
-  }
-  for (const fid of createdFamilies) {
-    const { data, error } = await admin.from('families').delete().eq('id', fid).select('id')
-    if (error) erros.push(`family ${fid.slice(0, 8)}: ${error.message}`)
-    else fams += data.length
-  }
-  for (const uid of createdUsers) {
-    const { error } = await admin.auth.admin.deleteUser(uid)
-    // C4 já removeu um usuário: "not found" é sucesso para a limpeza.
-    if (error && !/not.?found/i.test(error.message)) erros.push(`user ${uid.slice(0, 8)}: ${error.message}`)
-    else users++
-  }
-  console.log(`limpeza: ${tx} lançamento(s), ${fams}/${createdFamilies.length} família(s), ${users}/${createdUsers.length} usuário(s) removidos`)
-  if (erros.length) {
-    console.log(`LIMPEZA INCOMPLETA (${erros.length}):`)
-    for (const e of erros) console.log(`  - ${e}`)
-    failures++
-  }
+  const erros = await limparTeste(admin, createdFamilies, createdUsers)
+  if (erros.length > 0) failures++
 }
 
 try {

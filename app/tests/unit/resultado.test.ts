@@ -141,3 +141,49 @@ describe('traduzErroDoBanco — mensagem crua nunca vaza', () => {
     expect(traduzErroDoBanco('string solta')).toBe(GENERICA)
   })
 })
+
+describe('traduzErroDoBanco — mensagens das migrations 00007 a 00009', () => {
+  it('o limite de tentativas do convite chega ao usuário como veio', () => {
+    // Antes desta correção, o P0001 do limite caía na genérica: quem estava
+    // bloqueado lia "tente de novo em instantes" e tentava de novo.
+    const msg = 'Muitas tentativas. Tente de novo em alguns minutos.'
+    expect(traduzErroDoBanco({ code: 'P0001', message: msg })).toBe(msg)
+  })
+
+  it('rotacionar_join_code sem família chega ao usuário como veio', () => {
+    const msg = 'Você não faz parte de uma família'
+    expect(traduzErroDoBanco({ code: 'P0001', message: msg })).toBe(msg)
+  })
+
+  it('23505 do índice de categoria vira mensagem específica', () => {
+    expect(
+      traduzErroDoBanco({
+        code: '23505',
+        message: 'duplicate key value violates unique constraint "categories_nome_ativo_unico"',
+      }),
+    ).toBe('Já existe uma categoria ativa com esse nome.')
+  })
+
+  it('23505 do índice de forma de pagamento vira mensagem específica', () => {
+    expect(
+      traduzErroDoBanco({
+        code: '23505',
+        message: 'duplicate key value violates unique constraint "payment_methods_nome_ativo_unico"',
+      }),
+    ).toBe('Já existe uma forma de pagamento ativa com esse nome.')
+  })
+
+  it('23505 de outra constraint continua na mensagem genérica de duplicata', () => {
+    expect(
+      traduzErroDoBanco({ code: '23505', message: 'duplicate key value violates unique constraint "x_key"' }),
+    ).toBe('Esse registro já existe.')
+  })
+
+  it('o nome do índice não vaza na mensagem', () => {
+    const r = traduzErroDoBanco({
+      code: '23505',
+      message: 'duplicate key value violates unique constraint "categories_nome_ativo_unico"',
+    })
+    expect(r).not.toMatch(/categories|constraint|unique/)
+  })
+})

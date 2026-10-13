@@ -2,6 +2,7 @@
 // altera nada da familia B. Roda contra o projeto hospedado.
 // Uso: node rls-test.mjs
 import { createClient } from '@supabase/supabase-js'
+import { limparTeste } from './limpeza-utils.mjs'
 
 const URL = 'https://wxhfgstgjjlmqauogeid.supabase.co'
 const ANON = process.env.ANON_KEY
@@ -18,6 +19,7 @@ const users = [
 let failures = 0
 let checks = 0
 const created = []
+const familias = []
 
 function check(name, passed, detail = '') {
   checks++
@@ -51,6 +53,7 @@ async function setup(u) {
   if (fErr) throw new Error(`create_family ${u.label}: ${fErr.message}`)
   const row = Array.isArray(fam) ? fam[0] : fam
   u.familyId = row.family_id
+  familias.push(row.family_id)
   u.memberId = row.member_id
   u.joinCode = row.join_code
 
@@ -269,6 +272,7 @@ async function run() {
       })
       if (fErr) { formatoOk = false; detalhe = `create_family: ${fErr.message}`; break }
       const code = (Array.isArray(fam) ? fam[0] : fam).join_code
+      familias.push((Array.isArray(fam) ? fam[0] : fam).family_id)
       if (!/^[A-Z2-9]{6}$/.test(code)) {
         formatoOk = false; detalhe = `codigo fora do formato: ${JSON.stringify(code)}`; break
       }
@@ -283,10 +287,8 @@ async function run() {
 }
 
 async function cleanup() {
-  for (const uid of created) {
-    await admin.auth.admin.deleteUser(uid).catch(() => {})
-  }
-  console.log(`limpeza: ${created.length} usuario(s) de teste removido(s)`)
+  const erros = await limparTeste(admin, familias, created)
+  if (erros.length > 0) failures++
 }
 
 try {

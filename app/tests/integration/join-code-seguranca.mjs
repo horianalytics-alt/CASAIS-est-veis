@@ -6,6 +6,7 @@
 //   ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY SERVICE_KEY=$SUPABASE_SERVICE_ROLE_KEY \
 //     node tests/integration/join-code-seguranca.mjs
 import { createClient } from '@supabase/supabase-js'
+import { limparTeste } from './limpeza-utils.mjs'
 
 const URL = 'https://wxhfgstgjjlmqauogeid.supabase.co'
 const ANON = process.env.ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -457,19 +458,9 @@ async function run() {
 }
 
 async function cleanup() {
-  // Usuarios primeiro: family_members tem ON DELETE CASCADE em user_id, o que
-  // esvazia as familias de teste. As familias em si nao caem por cascata (nada
-  // referencia families a partir de auth.users), por isso o DELETE explicito.
-  for (const uid of createdUsers) {
-    await admin.auth.admin.deleteUser(uid).catch(() => {})
-  }
-  let fams = 0
-  for (const fid of createdFamilies) {
-    const { error } = await admin.from('families').delete().eq('id', fid)
-    if (!error) fams++
-  }
   // join_attempts cai por cascata junto com o usuario (FK ON DELETE CASCADE).
-  console.log(`limpeza: ${createdUsers.length} usuario(s) e ${fams} familia(s) de teste removidos`)
+  const erros = await limparTeste(admin, createdFamilies, createdUsers)
+  if (erros.length > 0) failures++
 }
 
 try {
