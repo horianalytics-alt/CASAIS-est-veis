@@ -13,6 +13,7 @@ import { GraficoPareto } from '@/components/analises/grafico-pareto'
 import { MapaDeCalorDias } from '@/components/analises/mapa-de-calor-dias'
 import { IndicadoresInteligencia } from '@/components/analises/indicadores-inteligencia'
 import { BotaoExportarCsv } from '@/components/analises/botao-exportar-csv'
+import { PrevisaoFixos } from '@/components/analises/previsao-fixos'
 
 export const metadata: Metadata = { title: ANALISES.titulo }
 
@@ -80,12 +81,30 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
     valor,
   }))
 
-  // 2. Histórico para barras mensais
-  const historicoMensal = (resumos.data ?? []).map((r) => ({
-    mes: r.month ?? '',
-    receitas: Number(r.income_paid ?? 0),
-    despesas: Number(r.expense_paid ?? 0),
-  }))
+  // 2. Histórico para barras mensais (até o mês consultado) e Previsão dos próximos 6 meses
+  const listaResumos = resumos.data ?? []
+  const mapaResumos = new Map(listaResumos.map((r) => [r.month ?? '', r]))
+
+  const historicoMensal = listaResumos
+    .filter((r) => (r.month ?? '') <= mes)
+    .map((r) => ({
+      mes: r.month ?? '',
+      receitas: Number(r.income_paid ?? 0),
+      despesas: Number(r.expense_paid ?? 0),
+    }))
+
+  const previsaoMeses = [0, 1, 2, 3, 4, 5].map((offset) => {
+    const m = somarMeses(mesAtual, offset)
+    const r = mapaResumos.get(m)
+    return {
+      mes: m,
+      rotulo: rotuloDoMes(m),
+      ehMesAtual: m === mesAtual,
+      aPagar: Number(r?.payable ?? 0),
+      jaPago: Number(r?.expense_paid ?? 0),
+      aReceber: Number(r?.receivable ?? 0),
+    }
+  })
 
   // 3. Inteligência: Benefícios e Fúteis
   let totalBeneficios = 0
@@ -173,6 +192,9 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
 
       {/* Evolução Mensal */}
       <GraficoBarrasMensais historico={historicoMensal} />
+
+      {/* Previsão de fixos e parcelas (próximos 6 meses) */}
+      <PrevisaoFixos meses={previsaoMeses} />
 
       {/* Mapa de Calor e Hábitos */}
       <div className="grid gap-[var(--esp-6)] lg:grid-cols-2">

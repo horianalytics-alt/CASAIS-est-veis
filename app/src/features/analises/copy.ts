@@ -26,4 +26,13 @@ export const ANALISES = {
   saldo: 'Saldo',
   economizadoComBeneficios: 'Preservado no salário',
   gastoFutil: 'Total em supérfluos',
+  previsaoTitulo: 'Previsão de fixos e parcelas (próximos 6 meses)',
+  previsaoDescricao:
+    'Compromissos já agendados ou parcelados que sairão nos próximos meses.',
+  mesAtualBadge: 'Mês atual',
+  aPagar: 'A pagar',
+  jaPago: 'Já pago',
+  aReceber: 'A receber',
+  semCompromissos: 'Sem lançamentos agendados',
 } as const
+
