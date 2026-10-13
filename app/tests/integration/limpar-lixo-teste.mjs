@@ -3,10 +3,11 @@
 //
 // MODO PADRÃO: simulação (dry-run). Só apaga de verdade com --executar.
 //
-// Identifica a família REAL por FAMILIA_REAL_JOIN_CODE (env var), com fallback
-// para 'GCX3EF' — NUNCA por padrão de e-mail, porque um membro real pode ter
-// "teste" no endereço (ex.: parceiro cujo e-mail de cadastro contém "teste").
-// Se essa família não for encontrada, o script ABORTA sem apagar nada.
+// Identifica a família REAL só por FAMILIA_REAL_JOIN_CODE (env var obrigatória,
+// sem fallback no código) — NUNCA por padrão de e-mail, porque um membro real
+// pode ter "teste" no endereço (ex.: parceiro cujo e-mail de cadastro contém
+// "teste"). Se a env var não existir, ou se a família não for encontrada, o
+// script ABORTA sem apagar nada.
 //
 // Ordem de remoção (respeita FKs ON DELETE RESTRICT/SET NULL do schema):
 //   transactions → push_subscriptions → account_goals → category_budgets
@@ -15,12 +16,18 @@
 //
 // Uso:
 //   set -a && . ./.env.local && set +a
-//   SERVICE_KEY="$SUPABASE_SERVICE_ROLE_KEY" node tests/integration/limpar-lixo-teste.mjs
-//   SERVICE_KEY="$SUPABASE_SERVICE_ROLE_KEY" node tests/integration/limpar-lixo-teste.mjs --executar
+//   FAMILIA_REAL_JOIN_CODE="<código atual>" SERVICE_KEY="$SUPABASE_SERVICE_ROLE_KEY" node tests/integration/limpar-lixo-teste.mjs
+//   FAMILIA_REAL_JOIN_CODE="<código atual>" SERVICE_KEY="$SUPABASE_SERVICE_ROLE_KEY" node tests/integration/limpar-lixo-teste.mjs --executar
 import { createClient } from '@supabase/supabase-js'
 
 const EXECUTAR = process.argv.includes('--executar')
-const CODIGO_REAL = process.env.FAMILIA_REAL_JOIN_CODE ?? 'GCX3EF'
+const CODIGO_REAL = process.env.FAMILIA_REAL_JOIN_CODE
+if (!CODIGO_REAL) {
+  throw new Error(
+    'Defina FAMILIA_REAL_JOIN_CODE com o join_code atual da família real antes de rodar — ' +
+    'sem fallback no código, para não preservar um código antigo/vazado por engano.',
+  )
+}
 const TAMANHO_LOTE = 25
 
 const admin = createClient(

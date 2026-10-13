@@ -15,7 +15,10 @@ const admin = createClient(
   { auth: { persistSession: false } },
 )
 
-const CODIGO = process.env.SEED_JOIN_CODE ?? 'GCX3EF'
+const CODIGO = process.env.SEED_JOIN_CODE
+if (!CODIGO) {
+  throw new Error('Defina SEED_JOIN_CODE com o join_code atual da família real antes de rodar.')
+}
 
 const { data: fams, error } = await admin
   .from('families')
