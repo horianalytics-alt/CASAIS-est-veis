@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowRightLeft, CreditCard, Plus, Trash2 } from 'lucide-react'
+import { ArrowRightLeft, ChevronDown, CreditCard, Plus, Trash2 } from 'lucide-react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { salvarLancamento, type EntradaDeLancamento, type Lancamento } from '@/actions/lancamento'
 import type { ResultadoAction } from '@/actions/resultado'
@@ -58,6 +58,9 @@ interface CamposSimples {
   parcelas: number
   estaPago: boolean
   dataDoPagamento: string
+  ehBeneficio: boolean
+  ehFutil: boolean
+  rotuloDoFutil: string
 }
 
 interface ItemLote {
@@ -68,6 +71,9 @@ interface ItemLote {
   contaId: string
   categoriaId: string
   estaPago: boolean
+  ehBeneficio: boolean
+  ehFutil: boolean
+  rotuloDoFutil: string
 }
 
 interface CamposLote {
@@ -90,6 +96,8 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
   const [pendente, iniciarEnvio] = useTransition()
   const [resultado, setResultado] = useState<ResultadoAction<Lancamento[]> | null>(null)
   const [concluido, setConcluido] = useState(false)
+  const [maisDetalhesAberto, setMaisDetalhesAberto] = useState(false)
+  const [detalhesLoteAbertos, setDetalhesLoteAbertos] = useState<Record<number, boolean>>({})
 
   // -------------------------------------------------------------------------
   // Formulário Simples
@@ -113,6 +121,9 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
       parcelas: 1,
       estaPago: true,
       dataDoPagamento: hoje,
+      ehBeneficio: false,
+      ehFutil: false,
+      rotuloDoFutil: '',
     },
   })
 
@@ -138,6 +149,7 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
   const contaId = watch('contaId')
   const estaPago = watch('estaPago')
   const parcelas = watch('parcelas')
+  const ehFutil = watch('ehFutil')
 
   const contaAtual = contas.find((c) => c.id === contaId)
   const ehCartao = contaAtual?.tipo === 'cartao' && contaAtual.closing_day != null
@@ -165,6 +177,7 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
   const aoEnviarSimples = handleSubmit((valores) => {
     setResultado(null)
     iniciarEnvio(async () => {
+      const ehDespesa = valores.tipo === 'despesa'
       const entrada: EntradaDeLancamento = {
         tipo: valores.tipo,
         descricao: valores.descricao,
@@ -176,9 +189,15 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
           valores.tipo === 'transferencia' || valores.categoriaId === SEM_CATEGORIA
             ? null
             : valores.categoriaId,
-        parcelas: valores.tipo === 'despesa' ? valores.parcelas : 1,
+        parcelas: ehDespesa ? valores.parcelas : 1,
         estaPago: valores.estaPago,
         dataDoPagamento: valores.estaPago ? valores.dataDoPagamento || null : null,
+        ehBeneficio: ehDespesa ? valores.ehBeneficio : false,
+        ehFutil: ehDespesa ? valores.ehFutil : false,
+        rotuloDoFutil:
+          ehDespesa && valores.ehFutil && valores.rotuloDoFutil.trim()
+            ? valores.rotuloDoFutil.trim()
+            : null,
       }
 
       const resposta = await salvarLancamento(entrada)
@@ -197,6 +216,7 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
     register: registerLote,
     control: controlLote,
     handleSubmit: handleSubmitLote,
+    watch: watchLote,
   } = useForm<CamposLote>({
     defaultValues: {
       itens: [
@@ -208,6 +228,9 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
           contaId: contas[0]?.id ?? '',
           categoriaId: SEM_CATEGORIA,
           estaPago: true,
+          ehBeneficio: false,
+          ehFutil: false,
+          rotuloDoFutil: '',
         },
         {
           tipo: 'despesa',
@@ -217,6 +240,9 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
           contaId: contas[0]?.id ?? '',
           categoriaId: SEM_CATEGORIA,
           estaPago: true,
+          ehBeneficio: false,
+          ehFutil: false,
+          rotuloDoFutil: '',
         },
       ],
     },
@@ -228,20 +254,31 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
       name: 'itens',
     })
 
+  const itensAssistidos = watchLote('itens')
+
   const aoEnviarLote = handleSubmitLote((valores) => {
     setResultado(null)
     iniciarEnvio(async () => {
-      const entradas: EntradaDeLancamento[] = valores.itens.map((item) => ({
-        tipo: item.tipo,
-        descricao: item.descricao,
-        valor: item.valor,
-        data: item.data,
-        contaId: item.contaId,
-        categoriaId: item.categoriaId === SEM_CATEGORIA ? null : item.categoriaId,
-        estaPago: item.estaPago,
-        dataDoPagamento: item.estaPago ? item.data || null : null,
-        parcelas: 1,
-      }))
+      const entradas: EntradaDeLancamento[] = valores.itens.map((item) => {
+        const ehDespesa = item.tipo === 'despesa'
+        return {
+          tipo: item.tipo,
+          descricao: item.descricao,
+          valor: item.valor,
+          data: item.data,
+          contaId: item.contaId,
+          categoriaId: item.categoriaId === SEM_CATEGORIA ? null : item.categoriaId,
+          estaPago: item.estaPago,
+          dataDoPagamento: item.estaPago ? item.data || null : null,
+          parcelas: 1,
+          ehBeneficio: ehDespesa ? item.ehBeneficio : false,
+          ehFutil: ehDespesa ? item.ehFutil : false,
+          rotuloDoFutil:
+            ehDespesa && item.ehFutil && item.rotuloDoFutil.trim()
+              ? item.rotuloDoFutil.trim()
+              : null,
+        }
+      })
 
       const resposta = await salvarLancamento(entradas)
       setResultado(resposta)
@@ -571,6 +608,81 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
             </div>
           ) : null}
 
+          {/* Mais detalhes (recolhido por padrão, apenas para Despesa) */}
+          {tipo === 'despesa' ? (
+            <div className="border-input rounded-lg border bg-card/50">
+              <button
+                type="button"
+                onClick={() => setMaisDetalhesAberto((v) => !v)}
+                aria-expanded={maisDetalhesAberto}
+                className="flex min-h-[44px] w-full items-center justify-between px-[var(--esp-3)] text-left text-[length:var(--texto-apoio)] font-medium text-muted-foreground hover:text-foreground"
+              >
+                <span>{LANCAR.maisDetalhes}</span>
+                <ChevronDown
+                  className={cn(
+                    'size-4 transition-transform duration-150',
+                    maisDetalhesAberto && 'rotate-180',
+                  )}
+                  aria-hidden="true"
+                />
+              </button>
+
+              {maisDetalhesAberto ? (
+                <div className="border-input flex flex-col gap-[var(--esp-3)] border-t p-[var(--esp-3)]">
+                  <Controller
+                    control={control}
+                    name="ehBeneficio"
+                    render={({ field }) => (
+                      <label className="border-input flex min-h-[44px] cursor-pointer items-center gap-[var(--esp-3)] rounded-lg border bg-background px-[var(--esp-3)]">
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(marcado) => field.onChange(marcado === true)}
+                          disabled={pendente}
+                        />
+                        <span className="text-[length:var(--texto-corpo)] leading-[var(--texto-corpo-lh)]">
+                          {LANCAR.ehBeneficioLabel}
+                        </span>
+                      </label>
+                    )}
+                  />
+
+                  <Controller
+                    control={control}
+                    name="ehFutil"
+                    render={({ field }) => (
+                      <label className="border-input flex min-h-[44px] cursor-pointer items-center gap-[var(--esp-3)] rounded-lg border bg-background px-[var(--esp-3)]">
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(marcado) => field.onChange(marcado === true)}
+                          disabled={pendente}
+                        />
+                        <span className="text-[length:var(--texto-corpo)] leading-[var(--texto-corpo-lh)]">
+                          {LANCAR.ehFutilLabel}
+                        </span>
+                      </label>
+                    )}
+                  />
+
+                  {ehFutil ? (
+                    <div className="flex flex-col gap-[var(--esp-2)]">
+                      <Label htmlFor="rotuloDoFutil">{LANCAR.rotuloDoFutilLabel}</Label>
+                      <Input
+                        id="rotuloDoFutil"
+                        maxLength={60}
+                        placeholder={LANCAR.rotuloDoFutilPlaceholder}
+                        disabled={pendente}
+                        aria-invalid={erros?.rotuloDoFutil ? true : undefined}
+                        aria-describedby={erros?.rotuloDoFutil ? 'erro-rotuloDoFutil' : undefined}
+                        {...register('rotuloDoFutil')}
+                      />
+                      <CampoErro id="erro-rotuloDoFutil" mensagens={erros?.rotuloDoFutil} />
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           {/* Alerta de erro geral */}
           {erroGeral ? (
             <Alert variant="destructive">
@@ -601,7 +713,7 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="toque"
               onClick={() =>
                 adicionarItemLote({
                   tipo: 'despesa',
@@ -611,6 +723,9 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
                   contaId: contas[0]?.id ?? '',
                   categoriaId: SEM_CATEGORIA,
                   estaPago: true,
+                  ehBeneficio: false,
+                  ehFutil: false,
+                  rotuloDoFutil: '',
                 })
               }
               disabled={pendente}
@@ -622,95 +737,181 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
           </div>
 
           <div className="flex flex-col gap-[var(--esp-3)]">
-            {camposLote.map((item, index) => (
-              <div
-                key={item.id}
-                className="border-input flex flex-col gap-[var(--esp-3)] rounded-lg border bg-card p-[var(--esp-3)]"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[length:var(--texto-apoio)] font-semibold text-muted-foreground">
-                    #{index + 1}
-                  </span>
-                  {camposLote.length > 1 ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removerItemLote(index)}
+            {camposLote.map((item, index) => {
+              const itemAtual = itensAssistidos?.[index]
+              const ehDespesaItem = (itemAtual?.tipo ?? item.tipo) === 'despesa'
+              const ehFutilItem = Boolean(itemAtual?.ehFutil)
+              const detalheAberto = Boolean(detalhesLoteAbertos[index])
+
+              return (
+                <div
+                  key={item.id}
+                  className="border-input flex flex-col gap-[var(--esp-3)] rounded-lg border bg-card p-[var(--esp-3)]"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[length:var(--texto-apoio)] font-semibold text-muted-foreground">
+                      #{index + 1}
+                    </span>
+                    {camposLote.length > 1 ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="toque"
+                        onClick={() => removerItemLote(index)}
+                        disabled={pendente}
+                        className="text-muted-foreground hover:text-destructive px-3"
+                      >
+                        <Trash2 className="size-4" aria-hidden="true" />
+                        <span className="sr-only">{LANCAR.removerItem}</span>
+                      </Button>
+                    ) : null}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-[var(--esp-2)]">
+                    {/* Tipo */}
+                    <Controller
+                      control={controlLote}
+                      name={`itens.${index}.tipo`}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange} disabled={pendente}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="despesa">{LANCAR.despesa}</SelectItem>
+                            <SelectItem value="receita">{LANCAR.receita}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+
+                    {/* Valor */}
+                    <Input
+                      placeholder="0,00"
+                      inputMode="decimal"
+                      className="font-mono num-tabular"
                       disabled={pendente}
-                      className="text-muted-foreground hover:text-destructive h-8 px-2"
-                    >
-                      <Trash2 className="size-3.5" aria-hidden="true" />
-                      <span className="sr-only">{LANCAR.removerItem}</span>
-                    </Button>
+                      {...registerLote(`itens.${index}.valor`)}
+                    />
+                  </div>
+
+                  {/* Descrição */}
+                  <Input
+                    placeholder="Descrição (ex.: Padaria)"
+                    disabled={pendente}
+                    {...registerLote(`itens.${index}.descricao`)}
+                  />
+
+                  <div className="grid grid-cols-2 gap-[var(--esp-2)]">
+                    {/* Data */}
+                    <Input
+                      type="date"
+                      disabled={pendente}
+                      {...registerLote(`itens.${index}.data`)}
+                    />
+
+                    {/* Conta */}
+                    <Controller
+                      control={controlLote}
+                      name={`itens.${index}.contaId`}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange} disabled={pendente}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Conta" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {contas.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+
+                  {/* Mais detalhes por linha do lote (apenas Despesa, recolhido por padrão) */}
+                  {ehDespesaItem ? (
+                    <div className="border-input rounded-lg border bg-background/50">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDetalhesLoteAbertos((ant) => ({
+                            ...ant,
+                            [index]: !ant[index],
+                          }))
+                        }
+                        aria-expanded={detalheAberto}
+                        className="flex min-h-[44px] w-full items-center justify-between px-[var(--esp-3)] text-left text-[length:var(--texto-apoio)] font-medium text-muted-foreground hover:text-foreground"
+                      >
+                        <span>{LANCAR.maisDetalhes}</span>
+                        <ChevronDown
+                          className={cn(
+                            'size-4 transition-transform duration-150',
+                            detalheAberto && 'rotate-180',
+                          )}
+                          aria-hidden="true"
+                        />
+                      </button>
+
+                      {detalheAberto ? (
+                        <div className="border-input flex flex-col gap-[var(--esp-2)] border-t p-[var(--esp-3)]">
+                          <Controller
+                            control={controlLote}
+                            name={`itens.${index}.ehBeneficio`}
+                            render={({ field }) => (
+                              <label className="border-input flex min-h-[44px] cursor-pointer items-center gap-[var(--esp-3)] rounded-lg border bg-background px-[var(--esp-3)]">
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={(marcado) => field.onChange(marcado === true)}
+                                  disabled={pendente}
+                                />
+                                <span className="text-[length:var(--texto-apoio)]">
+                                  {LANCAR.ehBeneficioLabel}
+                                </span>
+                              </label>
+                            )}
+                          />
+
+                          <Controller
+                            control={controlLote}
+                            name={`itens.${index}.ehFutil`}
+                            render={({ field }) => (
+                              <label className="border-input flex min-h-[44px] cursor-pointer items-center gap-[var(--esp-3)] rounded-lg border bg-background px-[var(--esp-3)]">
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={(marcado) => field.onChange(marcado === true)}
+                                  disabled={pendente}
+                                />
+                                <span className="text-[length:var(--texto-apoio)]">
+                                  {LANCAR.ehFutilLabel}
+                                </span>
+                              </label>
+                            )}
+                          />
+
+                          {ehFutilItem ? (
+                            <div className="flex flex-col gap-1 pt-1">
+                              <Label htmlFor={`rotuloDoFutil-${index}`} className="text-xs">
+                                {LANCAR.rotuloDoFutilLabel}
+                              </Label>
+                              <Input
+                                id={`rotuloDoFutil-${index}`}
+                                maxLength={60}
+                                placeholder={LANCAR.rotuloDoFutilPlaceholder}
+                                disabled={pendente}
+                                {...registerLote(`itens.${index}.rotuloDoFutil`)}
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
                   ) : null}
                 </div>
-
-                <div className="grid grid-cols-2 gap-[var(--esp-2)]">
-                  {/* Tipo */}
-                  <Controller
-                    control={controlLote}
-                    name={`itens.${index}.tipo`}
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange} disabled={pendente}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="despesa">{LANCAR.despesa}</SelectItem>
-                          <SelectItem value="receita">{LANCAR.receita}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-
-                  {/* Valor */}
-                  <Input
-                    placeholder="0,00"
-                    inputMode="decimal"
-                    className="font-mono num-tabular"
-                    disabled={pendente}
-                    {...registerLote(`itens.${index}.valor`)}
-                  />
-                </div>
-
-                {/* Descrição */}
-                <Input
-                  placeholder="Descrição (ex.: Padaria)"
-                  disabled={pendente}
-                  {...registerLote(`itens.${index}.descricao`)}
-                />
-
-                <div className="grid grid-cols-2 gap-[var(--esp-2)]">
-                  {/* Data */}
-                  <Input
-                    type="date"
-                    disabled={pendente}
-                    {...registerLote(`itens.${index}.data`)}
-                  />
-
-                  {/* Conta */}
-                  <Controller
-                    control={controlLote}
-                    name={`itens.${index}.contaId`}
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange} disabled={pendente}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Conta" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {contas.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {erroGeral ? (

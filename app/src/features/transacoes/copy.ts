@@ -107,4 +107,9 @@ export const LANCAR = {
     'Todo lançamento precisa de uma conta. Cadastre uma conta antes de lançar.',
   voltarAoInicio: 'Voltar ao início',
   erroDeLeitura: 'Não foi possível carregar suas contas. Atualize a página.',
+  maisDetalhes: 'Mais detalhes',
+  ehBeneficioLabel: 'Pago com benefício (VR/VA)',
+  ehFutilLabel: 'Gasto fútil (compra por impulso)',
+  rotuloDoFutilLabel: 'O que motivou ou qual foi o item? (opcional)',
+  rotuloDoFutilPlaceholder: 'Ex.: Delivery por preguiça, doce, roupa extra',
 } as const
