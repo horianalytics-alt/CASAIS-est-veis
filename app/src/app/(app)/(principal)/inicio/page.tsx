@@ -116,7 +116,7 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
   // Casa sem nenhum lançamento: a primeira tela real do produto.
   if (!falhouAlgo && !temHistorico) {
     return (
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-[var(--esp-6)] px-[var(--esp-4)] py-[var(--esp-6)]">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-[var(--esp-6)] px-[var(--esp-4)] py-[var(--esp-6)]">
         <h1 className="sr-only">{INICIO.titulo}</h1>
         <SaldoDasContas contas={listaDeContas} />
         <Card>
@@ -140,7 +140,7 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-[var(--esp-6)] px-[var(--esp-4)] py-[var(--esp-6)]">
+    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-[var(--esp-6)] px-[var(--esp-4)] py-[var(--esp-6)]">
       <div className="flex items-center justify-between gap-[var(--esp-3)]">
         <Link
           href={hrefDoMes(somarMeses(mes, -1))}
@@ -180,23 +180,24 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
         </Link>
       </div>
 
-      <div className="grid gap-[var(--esp-6)] lg:grid-cols-[22rem_1fr] lg:items-start">
-        <div className="flex flex-col gap-[var(--esp-6)]">
-          <ResumoDoMes
-            entrou={resumoDoMes?.income_paid ?? 0}
-            saiu={resumoDoMes?.expense_paid ?? 0}
-            aPagar={resumoDoMes?.payable ?? 0}
-          />
-          <SaldoDasContas contas={listaDeContas} />
-        </div>
+      {/* Indicadores do Mês e Saldo das Contas no topo (lado a lado a partir de tablet/sm) */}
+      <div className="grid gap-[var(--esp-6)] md:grid-cols-2 items-stretch">
+        <ResumoDoMes
+          entrou={resumoDoMes?.income_paid ?? 0}
+          saiu={resumoDoMes?.expense_paid ?? 0}
+          aPagar={resumoDoMes?.payable ?? 0}
+        />
+        <SaldoDasContas contas={listaDeContas} />
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-[length:var(--texto-subtitulo)] leading-[var(--texto-subtitulo-lh)] font-semibold">
-              {INICIO.tituloLancamentos}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+      {/* Lançamentos em largura total, aproveitando o espaço em PC, notebook e tablet */}
+      <Card className="w-full min-w-0">
+        <CardHeader className="px-4 sm:px-6">
+          <CardTitle className="text-[length:var(--texto-subtitulo)] leading-[var(--texto-subtitulo-lh)] font-semibold">
+            {INICIO.tituloLancamentos}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-3 sm:px-6 pt-0 sm:pt-0">
             {(lancamentos.data ?? []).length === 0 ? (
               <EstadoVazio
                 titulo={INICIO.semLancamentosNoMes}
@@ -233,7 +234,6 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
             />
           </CardContent>
         </Card>
-      </div>
 
       {/* Ouvinte em Tempo Real via Supabase Realtime (item 9.8) */}
       {familyId && (

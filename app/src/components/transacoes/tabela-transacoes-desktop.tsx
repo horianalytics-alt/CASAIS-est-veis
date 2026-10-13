@@ -35,15 +35,17 @@ export function TabelaTransacoesDesktop({
 }: TabelaTransacoesDesktopProps) {
   return (
     <div className="hidden lg:block w-full overflow-x-auto">
-      <table className="w-full text-left border-collapse text-sm">
+      <table className="w-full table-fixed text-left border-collapse text-sm">
         <thead>
           <tr className="border-b border-border/80 text-muted-foreground text-xs uppercase tracking-wider">
-            <th className="py-3 px-3 font-semibold">Data</th>
-            <th className="py-3 px-3 font-semibold">Descrição</th>
-            <th className="py-3 px-3 font-semibold">Categoria</th>
-            <th className="py-3 px-3 font-semibold">Conta</th>
-            <th className="py-3 px-3 font-semibold text-right">Valor</th>
-            <th className="py-3 px-3 font-semibold text-right">Estado</th>
+            <th className="py-3 px-2 xl:px-3 font-semibold whitespace-nowrap w-[85px] xl:w-[95px]">Data</th>
+            <th className="py-3 px-2 xl:px-3 font-semibold">Descrição</th>
+            <th className="py-3 px-2 xl:px-3 font-semibold whitespace-nowrap w-[85px] xl:w-[130px]">Categoria</th>
+            <th className="py-3 px-2 xl:px-3 font-semibold whitespace-nowrap w-[115px] xl:w-[160px]">Conta</th>
+            <th className="py-3 px-2 xl:px-3 font-semibold text-right whitespace-nowrap w-[115px] xl:w-[130px]">Valor</th>
+            <th className="py-3 px-2 xl:px-3 font-semibold text-right whitespace-nowrap w-[95px] hidden xl:table-cell">
+              Estado
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border/60">
@@ -59,32 +61,39 @@ export function TabelaTransacoesDesktop({
                 className="hover:bg-muted/40 transition-colors group"
               >
                 {/* Data */}
-                <td className="py-3.5 px-3 whitespace-nowrap text-muted-foreground font-mono text-xs num-tabular">
+                <td className="py-3 px-2 xl:px-3 whitespace-nowrap text-muted-foreground font-mono text-xs num-tabular">
                   {isoToBR(t.date)}
                 </td>
 
                 {/* Descrição e Tipo */}
-                <td className="py-3.5 px-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground max-w-[260px] truncate" title={t.description}>
+                <td className="py-3 px-2 xl:px-3 min-w-0">
+                  <div className="flex items-center gap-1.5 xl:gap-2 min-w-0">
+                    <span
+                      className="font-medium text-foreground truncate min-w-0 flex-1"
+                      title={t.description}
+                    >
                       {t.description}
                     </span>
-                    <BadgeTipo tipo={t.type} pago />
+                    <BadgeTipo tipo={t.type} pago={t.is_paid} className="text-[11px] xl:text-xs shrink-0" />
                   </div>
                 </td>
 
                 {/* Categoria */}
-                <td className="py-3.5 px-3 text-muted-foreground text-xs">
-                  {categoria ?? '—'}
+                <td className="py-3 px-2 xl:px-3 text-muted-foreground text-xs whitespace-nowrap">
+                  <span className="truncate block max-w-[95px] xl:max-w-[125px]" title={categoria ?? undefined}>
+                    {categoria ?? '—'}
+                  </span>
                 </td>
 
                 {/* Conta */}
-                <td className="py-3.5 px-3 text-muted-foreground text-xs">
-                  {conta ?? '—'}
+                <td className="py-3 px-2 xl:px-3 text-foreground text-xs whitespace-nowrap font-medium">
+                  <span className="truncate block max-w-[120px] xl:max-w-[160px]" title={conta ?? undefined}>
+                    {conta ?? '—'}
+                  </span>
                 </td>
 
                 {/* Valor */}
-                <td className="py-3.5 px-3 text-right whitespace-nowrap">
+                <td className="py-3 px-2 xl:px-3 text-right whitespace-nowrap">
                   {tipo ? (
                     <ValorMonetario
                       valor={t.amount}
@@ -97,20 +106,20 @@ export function TabelaTransacoesDesktop({
                   )}
                 </td>
 
-                {/* Estado */}
-                <td className="py-3.5 px-3 text-right whitespace-nowrap">
+                {/* Estado (visível a partir de xl >= 1280px) */}
+                <td className="py-3 px-2 xl:px-3 text-right whitespace-nowrap hidden xl:table-cell">
                   {mostraStatus ? (
                     <span
-                      className={`inline-flex items-center gap-1.5 text-xs font-medium ${
+                      className={`inline-flex items-center justify-end gap-1.5 text-xs font-medium ${
                         t.is_paid ? 'text-muted-foreground' : 'text-pendente'
                       }`}
                     >
                       {t.is_paid ? (
-                        <Check aria-hidden="true" className="size-3.5 text-receita" />
+                        <Check aria-hidden="true" className="size-3.5 text-receita shrink-0" />
                       ) : (
-                        <Clock aria-hidden="true" className="size-3.5" />
+                        <Clock aria-hidden="true" className="size-3.5 shrink-0" />
                       )}
-                      {t.is_paid ? INICIO.pago : INICIO.pendente}
+                      <span>{t.is_paid ? INICIO.pago : INICIO.pendente}</span>
                     </span>
                   ) : (
                     <span className="text-muted-foreground text-xs">—</span>
