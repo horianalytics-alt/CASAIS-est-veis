@@ -2,15 +2,15 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { connection } from 'next/server'
 import Link from 'next/link'
-import { ArrowLeft, Tag } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { AJUSTES } from '@/features/ajustes/copy'
+import { GerenciadorCategorias } from '@/components/ajustes/gerenciador-categorias'
+import { AJUSTES_CATEGORIAS } from '@/features/ajustes/copy'
 
 export const metadata: Metadata = {
-  title: 'Categorias',
-  description: 'Categorias de despesas e receitas',
+  title: AJUSTES_CATEGORIAS.titulo,
+  description: AJUSTES_CATEGORIAS.subtitulo,
 }
 
 export default async function PaginaAjustesCategorias() {
@@ -31,8 +31,7 @@ export default async function PaginaAjustesCategorias() {
     .from('categories')
     .select('*')
     .order('sort_order', { ascending: true })
-
-  const lista = categorias ?? []
+    .order('name', { ascending: true })
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6">
@@ -45,31 +44,15 @@ export default async function PaginaAjustesCategorias() {
         </Button>
         <div>
           <h1 className="text-foreground text-2xl font-bold tracking-tight">
-            Categorias
+            {AJUSTES_CATEGORIAS.titulo}
           </h1>
           <p className="text-muted-foreground text-sm">
-            Categorias utilizadas na classificação de despesas e receitas da casa
+            {AJUSTES_CATEGORIAS.subtitulo}
           </p>
         </div>
       </div>
 
-      <div className="bg-card border-border/80 divide-border flex flex-col divide-y rounded-xl border shadow-xs overflow-hidden">
-        {lista.map((cat) => (
-          <div key={cat.id} className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-muted text-foreground flex size-8 items-center justify-center rounded-lg border border-border">
-                <Tag className="size-4" aria-hidden="true" />
-              </div>
-              <span className="text-foreground text-sm font-semibold">
-                {cat.name}
-              </span>
-            </div>
-            <Badge variant="outline" className="text-xs uppercase">
-              {cat.type}
-            </Badge>
-          </div>
-        ))}
-      </div>
+      <GerenciadorCategorias categoriasIniciais={categorias ?? []} />
     </main>
   )
 }

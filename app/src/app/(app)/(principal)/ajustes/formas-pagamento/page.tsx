@@ -2,14 +2,15 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { connection } from 'next/server'
 import Link from 'next/link'
-import { ArrowLeft, CreditCard } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { GerenciadorFormasPagamento } from '@/components/ajustes/gerenciador-formas-pagamento'
+import { AJUSTES_FORMAS } from '@/features/ajustes/copy'
 
 export const metadata: Metadata = {
-  title: 'Formas de pagamento',
-  description: 'Métodos de pagamento cadastrados',
+  title: AJUSTES_FORMAS.titulo,
+  description: AJUSTES_FORMAS.subtitulo,
 }
 
 export default async function PaginaAjustesFormasPagamento() {
@@ -30,8 +31,7 @@ export default async function PaginaAjustesFormasPagamento() {
     .from('payment_methods')
     .select('*')
     .order('sort_order', { ascending: true })
-
-  const lista = formas ?? []
+    .order('name', { ascending: true })
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6">
@@ -44,31 +44,15 @@ export default async function PaginaAjustesFormasPagamento() {
         </Button>
         <div>
           <h1 className="text-foreground text-2xl font-bold tracking-tight">
-            Formas de pagamento
+            {AJUSTES_FORMAS.titulo}
           </h1>
           <p className="text-muted-foreground text-sm">
-            Métodos e meios utilizados nos lançamentos da casa
+            {AJUSTES_FORMAS.subtitulo}
           </p>
         </div>
       </div>
 
-      <div className="bg-card border-border/80 divide-border flex flex-col divide-y rounded-xl border shadow-xs overflow-hidden">
-        {lista.map((f) => (
-          <div key={f.id} className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-muted text-foreground flex size-8 items-center justify-center rounded-lg border border-border">
-                <CreditCard className="size-4" aria-hidden="true" />
-              </div>
-              <span className="text-foreground text-sm font-semibold">
-                {f.name}
-              </span>
-            </div>
-            <span className="text-muted-foreground text-xs font-medium">
-              Ativa
-            </span>
-          </div>
-        ))}
-      </div>
+      <GerenciadorFormasPagamento formasIniciais={formas ?? []} />
     </main>
   )
 }
