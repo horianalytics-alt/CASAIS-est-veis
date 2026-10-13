@@ -53,10 +53,10 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
 - **Opções:** expirar em N horas · rotacionar a cada uso · botão "gerar novo
   código" nos ajustes da família · código de uso único por convite.
 
-### P-002 — URL do repositório novo no GitHub
-- **O quê:** o Heitor vai fornecer um repositório novo e vazio para receber a v2.
-- **Status:** ainda não fornecido. O projeto está em git local com histórico
-  completo; o push é um passo único quando a URL chegar.
+### P-002 — URL do repositório novo no GitHub — RESOLVIDO
+- **O quê:** o Heitor forneceu `https://github.com/horianalytics-alt/CASAIS-est-veis.git`
+  em 2026-10-12. Push feito, deploy automático na Vercel confirmado.
+- **Status:** fechado. Mantido aqui só como registro histórico.
 
 ### P-003 — Open Finance
 - **Origem:** Heitor, 2026-10-11 — "futuramente penso em deixar esse app open finance".
