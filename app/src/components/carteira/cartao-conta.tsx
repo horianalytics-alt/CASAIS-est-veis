@@ -120,13 +120,13 @@ export function CartaoConta({
               <ValorMonetario
                 valor={totalFaturaAtual}
                 tipo="despesa"
-                tamanho="heroi"
+                tamanho="destaque"
               />
             ) : (
-              <ValorMonetario valor={0} tamanho="heroi" />
+              <ValorMonetario valor={0} tamanho="destaque" />
             )
           ) : (
-            <ValorSaldo valor={saldoAtual} tamanho="heroi" />
+            <ValorSaldo valor={saldoAtual} tamanho="destaque" />
           )}
         </div>
 
