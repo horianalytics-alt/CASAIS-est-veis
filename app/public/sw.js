@@ -72,3 +72,50 @@ self.addEventListener('fetch', (event) => {
     })
   )
 })
+
+self.addEventListener('push', (event) => {
+  let dados = {}
+  if (event.data) {
+    try {
+      dados = event.data.json()
+    } catch {
+      dados = { corpo: event.data.text() }
+    }
+  }
+  // dados = { titulo: string, corpo: string, url: string }
+  event.waitUntil(
+    self.registration.showNotification(dados.titulo ?? 'Finanças a Dois', {
+      body: dados.corpo ?? '',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url: dados.url ?? '/inicio' },
+    }),
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const urlDestino =
+    event.notification.data && typeof event.notification.data.url === 'string'
+      ? event.notification.data.url
+      : '/inicio'
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientes) => {
+        for (const cliente of clientes) {
+          if (cliente.url.includes(self.location.origin) && 'focus' in cliente) {
+            if ('navigate' in cliente) {
+              cliente.navigate(urlDestino)
+            }
+            return cliente.focus()
+          }
+        }
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(urlDestino)
+        }
+      }),
+  )
+})
+
