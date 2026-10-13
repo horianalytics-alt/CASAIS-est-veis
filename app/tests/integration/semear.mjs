@@ -18,14 +18,16 @@ const admin = createClient(URL, SERVICE, { auth: { persistSession: false } })
 // repositório, e senha em texto aberto num repo foi um dos defeitos da v1.
 const CODIGO = process.env.SEED_JOIN_CODE
 const EMAIL_HEITOR = process.env.SEED_EMAIL_DONO
-const EMAIL_CAROL = process.env.SEED_EMAIL_PARCEIRA ?? 'carol.financas.teste@gmail.com'
+const EMAIL_CAROL = process.env.SEED_EMAIL_PARCEIRA
 const SENHA = process.env.SEED_SENHA
 
-if (!EMAIL_HEITOR || !SENHA || !CODIGO) {
+if (!EMAIL_HEITOR || !EMAIL_CAROL || !SENHA || !CODIGO) {
   throw new Error(
     'Faltam credenciais. Rode com:\n' +
-      '  SEED_EMAIL_DONO=... SEED_SENHA=... SEED_JOIN_CODE=... node tests/integration/semear.mjs\n' +
-      '(ou defina-as em app/.env.local, que é git-ignored)',
+      '  SEED_EMAIL_DONO=... SEED_EMAIL_PARCEIRA=... SEED_SENHA=... SEED_JOIN_CODE=... node tests/integration/semear.mjs\n' +
+      '(ou defina-as em app/.env.local, que é git-ignored). Sem fallback de e-mail no código — ' +
+      'o valor antigo aqui era o e-mail real da Carol, e rodar sem a env var tentaria semear ' +
+      'dados de teste direto na conta real dela.',
   )
 }
 
