@@ -87,7 +87,15 @@ export function FormLogin({ proximo }: FormLoginProps) {
       </div>
 
       <div className="flex flex-col gap-[var(--esp-2)]">
-        <Label htmlFor="senha">{LOGIN.senhaLabel}</Label>
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="senha">{LOGIN.senhaLabel}</Label>
+          <Link
+            href="/recuperar-senha"
+            className="text-primary inline-block py-[14px] text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)] underline underline-offset-4"
+          >
+            {LOGIN.esqueciSenha}
+          </Link>
+        </div>
         <Input
           id="senha"
           name="senha"

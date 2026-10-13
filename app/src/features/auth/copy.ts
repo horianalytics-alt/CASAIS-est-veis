@@ -40,3 +40,31 @@ export const CADASTRO = {
   confirmeDescricao:
     'Enviamos um link de confirmação. Abra o link e depois volte para entrar.',
 } as const
+
+export const RECUPERAR_SENHA = {
+  titulo: 'Recuperar senha',
+  subtitulo: 'Informe o seu e-mail para receber um link de redefinição.',
+  emailLabel: 'E-mail',
+  emailPlaceholder: 'voce@email.com',
+  enviar: 'Enviar link de recuperação',
+  enviando: 'Enviando…',
+  voltarLogin: 'Voltar para entrar',
+  confirmacaoTitulo: 'Confira seu e-mail',
+  confirmacaoDescricao: 'Se houver uma conta com esse e-mail, enviamos um link.',
+} as const
+
+export const NOVA_SENHA = {
+  titulo: 'Definir nova senha',
+  subtitulo: 'Escolha uma senha nova para proteger a sua conta.',
+  senhaLabel: 'Nova senha',
+  senhaApoio: 'Pelo menos 8 caracteres.',
+  confirmacaoLabel: 'Repita a senha',
+  enviar: 'Salvar nova senha',
+  enviando: 'Salvando…',
+  sucessoTitulo: 'Senha atualizada',
+  sucessoDescricao: 'Sua nova senha já está valendo. Você pode continuar para o início.',
+  irParaInicio: 'Ir para o início',
+  irParaLogin: 'Voltar para entrar',
+  pedirNovoLink: 'Pedir novo link de recuperação',
+} as const
+
