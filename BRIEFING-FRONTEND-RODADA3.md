@@ -27,6 +27,30 @@ volta como defeito na próxima rodada.
 
 ---
 
+## 0.5. ACHADO NOVO (verificação pós-D1-D4) — card do cartão corta o valor em 1024px [MÉDIO]
+
+Já corrigido: o item 1 abaixo (botão de convite) — confirmei rodando
+`7a5f94d`, chama `rotacionar_join_code` corretamente agora. Bom trabalho.
+
+**Achado em `/carteira`, viewport 1024px (tablet grande / notebook pequeno):**
+O card do "Cartão Nubank" fica na terceira coluna da grade `Contas` (3 cards
+lado a lado). Nessa largura, o texto herói do valor da fatura
+(`−R$ 639,23`, fonte grande) **não cabe e é cortado** pelo `overflow-x: hidden`
+do card — sem reticências, sem quebra de linha, o `3` final de `639,23`
+simplesmente desaparece da tela. Medido via `getBoundingClientRect`: o card
+tem 235px de largura ali.
+
+Prova: `docs/auditoria/evidencias/a0-carteira-1024.png` (cheio) — compare a
+largura do "Conta de Heitor" (cabe) com "Cartão Nubank" (corta).
+
+Correção sugerida: o valor herói do cartão precisa reduzir o tamanho da fonte
+em breakpoints intermediários (`md:text-2xl lg:text-3xl`, por exemplo) ou a
+grade de Contas cair para 2 colunas entre 768px e 1280px, voltando a 3 só a
+partir de onde o terceiro card tem espaço real. Teste explicitamente em 1024px
+— é a faixa onde isso quebra; em 1440px (coluna mais larga) não reproduz.
+
+---
+
 ## 1. DEFEITO — o botão "Gerar novo código" está quebrado em produção [ALTO]
 
 **Arquivo:** `app/src/components/ajustes/bloco-codigo-convite.tsx:45-56`
