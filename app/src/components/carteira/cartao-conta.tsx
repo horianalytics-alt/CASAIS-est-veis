@@ -139,14 +139,10 @@ export function CartaoConta({
             <ValorSaldo valor={saldoPrevisto} tamanho="linha" />
             <div className="text-muted-foreground flex items-center gap-1.5 text-[11px]">
               {pendenteEntrada > 0 && (
-                <span>
-                  + <ValorMonetario valor={pendenteEntrada} tipo="receita" pago={false} />
-                </span>
+                <ValorMonetario valor={pendenteEntrada} tipo="receita" pago={false} />
               )}
               {pendenteSaida > 0 && (
-                <span>
-                  − <ValorMonetario valor={pendenteSaida} tipo="despesa" pago={false} />
-                </span>
+                <ValorMonetario valor={pendenteSaida} tipo="despesa" pago={false} />
               )}
             </div>
           </div>

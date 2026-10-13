@@ -184,14 +184,10 @@ export default async function PaginaCarteira({ searchParams }: PaginaCarteiraPro
             <ValorSaldo valor={totalSaldoPrevisto} tamanho="destaque" />
             <div className="text-muted-foreground flex items-center gap-2 text-xs">
               {totalPendenteInflow > 0 && (
-                <span>
-                  + <ValorMonetario valor={totalPendenteInflow} tipo="receita" pago={false} />
-                </span>
+                <ValorMonetario valor={totalPendenteInflow} tipo="receita" pago={false} />
               )}
               {totalPendenteOutflow > 0 && (
-                <span>
-                  − <ValorMonetario valor={totalPendenteOutflow} tipo="despesa" pago={false} />
-                </span>
+                <ValorMonetario valor={totalPendenteOutflow} tipo="despesa" pago={false} />
               )}
             </div>
           </div>

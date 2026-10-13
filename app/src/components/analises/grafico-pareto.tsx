@@ -39,7 +39,7 @@ export function GraficoPareto({ itens }: GraficoParetoProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col gap-[var(--esp-2)] sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-[var(--esp-2)]">
           <div>
             <CardTitle className="text-[length:var(--texto-subtitulo)] font-semibold">
               {ANALISES.paretoTitulo}

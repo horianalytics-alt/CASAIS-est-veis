@@ -138,11 +138,11 @@ export function GraficoRoscaCategorias({ itens }: GraficoRoscaCategoriasProps) {
           </svg>
 
           {/* Rótulo central */}
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className="text-muted-foreground text-[length:var(--texto-micro)] uppercase">
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
+            <span className="text-muted-foreground text-[10px] uppercase">
               {ANALISES.totalGasto}
             </span>
-            <span className="font-mono text-[length:var(--texto-corpo)] font-semibold num-tabular text-despesa">
+            <span className="font-mono text-xs font-semibold num-tabular text-despesa">
               − {formatBRL(total)}
             </span>
           </div>

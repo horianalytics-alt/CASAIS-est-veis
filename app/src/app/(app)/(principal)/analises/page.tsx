@@ -185,7 +185,7 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
       </div>
 
       {/* Grid de Gráficos Principais */}
-      <div className="grid gap-[var(--esp-6)] lg:grid-cols-2">
+      <div className="grid gap-[var(--esp-6)] xl:grid-cols-2">
         <GraficoRoscaCategorias itens={itensCategorias} />
         <GraficoPareto itens={itensCategorias} />
       </div>
@@ -197,7 +197,7 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
       <PrevisaoFixos meses={previsaoMeses} />
 
       {/* Mapa de Calor e Hábitos */}
-      <div className="grid gap-[var(--esp-6)] lg:grid-cols-2">
+      <div className="grid gap-[var(--esp-6)] xl:grid-cols-2">
         <MapaDeCalorDias anoMes={mes} transacoes={transacoes} />
         <div className="flex flex-col justify-between">
           <IndicadoresInteligencia
