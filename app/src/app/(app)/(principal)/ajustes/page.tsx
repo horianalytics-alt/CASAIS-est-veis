@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { SeletorTema } from '@/components/ajustes/seletor-tema'
+import { AlternarSom } from '@/components/ajustes/alternar-som'
 import { AJUSTES } from '@/features/ajustes/copy'
 
 export const metadata: Metadata = {
@@ -52,7 +53,7 @@ export default async function PaginaAjustes() {
         </p>
       </div>
 
-      {/* Seção de Aparência */}
+      {/* Seção de Aparência e Sons */}
       <section
         aria-labelledby="titulo-aparencia"
         className="bg-card border-border/80 flex flex-col gap-4 rounded-xl border p-5 shadow-xs"
@@ -71,6 +72,10 @@ export default async function PaginaAjustes() {
 
         <div className="border-border/60 border-t pt-4">
           <SeletorTema />
+        </div>
+
+        <div className="border-border/60 border-t pt-4">
+          <AlternarSom />
         </div>
       </section>
 

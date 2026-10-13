@@ -24,6 +24,10 @@ export const AJUSTES = {
   linkCategoriasDica: 'Categorias de despesas, receitas e investimentos',
   linkFormasPagamento: 'Formas de pagamento',
   linkFormasPagamentoDica: 'Métodos utilizados nos lançamentos da casa',
+  sonsTitulo: 'Sons do aplicativo',
+  sonsDica: 'Toque curto ao salvar lançamentos ou quando ocorrer um erro',
+  sonsAtivo: 'Ativado',
+  sonsInativo: 'Desativado',
 } as const
 
 export const AJUSTES_FAMILIA = {

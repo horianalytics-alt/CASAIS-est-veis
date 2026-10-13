@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LANCAR } from '@/features/transacoes/copy'
+import { tocarSomErro, tocarSomSucesso } from '@/features/sons/sons'
 import { getInvoicePeriod, invoicePeriodLabel } from '@/lib/invoice'
 import { cn } from '@/lib/utils'
 
@@ -203,8 +204,11 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
       const resposta = await salvarLancamento(entrada)
       setResultado(resposta)
       if (resposta.ok) {
+        tocarSomSucesso()
         setConcluido(true)
         router.replace(`/inicio?mes=${valores.data.slice(0, 7)}`)
+      } else {
+        tocarSomErro()
       }
     })
   })
@@ -283,9 +287,12 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
       const resposta = await salvarLancamento(entradas)
       setResultado(resposta)
       if (resposta.ok) {
+        tocarSomSucesso()
         setConcluido(true)
         const primeiraData = valores.itens[0]?.data || hoje
         router.replace(`/inicio?mes=${primeiraData.slice(0, 7)}`)
+      } else {
+        tocarSomErro()
       }
     })
   })
