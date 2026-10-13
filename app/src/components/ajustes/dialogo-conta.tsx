@@ -4,9 +4,9 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { Controller, useForm } from 'react-hook-form'
 import { Plus } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { parseBRLInput } from '@/lib/format'
 import type { ResultadoAction } from '@/actions/resultado'
+import { criarConta, editarConta, type TipoConta } from '@/actions/contas'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -33,10 +33,9 @@ import { tocarSomErro, tocarSomSucesso } from '@/features/sons/sons'
 import type { Database } from '@/types/database'
 
 type Conta = Database['public']['Tables']['accounts']['Row']
-export type TipoConta = 'corrente' | 'beneficio' | 'cartao' | 'investimento'
 
 export interface DialogoContaProps {
-  familiaId: string
+  familiaId?: string
   contaParaEditar?: Conta | null
   gatilho?: React.ReactNode
 }
@@ -49,93 +48,6 @@ interface FormContaValores {
   diaVencimento: string
 }
 
-async function acaoCriarConta(
-  familiaId: string,
-  input: {
-    nome: string
-    tipo: TipoConta
-    saldoInicial: number
-    diaFechamento?: number | null
-    diaVencimento?: number | null
-  },
-): Promise<ResultadoAction<{ id: string }>> {
-  const nome = input.nome.trim()
-  if (!nome) {
-    return {
-      ok: false,
-      erro: 'Informe o nome da conta.',
-      camposComErro: { nome: ['Informe o nome da conta.'] },
-    }
-  }
-  if (input.tipo === 'cartao') {
-    const f = input.diaFechamento
-    const v = input.diaVencimento
-    if (!f || f < 1 || f > 31) {
-      return {
-        ok: false,
-        erro: 'Informe um dia de fechamento entre 1 e 31.',
-        camposComErro: { diaFechamento: ['Informe um dia entre 1 e 31.'] },
-      }
-    }
-    if (!v || v < 1 || v > 31) {
-      return {
-        ok: false,
-        erro: 'Informe um dia de vencimento entre 1 e 31.',
-        camposComErro: { diaVencimento: ['Informe um dia entre 1 e 31.'] },
-      }
-    }
-  }
-
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('accounts')
-    .insert({
-      family_id: familiaId,
-      name: nome,
-      type: input.tipo,
-      initial_balance: input.saldoInicial,
-      closing_day: input.tipo === 'cartao' ? (input.diaFechamento ?? null) : null,
-      due_day: input.tipo === 'cartao' ? (input.diaVencimento ?? null) : null,
-    })
-    .select('id')
-    .single()
-
-  if (error || !data) {
-    return { ok: false, erro: error?.message ?? 'Erro ao criar conta.' }
-  }
-  return { ok: true, dados: { id: data.id } }
-}
-
-async function acaoEditarConta(input: {
-  id: string
-  nome?: string
-  diaFechamento?: number | null
-  diaVencimento?: number | null
-}): Promise<ResultadoAction<void>> {
-  const nome = input.nome?.trim()
-  if (!nome) {
-    return {
-      ok: false,
-      erro: 'Informe o nome da conta.',
-      camposComErro: { nome: ['Informe o nome da conta.'] },
-    }
-  }
-
-  const supabase = createClient()
-  const { error } = await supabase
-    .from('accounts')
-    .update({
-      name: nome,
-      closing_day: input.diaFechamento ?? null,
-      due_day: input.diaVencimento ?? null,
-    })
-    .eq('id', input.id)
-
-  if (error) {
-    return { ok: false, erro: error.message }
-  }
-  return { ok: true, dados: undefined }
-}
 
 export function DialogoConta({
   familiaId,
@@ -210,7 +122,7 @@ export function DialogoConta({
           : null
 
       if (contaParaEditar) {
-        const res = await acaoEditarConta({
+        const res = await editarConta({
           id: contaParaEditar.id,
           nome: valores.nome,
           diaFechamento: ehCartao ? fechamentoNum : null,
@@ -226,7 +138,7 @@ export function DialogoConta({
         }
       } else {
         const saldoNum = parseBRLInput(valores.saldoInicial)
-        const res = await acaoCriarConta(familiaId, {
+        const res = await criarConta({
           nome: valores.nome,
           tipo: valores.tipo,
           saldoInicial: Number.isNaN(saldoNum) ? 0 : saldoNum,
