@@ -40,42 +40,24 @@ import {
 } from '@/components/ui/dialog'
 import { AJUSTES_CATEGORIAS } from '@/features/ajustes/copy'
 import { tocarSomErro, tocarSomSucesso } from '@/features/sons/sons'
-import { createClient } from '@/lib/supabase/client'
+import {
+  adicionarCategorias,
+  renomearCategoria,
+  alterarTipoCategoria,
+  arquivarCategoria,
+  excluirCategoria,
+  contarUsoCategoria,
+  type TipoCategoria,
+} from '@/actions/categorias'
+import {
+  LIMITE_CARACTERES,
+  LIMITE_NOMES,
+  separarNomes,
+  chaveDeComparacao,
+} from '@/lib/lista-nomes'
 import { cn } from '@/lib/utils'
 
-export type TipoCategoria = 'receita' | 'despesa' | 'investimento' | 'todos'
 type CategoriaRow = Database['public']['Tables']['categories']['Row']
-
-const LIMITE_CARACTERES = 40
-const LIMITE_NOMES = 50
-
-function normalizarChave(s: string): string {
-  return s
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-}
-
-function separarNomesLocal(entrada: string): { nomes: string[]; descartados: string[] } {
-  const partes = entrada.split(/[,\r\n]+/)
-  const vistos = new Set<string>()
-  const nomes: string[] = []
-  const descartados: string[] = []
-
-  for (const bruta of partes) {
-    const limpo = bruta.trim().replace(/\s+/g, ' ')
-    if (!limpo) continue
-    const chave = normalizarChave(limpo)
-    if (vistos.has(chave)) {
-      descartados.push(limpo)
-    } else {
-      vistos.add(chave)
-      nomes.push(limpo)
-    }
-  }
-
-  return { nomes, descartados }
-}
 
 const ROTULOS_TIPO: Record<string, string> = {
   despesa: 'Despesa',
@@ -89,185 +71,6 @@ interface FormLoteValores {
   tipo: TipoCategoria
 }
 
-// Stubs locais que seguem o contrato da seção 3.2 até app/src/actions/categorias.ts chegar
-async function acaoAdicionarCategorias(input: {
-  nomes: string
-  tipo: TipoCategoria
-}): Promise<
-  ResultadoAction<{
-    criadas: { id: string; nome: string }[]
-    ignoradas: string[]
-  }>
-> {
-  const { nomes } = separarNomesLocal(input.nomes)
-  if (nomes.length === 0) {
-    return {
-      ok: false,
-      erro: 'Informe ao menos um nome de categoria.',
-      camposComErro: { nomes: ['Informe ao menos um nome de categoria.'] },
-    }
-  }
-  if (nomes.length > LIMITE_NOMES) {
-    return {
-      ok: false,
-      erro: `Máximo de ${LIMITE_NOMES} categorias por vez.`,
-      camposComErro: { nomes: [`Máximo de ${LIMITE_NOMES} categorias por vez.`] },
-    }
-  }
-  const muitoLongo = nomes.find((n) => n.length > LIMITE_CARACTERES)
-  if (muitoLongo) {
-    return {
-      ok: false,
-      erro: `Cada nome pode ter no máximo ${LIMITE_CARACTERES} caracteres.`,
-      camposComErro: {
-        nomes: [`"${muitoLongo}" passa de ${LIMITE_CARACTERES} caracteres.`],
-      },
-    }
-  }
-
-  const supabase = createClient()
-  const { data: familyId } = await supabase.rpc('get_user_family_id_self')
-  if (!familyId) return { ok: false, erro: 'Você não faz parte de uma família.' }
-
-  const { data: existentes } = await supabase
-    .from('categories')
-    .select('id, name, type')
-    .eq('type', input.tipo)
-    .is('archived_at', null)
-
-  const mapaExistentes = new Set(
-    (existentes ?? []).map((e) => normalizarChave(e.name)),
-  )
-
-  const paraCriar: string[] = []
-  const ignoradas: string[] = []
-
-  for (const nome of nomes) {
-    if (mapaExistentes.has(normalizarChave(nome))) {
-      ignoradas.push(nome)
-    } else {
-      paraCriar.push(nome)
-    }
-  }
-
-  if (paraCriar.length === 0) {
-    return { ok: true, dados: { criadas: [], ignoradas } }
-  }
-
-  const { data: inseridas, error } = await supabase
-    .from('categories')
-    .insert(
-      paraCriar.map((name) => ({
-        family_id: familyId,
-        name,
-        type: input.tipo,
-      })),
-    )
-    .select('id, name')
-
-  if (error) return { ok: false, erro: error.message }
-
-  return {
-    ok: true,
-    dados: {
-      criadas: (inseridas ?? []).map((i) => ({ id: i.id, nome: i.name })),
-      ignoradas,
-    },
-  }
-}
-
-async function acaoRenomearCategoria(input: {
-  id: string
-  nome: string
-}): Promise<ResultadoAction<void>> {
-  const limpo = input.nome.trim().replace(/\s+/g, ' ')
-  if (!limpo) return { ok: false, erro: 'Informe o nome da categoria.' }
-  if (limpo.length > LIMITE_CARACTERES) {
-    return {
-      ok: false,
-      erro: `O nome pode ter no máximo ${LIMITE_CARACTERES} caracteres.`,
-    }
-  }
-  const supabase = createClient()
-  const { error } = await supabase
-    .from('categories')
-    .update({ name: limpo })
-    .eq('id', input.id)
-  if (error) return { ok: false, erro: error.message }
-  return { ok: true, dados: undefined }
-}
-
-async function acaoAlterarTipoCategoria(input: {
-  id: string
-  tipo: TipoCategoria
-}): Promise<ResultadoAction<void>> {
-  const supabase = createClient()
-  const { count } = await supabase
-    .from('transactions')
-    .select('id', { count: 'exact', head: true })
-    .eq('category_id', input.id)
-  if ((count ?? 0) > 0) {
-    return {
-      ok: false,
-      erro: 'Não é possível mudar o tipo de uma categoria que já possui lançamentos.',
-    }
-  }
-  const { error } = await supabase
-    .from('categories')
-    .update({ type: input.tipo })
-    .eq('id', input.id)
-  if (error) return { ok: false, erro: error.message }
-  return { ok: true, dados: undefined }
-}
-
-async function acaoArquivarCategoria(input: {
-  id: string
-  arquivar: boolean
-}): Promise<ResultadoAction<void>> {
-  const supabase = createClient()
-  const { error } = await supabase
-    .from('categories')
-    .update({ archived_at: input.arquivar ? new Date().toISOString() : null })
-    .eq('id', input.id)
-  if (error) return { ok: false, erro: error.message }
-  return { ok: true, dados: undefined }
-}
-
-async function acaoContarUsoCategoria(input: {
-  id: string
-}): Promise<ResultadoAction<{ lancamentos: number; orcamentos: number }>> {
-  const supabase = createClient()
-  const [txRes, budRes] = await Promise.all([
-    supabase
-      .from('transactions')
-      .select('id', { count: 'exact', head: true })
-      .eq('category_id', input.id),
-    supabase
-      .from('category_budgets')
-      .select('id', { count: 'exact', head: true })
-      .eq('category_id', input.id),
-  ])
-  return {
-    ok: true,
-    dados: {
-      lancamentos: txRes.count ?? 0,
-      orcamentos: budRes.count ?? 0,
-    },
-  }
-}
-
-async function acaoExcluirCategoria(input: {
-  id: string
-}): Promise<ResultadoAction<{ lancamentosAfetados: number }>> {
-  const supabase = createClient()
-  const { count } = await supabase
-    .from('transactions')
-    .select('id', { count: 'exact', head: true })
-    .eq('category_id', input.id)
-  const { error } = await supabase.from('categories').delete().eq('id', input.id)
-  if (error) return { ok: false, erro: error.message }
-  return { ok: true, dados: { lancamentosAfetados: count ?? 0 } }
-}
 
 export function GerenciadorCategorias({
   categoriasIniciais,
@@ -317,16 +120,16 @@ export function GerenciadorCategorias({
 
   // Prévia ao vivo
   const previa = React.useMemo(() => {
-    const { nomes, descartados } = separarNomesLocal(textoNomes || '')
+    const { nomes, descartados } = separarNomes(textoNomes || '')
     const chavesExistentesDoTipo = new Set(
       ativas
         .filter((c) => c.type === tipoLote)
-        .map((c) => normalizarChave(c.name)),
+        .map((c) => chaveDeComparacao(c.name)),
     )
 
     const itens = nomes.map((nome) => ({
       nome,
-      jaExiste: chavesExistentesDoTipo.has(normalizarChave(nome)),
+      jaExiste: chavesExistentesDoTipo.has(chaveDeComparacao(nome)),
       muitoLongo: nome.length > LIMITE_CARACTERES,
     }))
 
@@ -341,7 +144,7 @@ export function GerenciadorCategorias({
     setResultadoLote(null)
     setResumoSalvo(null)
     iniciarLote(async () => {
-      const res = await acaoAdicionarCategorias({
+      const res = await adicionarCategorias({
         nomes: valores.nomes,
         tipo: valores.tipo,
       })
@@ -379,7 +182,7 @@ export function GerenciadorCategorias({
     setErroItem(null)
     iniciarItem(async () => {
       if (novoNome.trim() !== cat.name) {
-        const resNome = await acaoRenomearCategoria({
+        const resNome = await renomearCategoria({
           id: cat.id,
           nome: novoNome,
         })
@@ -391,7 +194,7 @@ export function GerenciadorCategorias({
       }
 
       if (novoTipo !== cat.type) {
-        const resTipo = await acaoAlterarTipoCategoria({
+        const resTipo = await alterarTipoCategoria({
           id: cat.id,
           tipo: novoTipo,
         })
@@ -411,7 +214,7 @@ export function GerenciadorCategorias({
   const alternarArquivamento = (cat: CategoriaRow, arquivar: boolean) => {
     setErroItem(null)
     iniciarItem(async () => {
-      const res = await acaoArquivarCategoria({ id: cat.id, arquivar })
+      const res = await arquivarCategoria({ id: cat.id, arquivar })
       if (!res.ok) {
         setErroItem(res.erro)
         tocarSomErro()
@@ -430,7 +233,7 @@ export function GerenciadorCategorias({
     setCategoriaParaExcluir(cat)
     setUsoExclusao(null)
     setCarregandoUso(true)
-    const res = await acaoContarUsoCategoria({ id: cat.id })
+    const res = await contarUsoCategoria({ id: cat.id })
     setCarregandoUso(false)
     if (res.ok) {
       setUsoExclusao(res.dados)
@@ -442,7 +245,7 @@ export function GerenciadorCategorias({
   const confirmarExclusao = () => {
     if (!categoriaParaExcluir) return
     iniciarItem(async () => {
-      const res = await acaoExcluirCategoria({ id: categoriaParaExcluir.id })
+      const res = await excluirCategoria({ id: categoriaParaExcluir.id })
       if (!res.ok) {
         setErroItem(res.erro)
         tocarSomErro()
