@@ -84,7 +84,8 @@ manda.
 | 6 | Análises: Previsão de fixos | **[LIVRE]** |
 | 7 | Sons | **[LIVRE]** |
 | 8 | Handler de push no `sw.js` | **[LIVRE]** |
-| 9 | Metas, Orçamento, Patrimônio, Simulador, botão de notificações | **aguarde** — Fase B |
+| 9 | Pagar fatura e Registrar acerto: trocar RPC direta por actions | **aguarde contrato** — Fase B |
+| 10 | Metas, Orçamento, Patrimônio, Simulador, botão de notificações | **aguarde** — Fase B |
 
 ---
 
@@ -114,11 +115,12 @@ por vírgula**.
   (padrão: Despesa)
 - depois de salvar, mostre o resultado: *"3 criadas · 1 já existia (Pet)"*
 
-**Para a prévia, use a mesma função que o servidor usa** — assim a prévia
-nunca mente sobre o que vai ser salvo:
+**Para a prévia, use a mesma função e as mesmas constantes que o servidor
+usa** — assim a prévia nunca mente sobre o que vai ser salvo (correção R-3:
+antes esse limite estava em dois lugares e podia divergir):
 
 ```ts
-import { separarNomes } from '@/lib/lista-nomes'
+import { separarNomes, LIMITE_CARACTERES, LIMITE_NOMES } from '@/lib/lista-nomes'
 // separarNomes('Pet, Presentes ,, pet') -> { nomes: ['Pet', 'Presentes'], descartados: ['pet'] }
 ```
 
@@ -128,7 +130,9 @@ Regras dessa função (já decididas, não reimplemente):
 - descarta vazios
 - remove duplicatas **sem diferenciar maiúscula nem acento** (`Pet` = `pet`,
   `Saúde` = `saude`); mantém a primeira grafia digitada
-- limite: **40 caracteres** por nome, **50 nomes** por lote
+- limite: `LIMITE_CARACTERES` (40) por nome, `LIMITE_NOMES` (50) por lote —
+  **importe as constantes, não repita os números**; o Zod do servidor usa as
+  mesmas
 - vírgula dentro de um nome não é suportada
 
 **Excluir:**
@@ -306,6 +310,19 @@ Feedback sonoro curto ao salvar e ao errar.
 - Não toque som em navegação comum, só em ação concluída/falha.
 
 ---
+
+## 8.5. Item 9 — (Fase B, aguarde) Pagar fatura e Registrar acerto por action
+
+Achado nesta revisão: `dialogo-pagar-fatura.tsx` e `dialogo-acertar.tsx` chamam
+`supabase.rpc('pay_invoice', ...)` e `supabase.rpc('settle_up', ...)` **direto do
+navegador**. Isso pula a validação do servidor e, mais importante, é por onde o
+push de notificação teria que passar para avisar o parceiro — e hoje não passa.
+
+Na Fase B vou publicar `pagarFatura` e `registrarAcerto` em
+`src/actions/` com a mesma forma de `ResultadoAction` de sempre. Quando o
+contrato chegar, troque as duas chamadas diretas pelas actions (mesmo padrão
+usado na troca de `dialogo-conta.tsx`, item 5). **Não comece isso agora** —
+é só para você saber que vem e não se surpreender com o pedido depois.
 
 ## 9. Item 8 — Handler de push no service worker
 
