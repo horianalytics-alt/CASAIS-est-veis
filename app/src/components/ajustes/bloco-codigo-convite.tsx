@@ -19,15 +19,20 @@ import { AJUSTES_FAMILIA } from '@/features/ajustes/copy'
 
 export function BlocoCodigoConvite({ codigo }: { codigo: string }) {
   const router = useRouter()
+  const [codigoExibido, setCodigoExibido] = React.useState(codigo)
   const [copiado, setCopiado] = React.useState(false)
   const [modalAberto, setModalAberto] = React.useState(false)
   const [carregando, setCarregando] = React.useState(false)
   const [erro, setErro] = React.useState<string | null>(null)
   const [sucesso, setSucesso] = React.useState<string | null>(null)
 
+  React.useEffect(() => {
+    setCodigoExibido(codigo)
+  }, [codigo])
+
   const copiar = async () => {
     try {
-      await navigator.clipboard.writeText(codigo)
+      await navigator.clipboard.writeText(codigoExibido)
       setCopiado(true)
       setTimeout(() => setCopiado(false), 2000)
     } catch {
@@ -38,32 +43,32 @@ export function BlocoCodigoConvite({ codigo }: { codigo: string }) {
   const rotacionarCodigo = async () => {
     setCarregando(true)
     setErro(null)
+    setSucesso(null)
 
     try {
       const supabase = createClient()
-      // Chamada à RPC de rotação de código da casa (aguarda migration no back-end)
-      const { error: rpcError } = await (
-        supabase.rpc as unknown as (
-          fn: string,
-        ) => Promise<{ error: { message: string; code?: string } | null }>
-      )('rotate_family_join_code')
+      const { data: novoCodigo, error: rpcError } = await supabase.rpc('rotacionar_join_code')
 
       if (rpcError) {
-        setErro(
-          rpcError.message.includes('function') || rpcError.code === '42883'
-            ? 'A função de rotação de código está sendo provisionada no banco de dados. Solicitação registrada!'
-            : rpcError.message,
-        )
+        setErro(rpcError.message)
         setCarregando(false)
         return
       }
 
-      setSucesso(AJUSTES_FAMILIA.rotacionadoSucesso)
+      if (novoCodigo) {
+        setCodigoExibido(novoCodigo)
+      }
+
+      setSucesso(
+        novoCodigo
+          ? `${AJUSTES_FAMILIA.rotacionadoSucesso} (${novoCodigo})`
+          : AJUSTES_FAMILIA.rotacionadoSucesso,
+      )
       setCarregando(false)
+      router.refresh()
       setTimeout(() => {
         setModalAberto(false)
         setSucesso(null)
-        router.refresh()
       }, 1200)
     } catch {
       setErro('Erro de conexão ao tentar gerar novo código.')
@@ -78,7 +83,7 @@ export function BlocoCodigoConvite({ codigo }: { codigo: string }) {
           {AJUSTES_FAMILIA.codigoConvite}
         </span>
         <span className="num-tabular font-mono text-3xl font-bold tracking-[0.25em] text-foreground">
-          {codigo}
+          {codigoExibido}
         </span>
         <span className="text-muted-foreground mt-1 text-xs">
           {AJUSTES_FAMILIA.codigoDica}
