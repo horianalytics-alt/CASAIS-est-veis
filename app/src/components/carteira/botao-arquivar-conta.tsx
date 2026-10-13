@@ -3,8 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { Archive, ArchiveRestore } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
-import type { ResultadoAction } from '@/actions/resultado'
+import { arquivarConta } from '@/actions/contas'
 import { Button } from '@/components/ui/button'
 import { CARTEIRA } from '@/features/carteira/copy'
 import { tocarSomErro, tocarSomSucesso } from '@/features/sons/sons'
@@ -12,19 +11,6 @@ import { tocarSomErro, tocarSomSucesso } from '@/features/sons/sons'
 export interface BotaoArquivarContaProps {
   contaId: string
   estaArquivada: boolean
-}
-
-async function acaoArquivarConta(input: {
-  id: string
-  arquivar: boolean
-}): Promise<ResultadoAction<void>> {
-  const supabase = createClient()
-  const { error } = await supabase
-    .from('accounts')
-    .update({ archived_at: input.arquivar ? new Date().toISOString() : null })
-    .eq('id', input.id)
-  if (error) return { ok: false, erro: error.message }
-  return { ok: true, dados: undefined }
 }
 
 export function BotaoArquivarConta({
@@ -36,7 +22,7 @@ export function BotaoArquivarConta({
 
   const alternarArquivamento = () => {
     iniciarTransicao(async () => {
-      const res = await acaoArquivarConta({
+      const res = await arquivarConta({
         id: contaId,
         arquivar: !estaArquivada,
       })
