@@ -124,6 +124,7 @@ export type Database = {
           color: string | null;
           created_at: string;
           family_id: string;
+          group_id: string | null;
           icon: string | null;
           id: string;
           name: string;
@@ -136,6 +137,7 @@ export type Database = {
           color?: string | null;
           created_at?: string;
           family_id: string;
+          group_id?: string | null;
           icon?: string | null;
           id?: string;
           name: string;
@@ -147,6 +149,7 @@ export type Database = {
           color?: string | null;
           created_at?: string;
           family_id?: string;
+          group_id?: string | null;
           icon?: string | null;
           id?: string;
           name?: string;
@@ -160,6 +163,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "families";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "categories_family_id_group_id_fkey";
+            columns: ["family_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "category_groups";
+            referencedColumns: ["family_id", "id"];
           },
         ];
       };
@@ -199,6 +209,39 @@ export type Database = {
           },
           {
             foreignKeyName: "category_budgets_family_id_fkey";
+            columns: ["family_id"];
+            isOneToOne: false;
+            referencedRelation: "families";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      category_groups: {
+        Row: {
+          created_at: string;
+          family_id: string;
+          id: string;
+          name: string;
+          sort_order: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          family_id: string;
+          id?: string;
+          name: string;
+          sort_order?: number;
+        };
+        Update: {
+          created_at?: string;
+          family_id?: string;
+          id?: string;
+          name?: string;
+          sort_order?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "category_groups_family_id_fkey";
             columns: ["family_id"];
             isOneToOne: false;
             referencedRelation: "families";
@@ -727,6 +770,7 @@ export type Database = {
       };
     };
     Functions: {
+      chave_nome: { Args: { p_nome: string }; Returns: string };
       create_family: {
         Args: {
           p_family_name: string;

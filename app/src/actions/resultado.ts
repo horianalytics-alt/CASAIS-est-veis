@@ -165,12 +165,14 @@ const MENSAGENS_DE_NEGOCIO = [
  * 23505 de índice único conhecido -> mensagem específica.
  *
  * O Postgres põe o nome do índice na mensagem crua; ele é usado só para
- * ESCOLHER o texto, nunca é exibido. Os nomes vêm da migration 00009 — não
- * renomeie um índice sem atualizar esta tabela.
+ * ESCOLHER o texto, nunca é exibido. Os nomes vêm das migrations 00009 (os
+ * dois primeiros, recriados com os MESMOS nomes na 00011) e 00011 (o de
+ * grupos) — não renomeie um índice sem atualizar esta tabela.
  */
 const POR_INDICE_UNICO: Record<string, string> = {
   categories_nome_ativo_unico: 'Já existe uma categoria ativa com esse nome.',
   payment_methods_nome_ativo_unico: 'Já existe uma forma de pagamento ativa com esse nome.',
+  category_groups_nome_unico: 'Já existe um grupo com esse nome.',
 }
 
 /** Mensagem genérica por SQLSTATE, quando a crua não é exibível. */

@@ -64,6 +64,29 @@ describe('limparNome e chaveDeComparacao', () => {
     expect(chaveDeComparacao('Débito')).toBe(chaveDeComparacao('debito'))
     expect(chaveDeComparacao('Pet')).not.toBe(chaveDeComparacao('Pets'))
   })
+
+  // P-008 (Sentinela R4): a chave precisa bater com public.chave_nome() da
+  // migration 00011, que é a expressão dos índices únicos. Os casos abaixo são
+  // os mesmos que foram rodados contra o Postgres na verificação de paridade.
+  it('limparNome remove caracteres invisíveis (zero-width, BOM, soft hyphen, word joiner)', () => {
+    expect(limparNome('Pet\u{200b}')).toBe('Pet')
+    expect(limparNome('P\u{200b}et')).toBe('Pet')
+    expect(limparNome('Pe\u{feff}t')).toBe('Pet')
+    expect(limparNome('Luz\u{ad}')).toBe('Luz')
+    expect(limparNome('Casa\u{2060}')).toBe('Casa')
+    expect(limparNome('Pet\u{a0}Shop')).toBe('Pet Shop')
+  })
+
+  it('chaveDeComparacao: invisível, espaço exótico e acento decomposto não criam nome "novo"', () => {
+    expect(chaveDeComparacao('P\u{200b}et')).toBe(chaveDeComparacao('Pet'))
+    expect(chaveDeComparacao('Pet\u{200c}')).toBe(chaveDeComparacao('Pet'))
+    expect(chaveDeComparacao('Pe\u{feff}t')).toBe(chaveDeComparacao('Pet'))
+    expect(chaveDeComparacao('Lazer\u{2003}')).toBe(chaveDeComparacao('Lazer'))
+    expect(chaveDeComparacao('Sau\u{301}de')).toBe(chaveDeComparacao('Saúde'))
+    expect(chaveDeComparacao('a \u{301} b')).toBe(chaveDeComparacao('a b'))
+    expect(chaveDeComparacao('Água\r\nLuz')).toBe('agua luz')
+    expect(chaveDeComparacao('Compras online')).not.toBe(chaveDeComparacao('Compras-online'))
+  })
 })
 
 describe('constantes compartilhadas com o front', () => {
