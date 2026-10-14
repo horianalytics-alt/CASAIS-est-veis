@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -160,24 +161,27 @@ export async function sair(): Promise<never> {
 }
 
 export async function pedirRecuperacaoDeSenha(
-  formData: FormData,
+  input: FormData | { email: string },
 ): Promise<ResultadoAction<void>> {
+  const emailBruto = input instanceof FormData ? texto(input, 'email') : input.email
   const analise = esquemaPedirRecuperacao.safeParse({
-    email: texto(formData, 'email'),
+    email: emailBruto,
   })
 
   if (!analise.success) return falhaDeValidacao(analise.error)
 
+  const baseUrl = await urlDoSite()
   const supabase = await createClient()
   const { error } = await supabase.auth.resetPasswordForEmail(
     analise.data.email,
-    { redirectTo: `${urlDoSite()}/nova-senha` },
+    { redirectTo: `${baseUrl}/nova-senha` },
   )
 
-  // Erro de envio não é devolvido ao usuário: dizer "esse e-mail não existe"
-  // entrega quais contas existem. A Fachada mostra sempre a mesma confirmação.
-  if (error && error.status === 429) {
-    return falha('Muitas tentativas. Espere alguns minutos e tente de novo.')
+  if (error) {
+    console.error('[auth] Erro em resetPasswordForEmail:', error)
+    if (error.status === 429) {
+      return falha('Muitas tentativas. Espere alguns minutos e tente de novo.')
+    }
   }
 
   return sucesso()
@@ -213,7 +217,19 @@ export async function definirNovaSenha(
   return sucesso()
 }
 
-function urlDoSite(): string {
+async function urlDoSite(): Promise<string> {
+  try {
+    const h = await headers()
+    const origin = h.get('origin')
+    if (origin) return origin.replace(/\/+$/, '')
+
+    const host = h.get('x-forwarded-host') ?? h.get('host')
+    const proto = h.get('x-forwarded-proto') ?? 'https'
+    if (host) return `${proto}://${host}`.replace(/\/+$/, '')
+  } catch {
+    // caso executado fora do contexto de requisição
+  }
+
   const bruto =
     process.env.NEXT_PUBLIC_SITE_URL ??
     (process.env.VERCEL_PROJECT_PRODUCTION_URL

@@ -19,15 +19,31 @@ type Estado = ResultadoAction<void> | null
 export function FormNovaSenha() {
   const [concluido, setConcluido] = useState(false)
 
-  // Se o link de recuperação vier com ?code= (PKCE), troca pelo cookie de sessão
+  // Troca ?code= (PKCE) ou #access_token= (hash) pelo cookie de sessão
   useEffect(() => {
+    const supabase = createClient()
+
     const params = new URLSearchParams(window.location.search)
     const code = params.get('code')
     if (code) {
-      const supabase = createClient()
       supabase.auth.exchangeCodeForSession(code).catch(() => {
         /* se o código já foi trocado ou expirou, a action acusará no submit */
       })
+    }
+
+    const hash = window.location.hash
+    if (hash && hash.includes('access_token')) {
+      const hashParams = new URLSearchParams(hash.replace(/^#/, ''))
+      const accessToken = hashParams.get('access_token')
+      const refreshToken = hashParams.get('refresh_token')
+      if (accessToken && refreshToken) {
+        supabase.auth
+          .setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          })
+          .catch(() => {})
+      }
     }
   }, [])
 

@@ -4,7 +4,8 @@
 // precisa do resultado da action para pintar erro sem recarregar a página.
 // É folha: a page que o renderiza continua Server Component.
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
+import { DialogoRecuperarSenha } from '@/components/auth/dialogo-recuperar-senha'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { entrar } from '@/actions/auth'
@@ -29,6 +30,8 @@ type Estado = ResultadoAction<void> | null
 
 export function FormLogin({ proximo }: FormLoginProps) {
   const router = useRouter()
+  const [emailDigitado, setEmailDigitado] = useState('')
+  const [recuperarAberto, setRecuperarAberto] = useState(false)
 
   // ADAPTADOR DE ARIDADE: `entrar` é (formData) => Promise<ResultadoAction>,
   // um argumento só. O useActionState chama (estadoAnterior, payload). Passar
@@ -78,6 +81,8 @@ export function FormLogin({ proximo }: FormLoginProps) {
           inputMode="email"
           autoComplete="email"
           autoCapitalize="none"
+          value={emailDigitado}
+          onChange={(e) => setEmailDigitado(e.target.value)}
           placeholder={LOGIN.emailPlaceholder}
           aria-invalid={campos?.email ? true : undefined}
           aria-describedby={campos?.email ? 'erro-email' : undefined}
@@ -89,12 +94,13 @@ export function FormLogin({ proximo }: FormLoginProps) {
       <div className="flex flex-col gap-[var(--esp-2)]">
         <div className="flex items-center justify-between gap-2">
           <Label htmlFor="senha">{LOGIN.senhaLabel}</Label>
-          <Link
-            href="/recuperar-senha"
-            className="text-primary inline-block py-[14px] text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)] underline underline-offset-4"
+          <button
+            type="button"
+            onClick={() => setRecuperarAberto(true)}
+            className="text-primary inline-block py-[10px] text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)] underline underline-offset-4 cursor-pointer hover:opacity-80"
           >
             {LOGIN.esqueciSenha}
-          </Link>
+          </button>
         </div>
         <Input
           id="senha"
@@ -127,6 +133,12 @@ export function FormLogin({ proximo }: FormLoginProps) {
           {LOGIN.irParaCadastro}
         </Link>
       </p>
+
+      <DialogoRecuperarSenha
+        aberto={recuperarAberto}
+        onOpenChange={setRecuperarAberto}
+        emailInicial={emailDigitado}
+      />
     </form>
   )
 }
