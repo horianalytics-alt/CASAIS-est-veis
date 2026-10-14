@@ -1,8 +1,8 @@
 # PROJETO.md — Finanças a Dois
 
 > Retrato ÚNICO do estado atual. Sempre sobrescrito, nunca acumulado.
-> Última atualização: 2026-10-13, por Maestro, durante investigação do bug
-> de acerto de contas (v_settlement) relatado pelo Heitor.
+> Última atualização: 2026-10-14, por Maestro, após push real e metas/
+> orçamento/patrimônio/simulador (back-end) + UX/UI renovada (front).
 > Histórico de entregas: `ENTREGA.md` (quando existir). Plano vivo: `PLANO.md`
 > (revisão 2 em `C:\Users\Heitor PC\.claude\plans\harmonic-jingling-eclipse.md`).
 
@@ -152,9 +152,33 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
   lançamento excluído some, sem duplicar — provado 5/5.
 - Rotação de código de convite, com limite de tentativas.
 - PWA: manifest, ícones, service worker com handler de push e
-  `notificationclick` — mas o ENVIO do push ainda não existe no back (ver
-  pendências).
+  `notificationclick`.
+- **Push real no celular** — back-end completo e verificado (`0609e05`):
+  `src/lib/supabase/servico.ts` (único uso de `service_role` em produção,
+  `import 'server-only'`, build falha se um Client Component importar —
+  provado), envio via `after()` com `web-push`, texto sem valor monetário,
+  inscrição morta (404/410) apagada, autor nunca recebe a própria
+  notificação (nem em navegador compartilhado com o parceiro — corrigido
+  no review). `pagarFatura`/`registrarAcerto` como Server Actions
+  substituem as chamadas diretas de `pay_invoice`/`settle_up` do navegador
+  (fecha o risco R-13). **Falta:** chaves VAPID configuradas na Vercel (ver
+  pendências — eu já gerei o par, só falta você colar na Vercel) e o front
+  do Antigravity trocar as chamadas diretas pelas novas actions + botão
+  "Ativar notificações".
+- **Metas por conta / Orçamento por categoria / Patrimônio / Simulador de
+  gasto fútil** — back-end completo (`306cef7`, migration 00013):
+  `v_orcamento_progresso` e `v_patrimonio_mensal` (ambas
+  `security_invoker=true`, isolamento testado), `src/lib/simulador.ts`
+  (juros compostos em centavos inteiros). **Falta:** telas (Dash +
+  Fachada) — ainda não planejadas/delegadas.
 - Previsão de fixos/parcelas nos próximos 6 meses, em Análises.
+- UX/UI de `/inicio`, `/lancar`, `/acerto`, `/carteira` renovada
+  (Antigravity, `bee799a`): cores funcionais por tipo (entrada/saída/
+  pendência/cartão), filtros em pílula por membro e tipo, fluxo visual do
+  acerto com avatares, botão de lançar flutuante no mobile. Cards de
+  Análises corrigidos (`9b3a0f1`): container `max-w-7xl`, grid responsivo
+  sem espremer. Modo privacidade (ocultar valores) agora funciona de
+  verdade em toda a árvore autenticada — estava desconectado do contexto.
 - Feedback sonoro (WebAudio) com toggle em Ajustes.
 - Banco de teste limpo (duas vezes nesta sessão): 125 famílias/86 usuários
   de teste acumulados removidos primeiro; depois a auditoria Sentinela R4
@@ -165,30 +189,25 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
 
 ### Pendente
 
-- **Bug em investigação (Estrutura, ativo):** `v_settlement` (view do acerto
-  entre os membros, `00004_views.sql`) ignora transações `transferencia` —
-  depois de registrar um acerto pela RPC `settle_up`, a dívida pendente
-  mostrada na tela `/acerto` NÃO diminui, porque a view nunca desconta o
-  acerto já pago do saldo. O Heitor relatou isso como "lançamento não
-  carrega" — na prática ele clicou em "Acertar" 3 vezes no mesmo valor
-  porque a tela continuava pedindo o mesmo acerto. Delegado ao Estrutura com
-  a causa raiz já identificada; aguardando correção + teste provando saldo
-  líquido em ZERO depois de um acerto exato.
-- **Push real:** o módulo `src/lib/supabase/servico.ts` (único lugar
-  autorizado a usar `service_role`) ainda não foi escrito. Depende disso:
-  gerar e configurar as chaves VAPID na Vercel.
-- **`pagarFatura`/`registrarAcerto`** como Server Actions (troca as chamadas
-  diretas de `pay_invoice`/`settle_up` do navegador) — bloqueante para o push
-  cobrir também essas duas ações. Também seria a correção estrutural certa
-  para o bug do `v_settlement`, já que move a lógica de acerto para dentro
-  de um caminho testável e auditável.
+- **Chaves VAPID na Vercel (bloqueante para o push funcionar de ponta a
+  ponta):** par gerado em 2026-10-14 (`npx web-push generate-vapid-keys`).
+  Só o Heitor pode configurar — ver "Só você pode fazer" no `PLANO.md`
+  seção relevante. Variáveis: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (Production +
+  Preview) e `VAPID_PRIVATE_KEY` (Production + Preview, **sem**
+  `NEXT_PUBLIC_`, nunca no repositório).
+- **Front do push** (Antigravity, briefing ainda não escrito): trocar as
+  chamadas diretas de `pay_invoice`/`settle_up` em
+  `dialogo-pagar-fatura.tsx`/`dialogo-acertar.tsx` pelas Server Actions
+  `pagarFatura`/`registrarAcerto`; botão "Ativar notificações" (o
+  `sw.js` já tem o handler).
+- **Telas de metas/orçamento/patrimônio/simulador** (Dash + Fachada, ainda
+  não planejadas) — back-end pronto (`v_orcamento_progresso`,
+  `v_patrimonio_mensal`, `simulador.ts`).
 - **P-007/P-008/P-009** (achados Sentinela R4, severidade MÉDIA/BAIXA): tipo
-  de conta mutável fora da Action, índice único com brechas de normalização,
-  arredondamento de ponto flutuante em valores monetários. Ver
-  `PENDENCIAS.md` e `docs/auditoria/sentinela-r4.md`.
-- **Metas por conta / orçamento por categoria** — schema existe
-  (`account_goals`, `category_budgets`), sem view de progresso nem tela.
-- **Patrimônio e simulador de gasto fútil** — não iniciados (Fase B).
+  de conta mutável fora da Action, índice único com brechas de normalização
+  (P-008 já corrigido na migration 00011, confirmar status em
+  `PENDENCIAS.md`), arredondamento de ponto flutuante em valores
+  monetários. Ver `docs/auditoria/sentinela-r4.md`.
 - **SMTP (Resend)** — e-mail de confirmação/recuperação ainda no provedor
   padrão do Supabase; decisão do Heitor, não técnica.
 - **Rotação da chave de serviço e senha do banco** — apareceram em chat
