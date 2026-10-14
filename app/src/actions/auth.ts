@@ -1,7 +1,6 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -170,7 +169,7 @@ export async function pedirRecuperacaoDeSenha(
 
   if (!analise.success) return falhaDeValidacao(analise.error)
 
-  const baseUrl = await urlDoSite()
+  const baseUrl = urlDoSite()
   const supabase = await createClient()
   const { error } = await supabase.auth.resetPasswordForEmail(
     analise.data.email,
@@ -217,24 +216,20 @@ export async function definirNovaSenha(
   return sucesso()
 }
 
-async function urlDoSite(): Promise<string> {
-  try {
-    const h = await headers()
-    const origin = h.get('origin')
-    if (origin) return origin.replace(/\/+$/, '')
-
-    const host = h.get('x-forwarded-host') ?? h.get('host')
-    const proto = h.get('x-forwarded-proto') ?? 'https'
-    if (host) return `${proto}://${host}`.replace(/\/+$/, '')
-  } catch {
-    // caso executado fora do contexto de requisição
-  }
-
+/**
+ * NUNCA lê Host/Origin da requisição: são cabeçalhos controlados pelo
+ * cliente, e usá-los aqui permitiria forjar o domínio do link de
+ * recuperação de senha (Host Header Injection) — um atacante chamaria esta
+ * Action com um Host forjado e o e-mail de reset apontaria para o site dele.
+ *
+ * `VERCEL_URL` cobre preview deployments automaticamente (muda a cada
+ * deploy, mas é definida pela própria Vercel, não pelo cliente) sem abrir
+ * esse buraco; `NEXT_PUBLIC_SITE_URL` tem prioridade quando setada (produção).
+ */
+function urlDoSite(): string {
   const bruto =
     process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : 'http://localhost:3000')
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 
   return bruto.replace(/\/+$/, '')
 }
