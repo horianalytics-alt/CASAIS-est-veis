@@ -6,6 +6,7 @@ import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { GerenciadorCategorias } from '@/components/ajustes/gerenciador-categorias'
+import { GerenciadorGrupos } from '@/components/ajustes/gerenciador-grupos'
 import { AJUSTES_CATEGORIAS } from '@/features/ajustes/copy'
 
 export const metadata: Metadata = {
@@ -27,11 +28,18 @@ export default async function PaginaAjustesCategorias() {
   const { data: memberId } = await supabase.rpc('get_user_member_id_self')
   if (!memberId) redirect('/onboarding')
 
-  const { data: categorias } = await supabase
-    .from('categories')
-    .select('*')
-    .order('sort_order', { ascending: true })
-    .order('name', { ascending: true })
+  const [{ data: categorias }, { data: grupos }] = await Promise.all([
+    supabase
+      .from('categories')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true }),
+    supabase
+      .from('category_groups')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true }),
+  ])
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6">
@@ -52,7 +60,12 @@ export default async function PaginaAjustesCategorias() {
         </div>
       </div>
 
-      <GerenciadorCategorias categoriasIniciais={categorias ?? []} />
+      <GerenciadorGrupos gruposIniciais={grupos ?? []} />
+
+      <GerenciadorCategorias
+        categoriasIniciais={categorias ?? []}
+        grupos={grupos ?? []}
+      />
     </main>
   )
 }
