@@ -121,6 +121,15 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
 
 - Login, cadastro, recuperar/nova senha, onboarding de família.
 - `/lancar`, `/inicio`, `/carteira`, `/acerto`, `/analises` com dados reais.
+- Editar dia de fechamento/vencimento de cartão já existente — JÁ FUNCIONA
+  (confirmado nesta sessão): `dialogo-conta.tsx` pré-preenche e permite
+  editar esses campos quando a conta editada é do tipo cartão.
+- E-mail da Carol no Supabase Auth trocado de teste
+  (`carol.financas.teste@gmail.com`) para o real
+  (`m.carolina.s.chaves@gmail.com`) — verificado com hash do banco
+  antes/depois (zero diferença fora do e-mail) e login testado nos dois
+  endereços. `realtime-duas-sessoes.mjs` atualizado para ler
+  `SEED_EMAIL_PARCEIRA` em vez de hardcode.
 - CRUD completo de categorias/formas de pagamento/contas — back-end
   (`18c327e`) e front (Antigravity, Rodada 4: `858bb66`..`24871bb`) os dois
   publicados e ligados: `gerenciador-categorias.tsx`,
@@ -178,13 +187,12 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
 - **Rotação da chave de serviço e senha do banco** — apareceram em chat
   nesta sessão (não vazaram para o GitHub, mas foram ditas em texto); rotação
   ainda não feita.
-- **Pedidos de produto novos do Heitor (ainda não planejados):** trocar o
-  e-mail de teste da Carol (`carol.financas.teste@gmail.com`) pelo e-mail
-  real dela (`m.carolina.s.chaves@gmail.com`); editar o dia de fechamento/
-  vencimento de um cartão já existente (hoje só é definido na criação);
-  filtro por categoria e por tipo (receita/despesa) em Ajustes e na tela de
-  lançar. Entram na próxima rodada de planejamento, depois do bug do
-  `v_settlement` resolvido.
+- **Grupos/filtros de categoria personalizados (novo, planejamento em
+  andamento):** o Heitor quer criar grupos como "Compras online" em Ajustes,
+  atribuir categorias a eles, e filtrar o seletor de categoria em `/lancar`
+  por esse grupo em vez de rolar a lista inteira. Exige tabela nova
+  (categoria↔grupo) — Estrutura planeja o schema antes do Antigravity tocar
+  na UI.
 
 ### Deixado de fora deliberadamente
 
