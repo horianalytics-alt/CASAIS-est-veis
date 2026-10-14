@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowRightLeft, ChevronDown, CreditCard, Plus, Trash2 } from 'lucide-react'
@@ -91,6 +91,55 @@ const OPCOES_DE_TIPO: { valor: TipoDoFormulario; rotulo: string }[] = [
 
 const OPCOES_DE_PARCELAS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24]
 
+function valoresIniciaisSimples(hoje: string, contas: OpcaoDeConta[]): CamposSimples {
+  return {
+    tipo: 'despesa',
+    descricao: '',
+    valor: '',
+    data: hoje,
+    contaId: contas[0]?.id ?? '',
+    contaDestinoId: contas[1]?.id ?? '',
+    categoriaId: SEM_CATEGORIA,
+    parcelas: 1,
+    estaPago: true,
+    dataDoPagamento: hoje,
+    ehBeneficio: false,
+    ehFutil: false,
+    rotuloDoFutil: '',
+  }
+}
+
+function itemLoteVazio(hoje: string, contas: OpcaoDeConta[]): ItemLote {
+  return {
+    tipo: 'despesa',
+    descricao: '',
+    valor: '',
+    data: hoje,
+    contaId: contas[0]?.id ?? '',
+    categoriaId: SEM_CATEGORIA,
+    estaPago: true,
+    ehBeneficio: false,
+    ehFutil: false,
+    rotuloDoFutil: '',
+  }
+}
+
+/**
+ * Destino depois de salvar: o mês do lançamento, com `novo` (id para o Início
+ * mostrar o aviso e destacar a linha) e `qtd` quando foi lote.
+ *
+ * Em parcelado a action devolve uma linha por parcela; o id escolhido é o da
+ * parcela que cai no mês de destino, para o destaque aparecer na lista aberta.
+ */
+function destinoAposSalvar(dataISO: string, salvos: Lancamento[], quantidade: number): string {
+  const mes = dataISO.slice(0, 7)
+  const parametros = new URLSearchParams({ mes })
+  const doMes = salvos.find((l) => l.date.startsWith(mes)) ?? salvos[0]
+  if (doMes) parametros.set('novo', doMes.id)
+  if (quantidade > 1) parametros.set('qtd', String(quantidade))
+  return `/inicio?${parametros.toString()}`
+}
+
 export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps) {
   const router = useRouter()
   const [modo, setModo] = useState<'simples' | 'lote'>('simples')
@@ -110,25 +159,20 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
     watch,
     setValue,
     getValues,
+    reset,
   } = useForm<CamposSimples>({
-    defaultValues: {
-      tipo: 'despesa',
-      descricao: '',
-      valor: '',
-      data: hoje,
-      contaId: contas[0]?.id ?? '',
-      contaDestinoId: contas[1]?.id ?? '',
-      categoriaId: SEM_CATEGORIA,
-      parcelas: 1,
-      estaPago: true,
-      dataDoPagamento: hoje,
-      ehBeneficio: false,
-      ehFutil: false,
-      rotuloDoFutil: '',
-    },
+    defaultValues: valoresIniciaisSimples(hoje, contas),
   })
 
   const pagamentoEditado = useRef(false)
+  // Ligado só depois de um salvamento OK; ver o useLayoutEffect de reinício.
+  const deveReiniciar = useRef(false)
+  // Props mais recentes para o reinício: `reset()` sem argumento voltaria aos
+  // valores do PRIMEIRO render (conta arquivada/reordenada, `hoje` velho).
+  const propsAtuais = useRef({ hoje, contas })
+  useEffect(() => {
+    propsAtuais.current = { hoje, contas }
+  }, [hoje, contas])
 
   useEffect(() => {
     const assinatura = watch((_valores, { name }) => {
@@ -206,7 +250,8 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
       if (resposta.ok) {
         tocarSomSucesso()
         setConcluido(true)
-        router.replace(`/inicio?mes=${valores.data.slice(0, 7)}`)
+        deveReiniciar.current = true
+        router.replace(destinoAposSalvar(valores.data, resposta.dados, 1))
       } else {
         tocarSomErro()
       }
@@ -221,34 +266,10 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
     control: controlLote,
     handleSubmit: handleSubmitLote,
     watch: watchLote,
+    reset: resetLote,
   } = useForm<CamposLote>({
     defaultValues: {
-      itens: [
-        {
-          tipo: 'despesa',
-          descricao: '',
-          valor: '',
-          data: hoje,
-          contaId: contas[0]?.id ?? '',
-          categoriaId: SEM_CATEGORIA,
-          estaPago: true,
-          ehBeneficio: false,
-          ehFutil: false,
-          rotuloDoFutil: '',
-        },
-        {
-          tipo: 'despesa',
-          descricao: '',
-          valor: '',
-          data: hoje,
-          contaId: contas[0]?.id ?? '',
-          categoriaId: SEM_CATEGORIA,
-          estaPago: true,
-          ehBeneficio: false,
-          ehFutil: false,
-          rotuloDoFutil: '',
-        },
-      ],
+      itens: [itemLoteVazio(hoje, contas), itemLoteVazio(hoje, contas)],
     },
   })
 
@@ -259,6 +280,36 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
     })
 
   const itensAssistidos = watchLote('itens')
+
+  // -------------------------------------------------------------------------
+  // Reinício ao sair da tela depois de salvar
+  // -------------------------------------------------------------------------
+  // Com `cacheComponents`, o Next 16 não desmonta a rota ao navegar: esconde em
+  // <Activity hidden> e preserva estado e inputs. Sem isto, voltar ao Lançar
+  // mostrava o lançamento anterior preenchido e o botão travado em "Salvando…"
+  // (concluido=true), impedindo o próximo. Padrão da doc empacotada do Next:
+  // node_modules/next/dist/docs/01-app/02-guides/preserving-ui-state.md,
+  // "Resetting stale status messages". O cleanup roda quando a rota é
+  // escondida, isto é, DEPOIS da navegação: o botão continua desabilitado até
+  // a página mudar (sem duplo envio). Rascunho não salvo é preservado: só
+  // reinicia quando `deveReiniciar` foi ligado por um salvamento bem-sucedido.
+  useLayoutEffect(() => {
+    return () => {
+      if (!deveReiniciar.current) return
+      deveReiniciar.current = false
+      pagamentoEditado.current = false
+      const { hoje: hojeAtual, contas: contasAtuais } = propsAtuais.current
+      reset(valoresIniciaisSimples(hojeAtual, contasAtuais))
+      resetLote({
+        itens: [itemLoteVazio(hojeAtual, contasAtuais), itemLoteVazio(hojeAtual, contasAtuais)],
+      })
+      setResultado(null)
+      setConcluido(false)
+      setModo('simples')
+      setMaisDetalhesAberto(false)
+      setDetalhesLoteAbertos({})
+    }
+  }, [reset, resetLote])
 
   const aoEnviarLote = handleSubmitLote((valores) => {
     setResultado(null)
@@ -289,8 +340,9 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
       if (resposta.ok) {
         tocarSomSucesso()
         setConcluido(true)
+        deveReiniciar.current = true
         const primeiraData = valores.itens[0]?.data || hoje
-        router.replace(`/inicio?mes=${primeiraData.slice(0, 7)}`)
+        router.replace(destinoAposSalvar(primeiraData, resposta.dados, valores.itens.length))
       } else {
         tocarSomErro()
       }
@@ -721,20 +773,7 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
               type="button"
               variant="outline"
               size="toque"
-              onClick={() =>
-                adicionarItemLote({
-                  tipo: 'despesa',
-                  descricao: '',
-                  valor: '',
-                  data: hoje,
-                  contaId: contas[0]?.id ?? '',
-                  categoriaId: SEM_CATEGORIA,
-                  estaPago: true,
-                  ehBeneficio: false,
-                  ehFutil: false,
-                  rotuloDoFutil: '',
-                })
-              }
+              onClick={() => adicionarItemLote(itemLoteVazio(hoje, contas))}
               disabled={pendente}
               className="gap-[var(--esp-1)]"
             >

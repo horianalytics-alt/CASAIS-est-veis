@@ -6,6 +6,7 @@ import {
 } from '@/components/financeiro/valor-monetario'
 import { INICIO } from '@/features/transacoes/copy'
 import { isoToBR } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import type { Database } from '@/types/database'
 
 type Transacao = Database['public']['Tables']['transactions']['Row']
@@ -26,6 +27,8 @@ export interface ItemTransacaoProps {
   transacao: Transacao
   nomeCategoria?: string | null
   nomeConta?: string | null
+  /** Acabou de ser salvo: fundo de destaque para a pessoa achar na lista. */
+  destacado?: boolean
 }
 
 /**
@@ -38,6 +41,7 @@ export function ItemTransacao({
   transacao,
   nomeCategoria,
   nomeConta,
+  destacado = false,
 }: ItemTransacaoProps) {
   const tipo = tipoConhecido(transacao.type)
   const mostraStatus = tipo === 'receita' || tipo === 'despesa'
@@ -47,7 +51,13 @@ export function ItemTransacao({
     .join(' · ')
 
   return (
-    <li className="flex items-start justify-between gap-[var(--esp-3)] py-[var(--esp-3)]">
+    <li
+      aria-current={destacado ? 'true' : undefined}
+      className={cn(
+        'flex items-start justify-between gap-[var(--esp-3)] py-[var(--esp-3)]',
+        destacado && 'bg-primary/10 -mx-[var(--esp-2)] rounded-lg px-[var(--esp-2)]',
+      )}
+    >
       <div className="flex min-w-0 flex-1 flex-col gap-[var(--esp-1)]">
         <p className="line-clamp-2 text-[length:var(--texto-corpo)] leading-[var(--texto-corpo-lh)] font-medium break-words">
           {transacao.description}

@@ -11,6 +11,10 @@ import { ItemTransacao } from '@/components/transacoes/item-transacao'
 import { TabelaTransacoesDesktop } from '@/components/transacoes/tabela-transacoes-desktop'
 import { PaginacaoLancamentos } from '@/components/transacoes/paginacao-lancamentos'
 import { OuvinteRealtime } from '@/components/inicio/ouvinte-realtime'
+import {
+  AvisoLancamentoSalvo,
+  type LancamentoSalvoResumo,
+} from '@/components/inicio/aviso-lancamento-salvo'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,8 +27,11 @@ export const metadata: Metadata = { title: INICIO.titulo }
 const POR_PAGINA = 20
 
 interface PropsDaPagina {
-  searchParams: Promise<{ mes?: string; pagina?: string }>
+  searchParams: Promise<{ mes?: string; pagina?: string; novo?: string; qtd?: string }>
 }
+
+// `novo` vem da URL: só UUID passa. Qualquer outra coisa é ignorada em silêncio.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
  * Início: indicadores do mês, saldo das contas e lista de lançamentos.
@@ -40,7 +47,12 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
   // e mesma cura do onboarding.
   await connection()
 
-  const { mes: mesPedido, pagina: paginaPedida } = await searchParams
+  const {
+    mes: mesPedido,
+    pagina: paginaPedida,
+    novo: novoPedido,
+    qtd: qtdPedida,
+  } = await searchParams
 
   const supabase = await createClient()
 
@@ -61,7 +73,14 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
   const pagina = Number.isFinite(paginaNumero) && paginaNumero > 0 ? paginaNumero : 1
   const de = (pagina - 1) * POR_PAGINA
 
-  const [resumos, contas, lancamentos, categorias, resFamilia] = await Promise.all([
+  // Lançamento recém-salvo (redirect do /lancar). Lido com a sessão do usuário:
+  // um id de outra família volta vazio pelo RLS e o aviso fica só com o título.
+  const idNovo = novoPedido && UUID.test(novoPedido) ? novoPedido : null
+  const qtdNumero = Number.parseInt(qtdPedida ?? '1', 10)
+  const qtdSalva =
+    Number.isFinite(qtdNumero) && qtdNumero >= 1 && qtdNumero <= 50 ? qtdNumero : 1
+
+  const [resumos, contas, lancamentos, categorias, resFamilia, resNovo] = await Promise.all([
     supabase.from('v_monthly_summary').select('*').order('month', { ascending: false }),
     supabase
       .from('v_account_balances')
@@ -78,7 +97,25 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
       .range(de, de + POR_PAGINA - 1),
     supabase.from('categories').select('id, name'),
     supabase.from('families').select('id').single(),
+    idNovo
+      ? supabase
+          .from('transactions')
+          .select('id, description, amount, type, is_paid, date')
+          .eq('id', idNovo)
+          .maybeSingle()
+      : Promise.resolve(null),
   ])
+
+  const linhaNova = resNovo?.data ?? null
+  const lancamentoSalvo: LancamentoSalvoResumo | null = linhaNova
+    ? {
+        descricao: linhaNova.description,
+        valor: linhaNova.amount,
+        tipo: linhaNova.type,
+        pago: linhaNova.is_paid,
+        data: linhaNova.date,
+      }
+    : null
 
   const familyId = resFamilia.data?.id ?? ''
 
@@ -161,6 +198,14 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
         </Link>
       </div>
 
+      {idNovo ? (
+        <AvisoLancamentoSalvo
+          lancamento={lancamentoSalvo}
+          quantidade={qtdSalva}
+          hrefFechar={hrefDoMes(mes)}
+        />
+      ) : null}
+
       {falhouAlgo ? (
         <Alert variant="destructive">
           <AlertDescription>{INICIO.avisoErroDeLeitura}</AlertDescription>
@@ -191,7 +236,7 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
       </div>
 
       {/* Lançamentos em largura total, aproveitando o espaço em PC, notebook e tablet */}
-      <Card className="w-full min-w-0">
+      <Card id="lista-lancamentos" className="w-full min-w-0 scroll-mt-[var(--esp-4)]">
         <CardHeader className="px-4 sm:px-6">
           <CardTitle className="text-[length:var(--texto-subtitulo)] leading-[var(--texto-subtitulo-lh)] font-semibold">
             {INICIO.tituloLancamentos}
@@ -215,6 +260,7 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
                       nomeCategoria={
                         t.category_id ? nomeDaCategoria.get(t.category_id) : null
                       }
+                      destacado={t.id === idNovo}
                     />
                   ))}
                 </ul>
@@ -224,6 +270,7 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
                   transacoes={lancamentos.data ?? []}
                   nomeConta={(id) => nomeDaConta.get(id)}
                   nomeCategoria={(id) => (id ? nomeDaCategoria.get(id) : null)}
+                  idDestacado={idNovo}
                 />
               </>
             )}

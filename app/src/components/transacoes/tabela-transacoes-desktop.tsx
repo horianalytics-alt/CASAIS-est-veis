@@ -26,12 +26,15 @@ export interface TabelaTransacoesDesktopProps {
   transacoes: Transacao[]
   nomeCategoria: (id: string | null) => string | null | undefined
   nomeConta: (id: string) => string | undefined
+  /** Lançamento que acabou de ser salvo: linha com fundo de destaque. */
+  idDestacado?: string | null
 }
 
 export function TabelaTransacoesDesktop({
   transacoes,
   nomeCategoria,
   nomeConta,
+  idDestacado = null,
 }: TabelaTransacoesDesktopProps) {
   return (
     <div className="hidden lg:block w-full overflow-x-auto">
@@ -54,11 +57,17 @@ export function TabelaTransacoesDesktop({
             const categoria = t.category_id ? nomeCategoria(t.category_id) : null
             const conta = nomeConta(t.account_id)
             const mostraStatus = tipo === 'receita' || tipo === 'despesa'
+            const destacado = t.id === idDestacado
 
             return (
               <tr
                 key={t.id}
-                className="hover:bg-muted/40 transition-colors group"
+                aria-current={destacado ? 'true' : undefined}
+                className={
+                  destacado
+                    ? 'bg-primary/10 transition-colors group'
+                    : 'hover:bg-muted/40 transition-colors group'
+                }
               >
                 {/* Data */}
                 <td className="py-3 px-2 xl:px-3 whitespace-nowrap text-muted-foreground font-mono text-xs num-tabular">

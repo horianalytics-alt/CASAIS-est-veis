@@ -42,6 +42,11 @@ export const INICIO = {
   lancarNovo: 'Lançar',
   avisoErroDeLeitura:
     'Não conseguimos carregar uma parte desta tela. Atualize a página para tentar de novo.',
+  salvoUm: 'Lançamento salvo',
+  salvoVarios: (n: number) => `${n} lançamentos salvos`,
+  salvoDetalhe: (descricao: string, dataBR: string) => `“${descricao}”, ${dataBR}`,
+  verNaLista: 'Ver na lista',
+  fecharAviso: 'Fechar aviso',
 } as const
 
 export const TIPOS_DE_CONTA: Record<string, string> = {
