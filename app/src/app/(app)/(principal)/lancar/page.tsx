@@ -33,7 +33,7 @@ export default async function PaginaLancar() {
   const { data: idDoMembro } = await supabase.rpc('get_user_member_id_self')
   if (!idDoMembro) redirect('/onboarding')
 
-  const [contas, categorias] = await Promise.all([
+  const [contas, categorias, grupos] = await Promise.all([
     supabase
       .from('accounts')
       .select('id, name, type, closing_day, due_day')
@@ -41,9 +41,14 @@ export default async function PaginaLancar() {
       .order('sort_order', { ascending: true }),
     supabase
       .from('categories')
-      .select('id, name, type')
+      .select('id, name, type, group_id')
       .is('archived_at', null)
       .order('sort_order', { ascending: true }),
+    supabase
+      .from('category_groups')
+      .select('id, name, sort_order')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true }),
   ])
 
   const listaDeContas = (contas.data ?? []).map((c) => ({
@@ -57,6 +62,11 @@ export default async function PaginaLancar() {
     id: c.id,
     nome: c.name,
     tipo: c.type,
+    grupoId: c.group_id,
+  }))
+  const listaDeGrupos = (grupos.data ?? []).map((g) => ({
+    id: g.id,
+    nome: g.name,
   }))
 
   return (
@@ -84,6 +94,7 @@ export default async function PaginaLancar() {
         <FormLancamento
           contas={listaDeContas}
           categorias={listaDeCategorias}
+          grupos={listaDeGrupos}
           hoje={hojeEmSaoPaulo()}
         />
       )}
