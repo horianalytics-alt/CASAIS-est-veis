@@ -1,7 +1,8 @@
 # PROJETO.md — Finanças a Dois
 
 > Retrato ÚNICO do estado atual. Sempre sobrescrito, nunca acumulado.
-> Última atualização: 2026-10-13, por Maestro, após fecho parcial da Fase A.
+> Última atualização: 2026-10-13, por Maestro, durante investigação do bug
+> de acerto de contas (v_settlement) relatado pelo Heitor.
 > Histórico de entregas: `ENTREGA.md` (quando existir). Plano vivo: `PLANO.md`
 > (revisão 2 em `C:\Users\Heitor PC\.claude\plans\harmonic-jingling-eclipse.md`).
 
@@ -120,10 +121,17 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
 
 - Login, cadastro, recuperar/nova senha, onboarding de família.
 - `/lancar`, `/inicio`, `/carteira`, `/acerto`, `/analises` com dados reais.
-- CRUD completo de categorias/formas de pagamento/contas — back-end publicado
-  nesta rodada (`18c327e`); front do Antigravity ainda usa uma implementação
-  local temporária que fala direto com o Supabase do navegador, troca
-  pendente (ver `BRIEFING-FRONTEND-RODADA4.md`, já enviado).
+- CRUD completo de categorias/formas de pagamento/contas — back-end
+  (`18c327e`) e front (Antigravity, Rodada 4: `858bb66`..`24871bb`) os dois
+  publicados e ligados: `gerenciador-categorias.tsx`,
+  `gerenciador-formas-pagamento.tsx`, `dialogo-conta.tsx`,
+  `botao-arquivar-conta.tsx` já importam as Server Actions reais, sem mais
+  stub local. Verificado com `tsc`/`vitest`/`next build` limpos e screenshots
+  nos 3 breakpoints + dark.
+- Responsividade de `/inicio` redesenhada (Antigravity, `24871bb`): painel de
+  indicadores lado a lado a partir de tablet, tabela de lançamentos em
+  largura total no desktop (antes limitada a ~400px por um `max-w-5xl` no
+  `<main>`).
 - Realtime entre as duas sessões (Heitor↔Carol): lançamento novo aparece e
   lançamento excluído some, sem duplicar — provado 5/5.
 - Rotação de código de convite, com limite de tentativas.
@@ -132,28 +140,51 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
   pendências).
 - Previsão de fixos/parcelas nos próximos 6 meses, em Análises.
 - Feedback sonoro (WebAudio) com toggle em Ajustes.
-- Banco de teste limpo: 125 famílias de teste e 66 usuários órfãos removidos
-  nesta sessão (preservando só a família real, por `user_id`, não por
-  e-mail). Só restam Heitor e Carol em `auth.users`.
+- Banco de teste limpo (duas vezes nesta sessão): 125 famílias/86 usuários
+  de teste acumulados removidos primeiro; depois a auditoria Sentinela R4
+  criou mais 4 famílias de teste para os testes hostis e CAIU por rate limit
+  antes de limpar — removidas manualmente (`FAMILIA_REAL_JOIN_CODE=RVFAXV`).
+  Só restam Heitor e Carol em `auth.users`, família real intacta em ambas as
+  limpezas.
 
 ### Pendente
 
+- **Bug em investigação (Estrutura, ativo):** `v_settlement` (view do acerto
+  entre os membros, `00004_views.sql`) ignora transações `transferencia` —
+  depois de registrar um acerto pela RPC `settle_up`, a dívida pendente
+  mostrada na tela `/acerto` NÃO diminui, porque a view nunca desconta o
+  acerto já pago do saldo. O Heitor relatou isso como "lançamento não
+  carrega" — na prática ele clicou em "Acertar" 3 vezes no mesmo valor
+  porque a tela continuava pedindo o mesmo acerto. Delegado ao Estrutura com
+  a causa raiz já identificada; aguardando correção + teste provando saldo
+  líquido em ZERO depois de um acerto exato.
 - **Push real:** o módulo `src/lib/supabase/servico.ts` (único lugar
   autorizado a usar `service_role`) ainda não foi escrito. Depende disso:
   gerar e configurar as chaves VAPID na Vercel.
 - **`pagarFatura`/`registrarAcerto`** como Server Actions (troca as chamadas
   diretas de `pay_invoice`/`settle_up` do navegador) — bloqueante para o push
-  cobrir também essas duas ações.
+  cobrir também essas duas ações. Também seria a correção estrutural certa
+  para o bug do `v_settlement`, já que move a lógica de acerto para dentro
+  de um caminho testável e auditável.
+- **P-007/P-008/P-009** (achados Sentinela R4, severidade MÉDIA/BAIXA): tipo
+  de conta mutável fora da Action, índice único com brechas de normalização,
+  arredondamento de ponto flutuante em valores monetários. Ver
+  `PENDENCIAS.md` e `docs/auditoria/sentinela-r4.md`.
 - **Metas por conta / orçamento por categoria** — schema existe
   (`account_goals`, `category_budgets`), sem view de progresso nem tela.
 - **Patrimônio e simulador de gasto fútil** — não iniciados (Fase B).
-- **Sentinela (auditoria independente)** — ainda não rodou nesta leva de
-  mudanças (categorias/formas/contas + limpeza do banco). Próximo passo.
 - **SMTP (Resend)** — e-mail de confirmação/recuperação ainda no provedor
   padrão do Supabase; decisão do Heitor, não técnica.
 - **Rotação da chave de serviço e senha do banco** — apareceram em chat
   nesta sessão (não vazaram para o GitHub, mas foram ditas em texto); rotação
   ainda não feita.
+- **Pedidos de produto novos do Heitor (ainda não planejados):** trocar o
+  e-mail de teste da Carol (`carol.financas.teste@gmail.com`) pelo e-mail
+  real dela (`m.carolina.s.chaves@gmail.com`); editar o dia de fechamento/
+  vencimento de um cartão já existente (hoje só é definido na criação);
+  filtro por categoria e por tipo (receita/despesa) em Ajustes e na tela de
+  lançar. Entram na próxima rodada de planejamento, depois do bug do
+  `v_settlement` resolvido.
 
 ### Deixado de fora deliberadamente
 
@@ -164,15 +195,22 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
 
 ## 5. Última auto-análise
 
-Nesta sessão: commit do backend da Rodada 3 (categorias/formas/contas) após
-verificação independente (`tsc` limpo, 208 testes + 23 de integração contra
-banco real, `categorias-crud.mjs` 30/30 com controle negativo de RLS).
-Limpeza de banco executada com confirmação do Heitor, sem perda de dado real
-(família e os 2 membros reais confirmados intactos antes e depois). Um
-achado de segurança automática (hardcoded fallback de `join_code` em 3
-scripts de teste) corrigido no mesmo ciclo — scripts agora exigem a env var
-e abortam sem apagar nada se faltar.
+Commit do backend da Rodada 3 (categorias/formas/contas) e front da Rodada 4
+(Antigravity ligou tudo nas Server Actions reais) — ambos verificados
+independentemente (`tsc`/`vitest`/`next build` limpos). Dois ciclos de
+limpeza de banco nesta sessão, sem perda de dado real nos dois (família e os
+2 membros reais confirmados intactos antes e depois de cada um). Dois
+achados de segurança corrigidos no mesmo ciclo em que apareceram: hardcoded
+fallback de `join_code` em 3 scripts de teste, e hardcoded fallback do
+**e-mail real da Carol** em `semear.mjs` — os dois removidos, env var agora
+obrigatória sem fallback.
 
-Sentinela e auditoria formal (A4 do plano) ainda não rodaram sobre este
-conjunto de mudanças — é o próximo passo, depois que a Rodada 4 do
-Antigravity (troca dos imports locais pelos reais) estiver publicada.
+A auditoria Sentinela R4 rodou parcialmente (confirmou isolamento
+multi-tenant, validação Zod e exclusão-em-uso como seguros; achou 3 itens
+MÉDIO/BAIXO — P-007/P-008/P-009) mas **caiu por rate limit da sessão do
+agente** antes de escrever o relatório e de limpar as 4 famílias de teste
+que criou. O Maestro reconstruiu o relatório a partir das evidências em
+disco (`docs/auditoria/sentinela-r4.md`) e limpou o lixo manualmente.
+Durante essa limpeza, o Heitor relatou o bug do `v_settlement` (acerto de
+contas não zera a dívida) usando o app de verdade — causa raiz já
+identificada e delegada ao Estrutura; correção em andamento.
