@@ -45,14 +45,14 @@
   --ring: #14594A;
   --accent: #E4EDE9;
 
-  /* semântica financeira — idêntica nas 4 paletas */
-  --receita: #0F7650;
-  --despesa: #BE352C;
-  --investimento: #1F5FA8;
-  --transferencia: #6A5AB3;
-  --pendente: #8A5A00;
-  --negativo: #9A2B22;
-  --beneficio: #0A6B6B;
+  /* semântica financeira — viva, contrastante e acolhedora */
+  --receita: #0D8C5F;
+  --despesa: #D93845;
+  --investimento: #0284C7;
+  --transferencia: #7C3AED;
+  --pendente: #D97706;
+  --negativo: #D93845;
+  --beneficio: #0891B2;
 
   /* séries de gráfico: as 5 primeiras de chart-palette.ts (shadcn chart) */
   --chart-1: #2F6DB5;
@@ -146,13 +146,13 @@
   --ring: #5FD3B2;
   --accent: #1B2E2A;
 
-  --receita: #3FC68B;
-  --despesa: #FF8A7A;
-  --investimento: #74AEF0;
-  --transferencia: #A79BF0;
-  --pendente: #E0A93F;
-  --negativo: #FF6F61;
-  --beneficio: #3FC2C2;
+  --receita: #10B981;
+  --despesa: #FB7185;
+  --investimento: #38BDF8;
+  --transferencia: #A78BFA;
+  --pendente: #FBBF24;
+  --negativo: #FB7185;
+  --beneficio: #22D3EE;
 
   --chart-1: #6FA8E8;
   --chart-2: #F08A5E;

@@ -58,30 +58,42 @@ export function ResumoAcerto({
         </div>
 
         {transferencia && devedor && credor ? (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1">
-              <h2
-                id="titulo-resultado-acerto"
-                className="text-foreground text-xl font-bold sm:text-2xl"
-              >
-                <span>{devedor.display_name ?? 'Parceiro'}</span>{' '}
-                <span className="text-muted-foreground font-normal">deve</span>{' '}
-                <ValorMonetario
-                  valor={transferencia.amount}
-                  tipo="transferencia"
-                  tamanho="destaque"
-                />{' '}
-                <span className="text-muted-foreground font-normal">para</span>{' '}
-                <span>{credor.display_name ?? 'Parceiro'}</span>
-              </h2>
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-muted/40 border border-border/80">
+              <div className="flex items-center gap-3">
+                <div className="bg-amber-500/10 text-amber-600 dark:text-amber-400 size-10 flex items-center justify-center rounded-xl border border-amber-500/20 font-bold text-sm shrink-0">
+                  {devedor.display_name?.slice(0, 2).toUpperCase() ?? 'DE'}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] text-muted-foreground uppercase font-semibold">Quem transfere</span>
+                  <p className="font-bold text-foreground text-base">{devedor.display_name}</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-1 px-4 py-2 rounded-lg bg-card border border-border/60">
+                <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Valor do acerto</span>
+                <ValorMonetario valor={transferencia.amount} tipo="transferencia" tamanho="destaque" className="font-bold" />
+                <ArrowRight className="size-4 text-primary hidden sm:block" />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 size-10 flex items-center justify-center rounded-xl border border-emerald-500/20 font-bold text-sm shrink-0">
+                  {credor.display_name?.slice(0, 2).toUpperCase() ?? 'PA'}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] text-muted-foreground uppercase font-semibold">Quem recebe</span>
+                  <p className="font-bold text-foreground text-base">{credor.display_name}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <p className="text-muted-foreground text-xs">
                 {ehProporcional
                   ? ACERTO.regraDescricaoProporcional
                   : ACERTO.regraDescricaoIgual}
               </p>
-            </div>
 
-            <div className="mt-2 flex flex-wrap items-center gap-3">
               <DialogoAcertar
                 devedorId={transferencia.from_member_id}
                 devedorNome={devedor.display_name ?? 'Parceiro'}

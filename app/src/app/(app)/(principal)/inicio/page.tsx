@@ -7,8 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { hojeEmSaoPaulo, ehMesValido, limitesDoMes, rotuloDoMes, somarMeses } from '@/lib/hoje'
 import { ResumoDoMes } from '@/components/inicio/resumo-do-mes'
 import { SaldoDasContas } from '@/components/inicio/saldo-das-contas'
-import { ItemTransacao } from '@/components/transacoes/item-transacao'
-import { TabelaTransacoesDesktop } from '@/components/transacoes/tabela-transacoes-desktop'
+import { ListaTransacoesInterativa } from '@/components/transacoes/lista-transacoes-interativa'
 import { PaginacaoLancamentos } from '@/components/transacoes/paginacao-lancamentos'
 import { OuvinteRealtime } from '@/components/inicio/ouvinte-realtime'
 import {
@@ -30,21 +29,9 @@ interface PropsDaPagina {
   searchParams: Promise<{ mes?: string; pagina?: string; novo?: string; qtd?: string }>
 }
 
-// `novo` vem da URL: só UUID passa. Qualquer outra coisa é ignorada em silêncio.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-/**
- * Início: indicadores do mês, saldo das contas e lista de lançamentos.
- *
- * Server Component. Os dados dependem da sessão do pedido, então a rota é
- * dinâmica; o `loading.tsx` ao lado é a fronteira de <Suspense> que deixa a
- * casca estática e faz streaming do conteúdo. Cada leitura passa pelo RLS do
- * usuário (client com a sessão dele, nunca service_role).
- */
 export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
-  // Depende da sessão do pedido: declara isso antes de qualquer leitura de
-  // relógio (o client do Supabase lê Date.now ao tratar o token). Mesma causa
-  // e mesma cura do onboarding.
   await connection()
 
   const {
@@ -56,7 +43,6 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
 
   const supabase = await createClient()
 
-  // getUser valida o token no servidor de Auth; getSession só leria o cookie.
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -73,14 +59,12 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
   const pagina = Number.isFinite(paginaNumero) && paginaNumero > 0 ? paginaNumero : 1
   const de = (pagina - 1) * POR_PAGINA
 
-  // Lançamento recém-salvo (redirect do /lancar). Lido com a sessão do usuário:
-  // um id de outra família volta vazio pelo RLS e o aviso fica só com o título.
   const idNovo = novoPedido && UUID.test(novoPedido) ? novoPedido : null
   const qtdNumero = Number.parseInt(qtdPedida ?? '1', 10)
   const qtdSalva =
     Number.isFinite(qtdNumero) && qtdNumero >= 1 && qtdNumero <= 50 ? qtdNumero : 1
 
-  const [resumos, contas, lancamentos, categorias, resFamilia, resNovo] = await Promise.all([
+  const [resumos, contas, lancamentos, categorias, resFamilia, resMembros, resNovo] = await Promise.all([
     supabase.from('v_monthly_summary').select('*').order('month', { ascending: false }),
     supabase
       .from('v_account_balances')
@@ -97,6 +81,7 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
       .range(de, de + POR_PAGINA - 1),
     supabase.from('categories').select('id, name'),
     supabase.from('families').select('id').single(),
+    supabase.from('family_members').select('id, display_name'),
     idNovo
       ? supabase
           .from('transactions')
@@ -128,16 +113,19 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
   const resumoDoMes = linhasDeResumo.find((linha) => linha.month === mes)
 
   const listaDeContas = contas.data ?? []
-  const nomeDaConta = new Map(
+  const mapaContas = Object.fromEntries(
     listaDeContas.map((c) => [c.account_id ?? '', c.name ?? '']),
   )
-  const nomeDaCategoria = new Map((categorias.data ?? []).map((c) => [c.id, c.name]))
+  const mapaCategorias = Object.fromEntries(
+    (categorias.data ?? []).map((c) => [c.id, c.name]),
+  )
+  const membros = (resMembros.data ?? []).map((m) => ({
+    id: m.id,
+    display_name: m.display_name,
+  }))
 
   const hrefDoMes = (m: string) => (m === mesAtual ? '/inicio' : `/inicio?mes=${m}`)
 
-  // Página além do fim: o PostgREST responde 416 (vira `lancamentos.error`) ou
-  // devolve vazio. Em vez de mostrar "página 99 de 1" ou um alerta de erro,
-  // volta à primeira página do mês. Sem laço: a primeira página não cai aqui.
   if (pagina > 1 && (lancamentos.error || (lancamentos.data ?? []).length === 0)) {
     redirect(hrefDoMes(mes))
   }
@@ -150,7 +138,6 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
 
   const classeNavMes = buttonVariants({ variant: 'outline', size: 'icone-toque' })
 
-  // Casa sem nenhum lançamento: a primeira tela real do produto.
   if (!falhouAlgo && !temHistorico) {
     return (
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-[var(--esp-6)] px-[var(--esp-4)] py-[var(--esp-6)]">
@@ -177,8 +164,9 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-[var(--esp-6)] px-[var(--esp-4)] py-[var(--esp-6)]">
-      <div className="flex items-center justify-between gap-[var(--esp-3)]">
+    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6">
+      {/* Cabeçalho do Mês */}
+      <div className="flex items-center justify-between gap-3">
         <Link
           href={hrefDoMes(somarMeses(mes, -1))}
           aria-label={INICIO.mesAnterior}
@@ -186,7 +174,7 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
         >
           <ChevronLeft aria-hidden="true" />
         </Link>
-        <h1 className="text-center text-[length:var(--texto-titulo)] leading-[var(--texto-titulo-lh)] font-semibold first-letter:uppercase">
+        <h1 className="text-center text-xl sm:text-2xl font-bold tracking-tight first-letter:uppercase">
           {rotuloDoMes(mes)}
         </h1>
         <Link
@@ -212,77 +200,67 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
         </Alert>
       ) : null}
 
-      <div className="flex items-center justify-between gap-[var(--esp-2)]">
-        <span className="text-muted-foreground text-[length:var(--texto-apoio)]">
-          Visão geral do mês
+      {/* Link de Atalho para Análises */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+          Visão Geral do Mês
         </span>
         <Link
           href={`/analises?mes=${mes}`}
-          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-[var(--esp-2)]')}
+          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-2 text-xs')}
         >
-          <PieChart className="size-4" aria-hidden="true" />
+          <PieChart className="size-3.5" aria-hidden="true" />
           <span>Ver gráficos & análises</span>
         </Link>
       </div>
 
-      {/* Indicadores do Mês e Saldo das Contas no topo (lado a lado a partir de tablet/sm) */}
-      <div className="grid gap-[var(--esp-6)] md:grid-cols-2 items-stretch">
-        <ResumoDoMes
-          entrou={resumoDoMes?.income_paid ?? 0}
-          saiu={resumoDoMes?.expense_paid ?? 0}
-          aPagar={resumoDoMes?.payable ?? 0}
-        />
-        <SaldoDasContas contas={listaDeContas} />
-      </div>
+      {/* 1. Indicadores do Mês (KPIs) com design modular e expressivo */}
+      <ResumoDoMes
+        entrou={resumoDoMes?.income_paid ?? 0}
+        saiu={resumoDoMes?.expense_paid ?? 0}
+        aPagar={resumoDoMes?.payable ?? 0}
+        receitasTotal={resumoDoMes?.income_total ?? 0}
+        despesasTotal={resumoDoMes?.expense_total ?? 0}
+        investimentos={resumoDoMes?.investment_total ?? 0}
+        aReceber={resumoDoMes?.receivable ?? 0}
+      />
 
-      {/* Lançamentos em largura total, aproveitando o espaço em PC, notebook e tablet */}
-      <Card id="lista-lancamentos" className="w-full min-w-0 scroll-mt-[var(--esp-4)]">
-        <CardHeader className="px-4 sm:px-6">
-          <CardTitle className="text-[length:var(--texto-subtitulo)] leading-[var(--texto-subtitulo-lh)] font-semibold">
+      {/* 2. Saldos das Contas como Cards Visuais */}
+      <SaldoDasContas contas={listaDeContas} />
+
+      {/* 3. Lançamentos com Barra de Filtros Interativos (Membros & Tipo) */}
+      <Card id="lista-lancamentos" className="w-full min-w-0 scroll-mt-4 shadow-xs border-border/80">
+        <CardHeader className="px-4 sm:px-6 py-4 border-b border-border/60">
+          <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             {INICIO.tituloLancamentos}
           </CardTitle>
         </CardHeader>
-        <CardContent className="px-3 sm:px-6 pt-0 sm:pt-0">
-            {(lancamentos.data ?? []).length === 0 ? (
-              <EstadoVazio
-                titulo={INICIO.semLancamentosNoMes}
-                descricao={INICIO.semLancamentosNoMesDica}
-              />
-            ) : (
-              <>
-                {/* Mobile / Tablet (< 1024px): Lista em cartões */}
-                <ul className="divide-border flex flex-col divide-y lg:hidden">
-                  {(lancamentos.data ?? []).map((t) => (
-                    <ItemTransacao
-                      key={t.id}
-                      transacao={t}
-                      nomeConta={nomeDaConta.get(t.account_id)}
-                      nomeCategoria={
-                        t.category_id ? nomeDaCategoria.get(t.category_id) : null
-                      }
-                      destacado={t.id === idNovo}
-                    />
-                  ))}
-                </ul>
-
-                {/* Desktop (>= 1024px): Tabela rica de lançamentos */}
-                <TabelaTransacoesDesktop
-                  transacoes={lancamentos.data ?? []}
-                  nomeConta={(id) => nomeDaConta.get(id)}
-                  nomeCategoria={(id) => (id ? nomeDaCategoria.get(id) : null)}
-                  idDestacado={idNovo}
-                />
-              </>
-            )}
-            <PaginacaoLancamentos
-              pagina={pagina}
-              totalDePaginas={totalDePaginas}
-              hrefDaPagina={hrefDaPagina}
+        <CardContent className="p-4 sm:p-6">
+          {(lancamentos.data ?? []).length === 0 ? (
+            <EstadoVazio
+              titulo={INICIO.semLancamentosNoMes}
+              descricao={INICIO.semLancamentosNoMesDica}
             />
-          </CardContent>
-        </Card>
+          ) : (
+            <>
+              <ListaTransacoesInterativa
+                transacoes={lancamentos.data ?? []}
+                membros={membros}
+                mapaContas={mapaContas}
+                mapaCategorias={mapaCategorias}
+                idDestacado={idNovo}
+              />
+              <PaginacaoLancamentos
+                pagina={pagina}
+                totalDePaginas={totalDePaginas}
+                hrefDaPagina={hrefDaPagina}
+              />
+            </>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Ouvinte em Tempo Real via Supabase Realtime (item 9.8) */}
+      {/* Ouvinte em Tempo Real via Supabase Realtime */}
       {familyId && (
         <OuvinteRealtime
           familyId={familyId}

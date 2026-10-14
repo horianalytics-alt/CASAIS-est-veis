@@ -34,13 +34,13 @@ export interface CartaoContaProps {
 function iconeDoTipo(tipo: string | null) {
   switch (tipo) {
     case 'cartao':
-      return CreditCard
+      return { Icone: CreditCard, classe: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' }
     case 'investimento':
-      return PiggyBank
+      return { Icone: PiggyBank, classe: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20' }
     case 'beneficio':
-      return UtensilsCrossed
+      return { Icone: UtensilsCrossed, classe: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20' }
     default:
-      return Landmark
+      return { Icone: Landmark, classe: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' }
   }
 }
 
@@ -51,7 +51,7 @@ export function CartaoConta({
   contasOrigem = [],
   className,
 }: CartaoContaProps) {
-  const Icone = iconeDoTipo(conta.type)
+  const { Icone, classe: classeIcone } = iconeDoTipo(conta.type)
   const saldoAtual = conta.current_balance ?? 0
   const pendenteEntrada = conta.pending_inflow ?? 0
   const pendenteSaida = conta.pending_outflow ?? 0
@@ -79,7 +79,7 @@ export function CartaoConta({
       {/* Topo do Cartão: Tipo da Conta, Ícone e Ações */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <div className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg border border-border/60">
+          <div className={cn('flex size-9 items-center justify-center rounded-xl border shrink-0', classeIcone)}>
             <Icone className="size-4.5" aria-hidden="true" />
           </div>
           <div>

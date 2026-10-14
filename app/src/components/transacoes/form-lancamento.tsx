@@ -389,10 +389,11 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
                 <label
                   key={opcao.valor}
                   className={cn(
-                    'border-input has-[:focus-visible]:ring-ring/50 has-[:focus-visible]:border-ring flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border px-[var(--esp-2)] text-center text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)] font-medium has-[:focus-visible]:ring-3 sm:text-[length:var(--texto-corpo)]',
-                    tipo === opcao.valor
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-background hover:bg-muted/40',
+                    'border-input has-[:focus-visible]:ring-ring/50 has-[:focus-visible]:border-ring flex min-h-[44px] cursor-pointer items-center justify-center rounded-xl border px-[var(--esp-2)] text-center text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)] font-medium has-[:focus-visible]:ring-3 sm:text-[length:var(--texto-corpo)] transition-all',
+                    tipo === opcao.valor && opcao.valor === 'despesa' && 'bg-despesa text-white border-despesa shadow-xs font-semibold',
+                    tipo === opcao.valor && opcao.valor === 'receita' && 'bg-receita text-white border-receita shadow-xs font-semibold',
+                    tipo === opcao.valor && opcao.valor === 'transferencia' && 'bg-transferencia text-white border-transferencia shadow-xs font-semibold',
+                    tipo !== opcao.valor && 'bg-background hover:bg-muted/50 text-muted-foreground hover:text-foreground',
                   )}
                 >
                   <input
