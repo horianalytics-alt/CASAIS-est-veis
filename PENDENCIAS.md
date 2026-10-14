@@ -70,6 +70,38 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
 
 ## Dívida técnica conhecida
 
+### P-007 — Tipo de conta mutável fora da Server Action
+- **Origem:** Sentinela, auditoria R4 (`docs/auditoria/sentinela-r4.md`, seção 5).
+- **O quê:** `editarConta` corretamente ignora o campo `tipo`, mas o mesmo
+  usuário consegue mudar o `type` de uma conta via PostgREST direto
+  (`accounts.update({ type: ... })`) — a regra "tipo não muda depois de
+  criada" existe só na Action, não como constraint no banco.
+- **Severidade:** MÉDIA. Sem exploração real hoje (só a Action escreve).
+- **Sugestão:** trigger `BEFORE UPDATE` em `accounts` rejeitando mudança de
+  `type`, ou aceitar o risco e documentar.
+
+### P-008 — Índice único de nome normalizado tem brechas
+- **Origem:** Sentinela, auditoria R4 (seção 6).
+- **O quê:** o índice único do banco em `categories`/`payment_methods`
+  bloqueia só variantes com espaço simples nas pontas + case. Tab, espaço
+  duplo interno, acento e zero-width space passam como nomes "diferentes"
+  no banco, mesmo sendo a mesma palavra visualmente. A Server Action já
+  normaliza certo (`chaveDeComparacao()`); o índice do banco não acompanha.
+- **Severidade:** MÉDIA. Sem exploração real hoje (só a Action escreve).
+- **Sugestão:** alinhar a expressão do índice com a mesma normalização de
+  `chaveDeComparacao()` (remover diacríticos, colapsar espaço, tratar
+  zero-width/tab).
+
+### P-009 — Arredondamento de ponto flutuante em valores monetários
+- **Origem:** Sentinela, auditoria R4 (seção 8).
+- **O quê:** `Math.round(numero * 100) / 100` em
+  `app/src/actions/lancamento.ts` erra na borda de 0,005 por causa de
+  ponto flutuante binário (`1.005 → 1` em vez de `1.01`/`1.00`;
+  `10.075 → 10.07` em vez de `10.08`). Só afeta quem digitar 3+ casas
+  decimais bem na borda — exposição rara, mas o valor salvo pode divergir
+  do digitado por 1 centavo, em silêncio.
+- **Severidade:** BAIXA. Correção simples (arredondamento decimal-safe).
+
 ### P-004 — 5 vulnerabilidades `npm audit` de severidade alta
 - **Cadeia:** `braces` → `micromatch` → `fast-glob` → `@next/eslint-plugin-next`
   → `eslint-config-next`.
