@@ -1,0 +1,139 @@
+
+ RUN  v5.0.3 C:/dev/financas-a-dois/docs/auditoria/evidencias
+
+stdout | sentinela-r4-hostil.test.ts
+OBS setup => {"A":{"uid":"b4655700-98f4-4eb8-b324-debd3b7d772d","fam":"d479cfcf-3915-4c6f-a913-a1534325d950"},"B":{"uid":"e3cea4df-cc21-46c3-801b-9f353b2ffb3e","fam":"9aa782f0-7204-4a06-bc4b-be310da2a27e"}}
+
+ × sentinela-r4-hostil.test.ts > 1. isolamento multi-tenant (A ataca B sabendo o UUID) > Server Actions: A não lê/renomeia/arquiva/exclui/muda tipo de categoria, forma e conta de B 205ms
+   → Invariant: static generation store missing in revalidatePath("/ajustes/categorias")
+stdout | sentinela-r4-hostil.test.ts > 1. isolamento multi-tenant (A ataca B sabendo o UUID) > PostgREST direto com a sessão de A: select/update/delete por id de B, insert com family_id de B, embed via transactions
+OBS 1b.rest_A_sobre_B => {"sel":{"rows":0},"upd":{"rows":0},"del":{"rows":0},"insFamB":{"err":"42501","msg":"new row violates row-level security policy for table \"categories\""},"insFamReal":{"err":"42501"},"contasB":{"rows":0},"viewB":{"rows":0},"viewReal":{"rows":0},"txApontandoCategoriaDeB":{"err":"23503","msg":"insert or update on table \"transactions\" violates foreign key constraint \"transactions_family_id_category_id_fkey\""}}
+
+ ✓ sentinela-r4-hostil.test.ts > 1. isolamento multi-tenant (A ataca B sabendo o UUID) > PostgREST direto com a sessão de A: select/update/delete por id de B, insert com family_id de B, embed via transactions 716ms
+stdout | sentinela-r4-hostil.test.ts > 2. validação Zod e idioma > entradas inválidas e hostis nas actions
+OBS 2a.validacao => {"vazio":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"nomes":["Informe ao menos um nome."]}},"soEspacosVirgulas":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"nomes":["Informe ao menos um nome."]}},"nome41":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"nomes":["Use no máximo 40 caracteres por nome: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx."]}},"nome10k":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"nomes":["Use no máximo 40 caracteres por nome: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy."]}},"lote51":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"nomes":["Informe no máximo 50 nomes por vez (você informou 51)."]}},"tipoInvalido":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"tipo":["Escolha uma das opções válidas."]}},"tipoNumero":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"tipo":["Valor inválido."]}},"nomesNaoString":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"nomes":["Valor inválido."]}},"inputNull":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{}},"renomearVazio":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"nome":["Informe o nome."]}},"renomear41":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"nome":["Use no máximo 40 caracteres."]}},"idNaoUuid":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"id":["Item inválido."]}},"arquivarString":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"arquivar":["Valor inválido."]}},"contaTipoInvalido":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"tipo":["Escolha uma das opções válidas."]}},"contaSaldoNaN":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"saldoInicial":["Informe um valor válido."]}},"contaSaldoString":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"saldoInicial":["Informe um valor válido."]}},"contaDia0":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"diaFechamento":["Informe um dia entre 1 e 31."],"diaVencimento":["Informe um dia entre 1 e 31."]}},"contaNome61":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"nome":["Use no máximo 60 caracteres."]}},"contaSaldoEnorme":{"ok":false,"erro":"Confira os campos destacados.","camposComErro":{"saldoInicial":["Valor fora do limite permitido."]}}}
+OBS 2a.palavras_em_ingles => []
+
+ ✓ sentinela-r4-hostil.test.ts > 2. validação Zod e idioma > entradas inválidas e hostis nas actions 4ms
+ × sentinela-r4-hostil.test.ts > 2. validação Zod e idioma > limites exatos aceitos (40 chars, 50 nomes) 158ms
+   → Invariant: static generation store missing in revalidatePath("/ajustes/categorias")
+ × sentinela-r4-hostil.test.ts > 2. validação Zod e idioma > payloads hostis aceitos como texto (armazenamento) 167ms
+   → Invariant: static generation store missing in revalidatePath("/ajustes/categorias")
+ × sentinela-r4-hostil.test.ts > 3. regra de negócio: excluir em uso preserva o lançamento > categoria e forma em uso: tx fica com referência nula e family_id intacto 149ms
+   → Invariant: static generation store missing in revalidatePath("/ajustes/categorias")
+ × sentinela-r4-hostil.test.ts > 4. tipo de conta imutável > editarConta ignora campo tipo; PostgREST direto aceita? 156ms
+   → Invariant: static generation store missing in revalidatePath("/ajustes/contas")
+stdout | sentinela-r4-hostil.test.ts > 5. índice único funcional (Mercado x "mercado ") > PostgREST direto (sem a normalização da action)
+OBS 5a.indice_direto => [{"name":"\"Mercado\"","ok":true},{"name":"\"mercado \"","ok":false,"code":"23505"},{"name":"\"  MERCADO\"","ok":false,"code":"23505"},{"name":"\"Mercado\\t\"","ok":true},{"name":"\"Mercado \"","ok":true},{"name":"\"Mer  cado\"","ok":true},{"name":"\"Mércado\"","ok":true},{"name":"\"Mercado​\"","ok":true}]
+
+ ✓ sentinela-r4-hostil.test.ts > 5. índice único funcional (Mercado x "mercado ") > PostgREST direto (sem a normalização da action) 253ms
+stdout | sentinela-r4-hostil.test.ts
+REGISTROS CRIADOS (NÃO apagados pelo Sentinela) => {"usuarios":["b4655700-98f4-4eb8-b324-debd3b7d772d","e3cea4df-cc21-46c3-801b-9f353b2ffb3e"],"familias":["d479cfcf-3915-4c6f-a913-a1534325d950","9aa782f0-7204-4a06-bc4b-be310da2a27e"]}
+
+ × sentinela-r4-hostil.test.ts > 5. índice único funcional (Mercado x "mercado ") > via action: variantes e corrida (Saúde x Saude em paralelo) 434ms
+   → Invariant: static generation store missing in revalidatePath("/ajustes/categorias")
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  sentinela-r4-hostil.test.ts > 1. isolamento multi-tenant (A ataca B sabendo o UUID) > Server Actions: A não lê/renomeia/arquiva/exclui/muda tipo de categoria, forma e conta de B
+Error: Invariant: static generation store missing in revalidatePath("/ajustes/categorias")
+ ❯ revalidate ../../../app/node_modules/next/src/server/web/spec-extension/revalidate.ts:145:11
+ ❯ revalidate ../../../app/node_modules/next/src/server/web/spec-extension/revalidate.ts:135:10
+ ❯ revalidar ../../../app/src/actions/categorias.ts:32:82
+     30|
+     31| function revalidar() {
+     32|   for (const rota of ['/ajustes/categorias', '/lancar', '/inicio', '/a…
+       |                                                                                  ^
+     33| }
+     34|
+ ❯ Module.adicionarCategorias ../../../app/src/actions/categorias.ts:115:3
+ ❯ sentinela-r4-hostil.test.ts:76:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  sentinela-r4-hostil.test.ts > 2. validação Zod e idioma > limites exatos aceitos (40 chars, 50 nomes)
+Error: Invariant: static generation store missing in revalidatePath("/ajustes/categorias")
+ ❯ revalidate ../../../app/node_modules/next/src/server/web/spec-extension/revalidate.ts:145:11
+ ❯ revalidate ../../../app/node_modules/next/src/server/web/spec-extension/revalidate.ts:135:10
+ ❯ revalidar ../../../app/src/actions/categorias.ts:32:82
+     30|
+     31| function revalidar() {
+     32|   for (const rota of ['/ajustes/categorias', '/lancar', '/inicio', '/a…
+       |                                                                                  ^
+     33| }
+     34|
+ ❯ Module.adicionarCategorias ../../../app/src/actions/categorias.ts:115:3
+ ❯ sentinela-r4-hostil.test.ts:171:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  sentinela-r4-hostil.test.ts > 2. validação Zod e idioma > payloads hostis aceitos como texto (armazenamento)
+Error: Invariant: static generation store missing in revalidatePath("/ajustes/categorias")
+ ❯ revalidate ../../../app/node_modules/next/src/server/web/spec-extension/revalidate.ts:145:11
+ ❯ revalidate ../../../app/node_modules/next/src/server/web/spec-extension/revalidate.ts:135:10
+ ❯ revalidar ../../../app/src/actions/categorias.ts:32:82
+     30|
+     31| function revalidar() {
+     32|   for (const rota of ['/ajustes/categorias', '/lancar', '/inicio', '/a…
+       |                                                                                  ^
+     33| }
+     34|
+ ❯ Module.adicionarCategorias ../../../app/src/actions/categorias.ts:115:3
+ ❯ sentinela-r4-hostil.test.ts:178:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  sentinela-r4-hostil.test.ts > 3. regra de negócio: excluir em uso preserva o lançamento > categoria e forma em uso: tx fica com referência nula e family_id intacto
+Error: Invariant: static generation store missing in revalidatePath("/ajustes/categorias")
+ ❯ revalidate ../../../app/node_modules/next/src/server/web/spec-extension/revalidate.ts:145:11
+ ❯ revalidate ../../../app/node_modules/next/src/server/web/spec-extension/revalidate.ts:135:10
+ ❯ revalidar ../../../app/src/actions/categorias.ts:32:82
+     30|
+     31| function revalidar() {
+     32|   for (const rota of ['/ajustes/categorias', '/lancar', '/inicio', '/a…
+       |                                                                                  ^
+     33| }
+     34|
+ ❯ Module.adicionarCategorias ../../../app/src/actions/categorias.ts:115:3
+ ❯ sentinela-r4-hostil.test.ts:189:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  sentinela-r4-hostil.test.ts > 4. tipo de conta imutável > editarConta ignora campo tipo; PostgREST direto aceita?
+Error: Invariant: static generation store missing in revalidatePath("/ajustes/contas")
+ ❯ revalidate ../../../app/node_modules/next/src/server/web/spec-extension/revalidate.ts:145:11
+ ❯ revalidate ../../../app/node_modules/next/src/server/web/spec-extension/revalidate.ts:135:10
+ ❯ revalidar ../../../app/src/actions/contas.ts:29:89
+     27|
+     28| function revalidar() {
+     29|   for (const rota of ['/ajustes/contas', '/lancar', '/inicio', '/carte…
+       |                                                                                         ^
+     30| }
+     31|
+ ❯ Module.editarConta ../../../app/src/actions/contas.ts:126:3
+ ❯ sentinela-r4-hostil.test.ts:213:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  sentinela-r4-hostil.test.ts > 5. índice único funcional (Mercado x "mercado ") > via action: variantes e corrida (Saúde x Saude em paralelo)
+Error: Invariant: static generation store missing in revalidatePath("/ajustes/categorias")
+ ❯ revalidate ../../../app/node_modules/next/src/server/web/spec-extension/revalidate.ts:145:11
+ ❯ revalidate ../../../app/node_modules/next/src/server/web/spec-extension/revalidate.ts:135:10
+ ❯ revalidar ../../../app/src/actions/categorias.ts:32:82
+     30|
+     31| function revalidar() {
+     32|   for (const rota of ['/ajustes/categorias', '/lancar', '/inicio', '/a…
+       |                                                                                  ^
+     33| }
+     34|
+ ❯ Module.adicionarCategorias ../../../app/src/actions/categorias.ts:115:3
+ ❯ sentinela-r4-hostil.test.ts:249:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  6 failed | 3 passed (9)
+   Start at  10:39:15
+   Duration  5.91s (tests 63%, import 34%, transform 3%)
+

@@ -1,0 +1,30 @@
+families: 5
+   d479cfcf-3915-4c6f-a913-a1534325d950 | Sentinela R4 a | join_code= AX6G2P | member_limit= 2
+   9aa782f0-7204-4a06-bc4b-be310da2a27e | Sentinela R4 b | join_code= 4D5YDB | member_limit= 2
+   5db71b29-5a31-49e6-a11b-023b83534bba | Sentinela R4 a | join_code= QZD5Q3 | member_limit= 2
+   820907bf-afb5-4cf5-b850-1351fb3fabe8 | Sentinela R4 b | join_code= MQW7HS | member_limit= 2
+   9969d589-1645-403f-912a-1504bfeebb89 | Casa do Heitor e Carol | join_code= RVFAXV | member_limit= 2
+family_members: 6
+   Carol | user_id= ccdfa462-283d-4e31-83a6-d2836c9596af | family= 9969d589-1645-403f-912a-1504bfeebb89
+   Heitor | user_id= bfa46034-cd3d-4e9b-9944-d6b3b326f9ee | family= 9969d589-1645-403f-912a-1504bfeebb89
+   Sentinela a | user_id= b4655700-98f4-4eb8-b324-debd3b7d772d | family= d479cfcf-3915-4c6f-a913-a1534325d950
+   Sentinela b | user_id= e3cea4df-cc21-46c3-801b-9f353b2ffb3e | family= 9aa782f0-7204-4a06-bc4b-be310da2a27e
+   Sentinela a | user_id= b24e3eb8-caf2-400b-b5c4-500215ed59e9 | family= 5db71b29-5a31-49e6-a11b-023b83534bba
+   Sentinela b | user_id= 961e167d-dbe8-489e-b65c-ff920aabdeb8 | family= 820907bf-afb5-4cf5-b850-1351fb3fabe8
+auth.users: 6
+   961e167d-dbe8-489e-b65c-ff920aabdeb8 | sen***@example.com | membro? true
+   b24e3eb8-caf2-400b-b5c4-500215ed59e9 | sen***@example.com | membro? true
+   e3cea4df-cc21-46c3-801b-9f353b2ffb3e | sen***@example.com | membro? true
+   b4655700-98f4-4eb8-b324-debd3b7d772d | sen***@example.com | membro? true
+   ccdfa462-283d-4e31-83a6-d2836c9596af | car***@gmail.com | membro? true
+   bfa46034-cd3d-4e9b-9944-d6b3b326f9ee | hor***@gmail.com | membro? true
+usuarios orfaos (sem family_members): 0
+accounts: total=8 | fora da(s) familia(s) existente(s)=0
+categories: total=90 | fora da(s) familia(s) existente(s)=0
+payment_methods: total=95 | fora da(s) familia(s) existente(s)=0
+transactions: total=33 | fora da(s) familia(s) existente(s)=0
+category_budgets: total=0 | fora da(s) familia(s) existente(s)=0
+account_goals: total=0 | fora da(s) familia(s) existente(s)=0
+push_subscriptions: total=0 | fora da(s) familia(s) existente(s)=0
+transactions com category_id NULL: 2
+fallback de semear.mjs == e-mail real da membro Carol? true

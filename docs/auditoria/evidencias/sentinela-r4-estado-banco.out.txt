@@ -1,0 +1,18 @@
+families: 1
+   9969d589-1645-403f-912a-1504bfeebb89 | Casa do Heitor e Carol | join_code= RVFAXV | member_limit= 2
+family_members: 2
+   Carol | user_id= ccdfa462-283d-4e31-83a6-d2836c9596af | family= 9969d589-1645-403f-912a-1504bfeebb89
+   Heitor | user_id= bfa46034-cd3d-4e9b-9944-d6b3b326f9ee | family= 9969d589-1645-403f-912a-1504bfeebb89
+auth.users: 2
+   ccdfa462-283d-4e31-83a6-d2836c9596af | car***@gmail.com | membro? true
+   bfa46034-cd3d-4e9b-9944-d6b3b326f9ee | hor***@gmail.com | membro? true
+usuarios orfaos (sem family_members): 0
+accounts: total=3 | fora da(s) familia(s) existente(s)=0
+categories: total=15 | fora da(s) familia(s) existente(s)=0
+payment_methods: total=6 | fora da(s) familia(s) existente(s)=0
+transactions: total=32 | fora da(s) familia(s) existente(s)=0
+category_budgets: total=0 | fora da(s) familia(s) existente(s)=0
+account_goals: total=0 | fora da(s) familia(s) existente(s)=0
+push_subscriptions: total=0 | fora da(s) familia(s) existente(s)=0
+transactions com category_id NULL: 1
+fallback de semear.mjs == e-mail real da membro Carol? true

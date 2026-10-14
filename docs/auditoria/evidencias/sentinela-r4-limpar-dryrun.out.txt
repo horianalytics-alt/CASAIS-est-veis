@@ -1,0 +1,60 @@
+### 1) sem FAMILIA_REAL_JOIN_CODE (dry-run)
+  throw new Error(
+Error: Defina FAMILIA_REAL_JOIN_CODE com o join_code atual da família real antes de rodar — sem fallback no código, para não preservar um código antigo/vazado por engano.
+exit=1
+
+### 2) FAMILIA_REAL_JOIN_CODE=ZZZZZZ (inexistente, dry-run)
+=== limpar-lixo-teste.mjs — modo: SIMULAÇÃO (dry-run) ===
+
+file:///C:/dev/financas-a-dois/app/tests/integration/limpar-lixo-teste.mjs:103
+  throw new Error(
+        ^
+
+Error: ABORTANDO: família real com join_code='ZZZZZZ' NÃO foi encontrada. Nada foi apagado. Confira FAMILIA_REAL_JOIN_CODE ou se o código foi rotacionado.
+
+
+### 3) FAMILIA_REAL_JOIN_CODE=<SEED_JOIN_CODE> (dry-run, SEM --executar)
+=== limpar-lixo-teste.mjs — modo: SIMULAÇÃO (dry-run) ===
+
+file:///C:/dev/financas-a-dois/app/tests/integration/limpar-lixo-teste.mjs:103
+  throw new Error(
+        ^
+
+Error: ABORTANDO: família real com join_code='GCX3EF' NÃO foi encontrada. Nada foi apagado. Confira FAMILIA_REAL_JOIN_CODE ou se o código foi rotacionado.
+    at file:///C:/dev/financas-a-dois/app/tests/integration/limpar-lixo-teste.mjs:103:9
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+Node.js v24.21.0
+
+### 4) FAMILIA_REAL_JOIN_CODE=RVFAXV (código atual lido do banco no item 4; dry-run, SEM --executar)
+=== limpar-lixo-teste.mjs — modo: SIMULAÇÃO (dry-run) ===
+
+Família REAL localizada: "Casa do Heitor e Carol" (join_code=RVFAXV, id=9969d589-1645-403f-912a-1504bfeebb89)
+
+Total de famílias no banco: 5
+Famílias a PRESERVAR: 1 ("Casa do Heitor e Carol", RVFAXV)
+Famílias a REMOVER:   4
+
+--- Lista de famílias que seriam removidas (nome | join_code | criada em) ---
+  Sentinela R4 a | AX6G2P | 2026-10-13T13:39:22.365276+00:00
+  Sentinela R4 b | 4D5YDB | 2026-10-13T13:39:22.809278+00:00
+  Sentinela R4 a | QZD5Q3 | 2026-10-13T13:41:03.013576+00:00
+  Sentinela R4 b | MQW7HS | 2026-10-13T13:41:03.511476+00:00
+
+Membros REAIS a preservar (2):
+  Carol (user_id=ccdfa462-283d-4e31-83a6-d2836c9596af)
+  Heitor (user_id=bfa46034-cd3d-4e9b-9944-d6b3b326f9ee)
+
+--- Simulação: contagem de linhas a REMOVER ---
+transactions:        1
+push_subscriptions:  0
+account_goals:       0
+category_budgets:    0
+accounts:            5
+categories:          75
+payment_methods:     89
+family_members:      4
+families:            4
+auth.users:          4
+
+=== SIMULAÇÃO CONCLUÍDA — nada foi apagado. Rode com --executar para aplicar. ===

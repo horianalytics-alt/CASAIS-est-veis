@@ -1,0 +1,3 @@
+OBS 6.categoria_10k_direto => {"id":"62d04380-6312-4d4b-9b19-9d446590ec60","len":10000}
+OBS 6.forma_10k_direto => {"id":"c7ef6315-44fb-48d2-b1ee-72ac1d72441a","len":10000}
+OBS 6.categoria_so_zwsp_direto => {"id":"7bf9a1bc-c8d1-4345-ae5f-278f4e5cc8d8"}
