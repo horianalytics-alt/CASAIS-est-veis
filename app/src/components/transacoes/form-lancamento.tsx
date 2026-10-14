@@ -38,11 +38,18 @@ export interface OpcaoDeCategoria {
   id: string
   nome: string
   tipo: string
+  grupoId: string | null
+}
+
+export interface OpcaoDeGrupo {
+  id: string
+  nome: string
 }
 
 export interface FormLancamentoProps {
   contas: OpcaoDeConta[]
   categorias: OpcaoDeCategoria[]
+  grupos?: OpcaoDeGrupo[]
   hoje: string
 }
 
@@ -140,13 +147,14 @@ function destinoAposSalvar(dataISO: string, salvos: Lancamento[], quantidade: nu
   return `/inicio?${parametros.toString()}`
 }
 
-export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps) {
+export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLancamentoProps) {
   const router = useRouter()
   const [modo, setModo] = useState<'simples' | 'lote'>('simples')
   const [pendente, iniciarEnvio] = useTransition()
   const [resultado, setResultado] = useState<ResultadoAction<Lancamento[]> | null>(null)
   const [concluido, setConcluido] = useState(false)
   const [maisDetalhesAberto, setMaisDetalhesAberto] = useState(false)
+  const [grupoFiltrado, setGrupoFiltrado] = useState<string | null>(null)
   const [detalhesLoteAbertos, setDetalhesLoteAbertos] = useState<Record<number, boolean>>({})
 
   // -------------------------------------------------------------------------
@@ -211,7 +219,9 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
   }
 
   const categoriasDoTipo = categorias.filter(
-    (c) => c.tipo === tipo || c.tipo === 'todos',
+    (c) =>
+      (c.tipo === tipo || c.tipo === 'todos') &&
+      (grupoFiltrado === null || c.grupoId === grupoFiltrado),
   )
 
   const contasDestinoDisponiveis = contas.filter((c) => c.id !== contaId)
@@ -306,6 +316,7 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
       setResultado(null)
       setConcluido(false)
       setModo('simples')
+      setGrupoFiltrado(null)
       setMaisDetalhesAberto(false)
       setDetalhesLoteAbertos({})
     }
@@ -547,8 +558,38 @@ export function FormLancamento({ contas, categorias, hoje }: FormLancamentoProps
               <CampoErro id="erro-contaDestinoId" mensagens={erros?.contaDestinoId} />
             </div>
           ) : (
-            /* Categoria (oculta em transferências) */
+            /* Categoria + filtro de grupo (oculto em transferências) */
             <div className="flex flex-col gap-[var(--esp-2)]">
+              {grupos.length > 0 && (
+                <div className="flex flex-col gap-[var(--esp-2)]">
+                  <Label htmlFor="filtro-grupo">{LANCAR.filtroGrupoLabel}</Label>
+                  <Select
+                    value={grupoFiltrado ?? '__todas__'}
+                    onValueChange={(v) => {
+                      const novoGrupo = v === '__todas__' ? null : v
+                      setGrupoFiltrado(novoGrupo)
+                      const catAtual = categorias.find((c) => c.id === getValues('categoriaId'))
+                      if (catAtual && novoGrupo !== null && catAtual.grupoId !== novoGrupo) {
+                        setValue('categoriaId', SEM_CATEGORIA)
+                      }
+                    }}
+                    disabled={pendente}
+                  >
+                    <SelectTrigger id="filtro-grupo" className="w-full">
+                      <SelectValue placeholder={LANCAR.filtroGrupoTodas} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__todas__">{LANCAR.filtroGrupoTodas}</SelectItem>
+                      {grupos.map((g) => (
+                        <SelectItem key={g.id} value={g.id}>
+                          {g.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <Label htmlFor="categoriaId">
                 {LANCAR.categoriaLabel}{' '}
                 <span className="text-muted-foreground font-normal">{LANCAR.categoriaOpcional}</span>
