@@ -130,6 +130,13 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
   antes/depois (zero diferença fora do e-mail) e login testado nos dois
   endereços. `realtime-duas-sessoes.mjs` atualizado para ler
   `SEED_EMAIL_PARCEIRA` em vez de hardcode.
+- **Grupos de categoria (pastas)** — back-end (`6df56d8`) e front
+  (Antigravity, Rodada 5: `01cc8f1`..`d37467e`) publicados e verificados
+  (`tsc`/`next build` limpos, confirmado independentemente): criar grupo em
+  Ajustes > Categorias, atribuir categoria a um grupo (menu simples), e
+  filtrar o seletor de categoria em `/lancar` por grupo. Um grupo por
+  categoria (como pasta); excluir grupo só desvincula, nunca apaga
+  categoria.
 - CRUD completo de categorias/formas de pagamento/contas — back-end
   (`18c327e`) e front (Antigravity, Rodada 4: `858bb66`..`24871bb`) os dois
   publicados e ligados: `gerenciador-categorias.tsx`,
@@ -187,12 +194,6 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
 - **Rotação da chave de serviço e senha do banco** — apareceram em chat
   nesta sessão (não vazaram para o GitHub, mas foram ditas em texto); rotação
   ainda não feita.
-- **Grupos/filtros de categoria personalizados (novo, planejamento em
-  andamento):** o Heitor quer criar grupos como "Compras online" em Ajustes,
-  atribuir categorias a eles, e filtrar o seletor de categoria em `/lancar`
-  por esse grupo em vez de rolar a lista inteira. Exige tabela nova
-  (categoria↔grupo) — Estrutura planeja o schema antes do Antigravity tocar
-  na UI.
 
 ### Deixado de fora deliberadamente
 
