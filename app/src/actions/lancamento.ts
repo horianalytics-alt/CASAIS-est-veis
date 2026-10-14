@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { isValidISODate } from '@/lib/format'
+import { agendarNotificacao, resolverAutorDoPush } from '@/lib/push/notificar'
 import {
   falha,
   falhaDeValidacao,
@@ -235,6 +236,10 @@ export async function salvarLancamento(
     recurrence_months: item.parcelas ?? 1,
   }))
 
+  // Quem lançou, pela sessão, em paralelo com a gravação (não atrasa a
+  // resposta). Nunca rejeita: sem autor, só não há push.
+  const autor = resolverAutorDoPush(supabase, usuario.user.id)
+
   const { data, error } = await supabase.rpc('save_transactions', {
     p_items: itens,
   })
@@ -245,6 +250,10 @@ export async function salvarLancamento(
   revalidatePath('/lancar')
   revalidatePath('/carteira')
   revalidatePath('/acerto')
+
+  // Push para o parceiro DEPOIS da resposta (after). Uma notificação por
+  // chamada, contando os itens do lote — não as parcelas.
+  agendarNotificacao(await autor, 'lancamento', analise.data.length)
 
   return sucesso(data ?? [])
 }

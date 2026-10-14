@@ -14,7 +14,8 @@ import { falha, traduzErroDoBanco, type ResultadoAction } from './resultado'
  */
 export type ClienteServidor = Awaited<ReturnType<typeof createClient>>
 
-export type ContextoDaFamilia = { supabase: ClienteServidor; familyId: string }
+/** `userId` vem do getUser() verificado — usado para resolver o autor do push. */
+export type ContextoDaFamilia = { supabase: ClienteServidor; familyId: string; userId: string }
 
 export async function obterContextoDaFamilia(): Promise<
   { ok: true; ctx: ContextoDaFamilia } | { ok: false; resultado: ResultadoAction<never> }
@@ -32,5 +33,5 @@ export async function obterContextoDaFamilia(): Promise<
     return { ok: false, resultado: falha('Você não faz parte de nenhuma família.') }
   }
 
-  return { ok: true, ctx: { supabase, familyId } }
+  return { ok: true, ctx: { supabase, familyId, userId: usuario.user.id } }
 }
