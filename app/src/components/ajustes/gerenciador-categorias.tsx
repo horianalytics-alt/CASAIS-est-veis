@@ -49,6 +49,7 @@ import {
   contarUsoCategoria,
   type TipoCategoria,
 } from '@/actions/categorias'
+import { atribuirGrupoCategoria } from '@/actions/grupos-categoria'
 import {
   LIMITE_CARACTERES,
   LIMITE_NOMES,
@@ -58,6 +59,7 @@ import {
 import { cn } from '@/lib/utils'
 
 type CategoriaRow = Database['public']['Tables']['categories']['Row']
+type GrupoRow = Database['public']['Tables']['category_groups']['Row']
 
 const ROTULOS_TIPO: Record<string, string> = {
   despesa: 'Despesa',
@@ -74,12 +76,15 @@ interface FormLoteValores {
 
 export function GerenciadorCategorias({
   categoriasIniciais,
+  grupos = [],
 }: {
   categoriasIniciais: CategoriaRow[]
+  grupos?: GrupoRow[]
 }) {
   const router = useRouter()
   const [pendenteLote, iniciarLote] = React.useTransition()
   const [pendenteItem, iniciarItem] = React.useTransition()
+  const [pendenteGrupo, iniciarGrupo] = React.useTransition()
 
   const [resultadoLote, setResultadoLote] = React.useState<
     ResultadoAction<{ criadas: { id: string; nome: string }[]; ignoradas: string[] }> | null
@@ -254,6 +259,20 @@ export function GerenciadorCategorias({
       }
       tocarSomSucesso()
       setCategoriaParaExcluir(null)
+      router.refresh()
+    })
+  }
+
+  const aoAtribuirGrupo = (cat: CategoriaRow, grupoId: string | null) => {
+    setErroItem(null)
+    iniciarGrupo(async () => {
+      const res = await atribuirGrupoCategoria({ categoriaId: cat.id, grupoId })
+      if (!res.ok) {
+        setErroItem(res.erro)
+        tocarSomErro()
+        return
+      }
+      tocarSomSucesso()
       router.refresh()
     })
   }
@@ -488,18 +507,49 @@ export function GerenciadorCategorias({
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="toque"
-                        onClick={() => iniciarEdicao(cat)}
-                        disabled={pendenteItem}
-                        className="gap-1.5 text-xs"
-                      >
-                        <Edit2 className="size-3.5" aria-hidden="true" />
-                        {AJUSTES_CATEGORIAS.renomear}
-                      </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {grupos.length > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-muted-foreground text-xs hidden sm:inline">Grupo:</span>
+                          <Select
+                            value={cat.group_id ?? '__nenhum__'}
+                            onValueChange={(v) =>
+                              aoAtribuirGrupo(cat, v === '__nenhum__' ? null : v)
+                            }
+                            disabled={pendenteGrupo || pendenteItem}
+                          >
+                            <SelectTrigger
+                              className="h-8 w-[140px] text-xs"
+                              aria-label={`Grupo de ${cat.name}`}
+                            >
+                              <SelectValue placeholder="Nenhum" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__nenhum__" className="text-xs text-muted-foreground">
+                                Nenhum
+                              </SelectItem>
+                              {grupos.map((g) => (
+                                <SelectItem key={g.id} value={g.id} className="text-xs">
+                                  {g.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="toque"
+                          onClick={() => iniciarEdicao(cat)}
+                          disabled={pendenteItem}
+                          className="gap-1.5 text-xs"
+                        >
+                          <Edit2 className="size-3.5" aria-hidden="true" />
+                          {AJUSTES_CATEGORIAS.renomear}
+                        </Button>
 
                       <Button
                         type="button"
@@ -525,6 +575,7 @@ export function GerenciadorCategorias({
                       >
                         <Trash2 className="size-4" aria-hidden="true" />
                       </Button>
+                      </div>
                     </div>
                   </>
                 )}
@@ -570,18 +621,49 @@ export function GerenciadorCategorias({
                       {ROTULOS_TIPO[cat.type] ?? cat.type}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="toque"
-                      onClick={() => alternarArquivamento(cat, false)}
-                      disabled={pendenteItem}
-                      className="gap-1.5 text-xs"
-                    >
-                      <ArchiveRestore className="size-3.5" aria-hidden="true" />
-                      {AJUSTES_CATEGORIAS.reativar}
-                    </Button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {grupos.length > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-muted-foreground text-xs hidden sm:inline">Grupo:</span>
+                        <Select
+                          value={cat.group_id ?? '__nenhum__'}
+                          onValueChange={(v) =>
+                            aoAtribuirGrupo(cat, v === '__nenhum__' ? null : v)
+                          }
+                          disabled={pendenteGrupo || pendenteItem}
+                        >
+                          <SelectTrigger
+                            className="h-8 w-[130px] text-xs"
+                            aria-label={`Grupo de ${cat.name}`}
+                          >
+                            <SelectValue placeholder="Nenhum" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__nenhum__" className="text-xs text-muted-foreground">
+                              Nenhum
+                            </SelectItem>
+                            {grupos.map((g) => (
+                              <SelectItem key={g.id} value={g.id} className="text-xs">
+                                {g.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="toque"
+                        onClick={() => alternarArquivamento(cat, false)}
+                        disabled={pendenteItem}
+                        className="gap-1.5 text-xs"
+                      >
+                        <ArchiveRestore className="size-3.5" aria-hidden="true" />
+                        {AJUSTES_CATEGORIAS.reativar}
+                      </Button>
                     <Button
                       type="button"
                       variant="ghost"
@@ -593,6 +675,7 @@ export function GerenciadorCategorias({
                     >
                       <Trash2 className="size-4" aria-hidden="true" />
                     </Button>
+                    </div>
                   </div>
                 </div>
               ))}
