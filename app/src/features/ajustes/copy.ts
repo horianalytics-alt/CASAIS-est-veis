@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Copy da tela de Ajustes (/ajustes) e suas subpáginas em pt-BR.
  */
 
@@ -109,6 +109,29 @@ export const AJUSTES_CATEGORIAS = {
   cancelar: 'Cancelar',
 } as const
 
+
+export const AJUSTES_GRUPOS = {
+  titulo: 'Grupos de categoria',
+  subtitulo: 'Agrupe categorias em pastas para filtrar rapidamente em lançamentos',
+  adicionarPlaceholder: 'Nome do grupo (ex.: Compras online)',
+  adicionarBotao: 'Adicionar',
+  adicionando: 'Adicionando…',
+  semGrupos: 'Nenhum grupo criado ainda.',
+  renomear: 'Renomear',
+  excluir: 'Excluir',
+  excluirTitulo: 'Excluir grupo?',
+  excluirDescricao: (nome: string) =>
+    `Tem certeza que deseja excluir o grupo "${nome}"? As categorias dentro dele ficam sem grupo, mas não são excluídas.`,
+  excluirConfirmar: 'Excluir grupo',
+  cancelar: 'Cancelar',
+  salvarRenomear: 'Salvar',
+  grupoExcluido: (n: number) =>
+    n === 0
+      ? 'Grupo excluído.'
+      : `Grupo excluído. ${n} ${n === 1 ? 'categoria ficou' : 'categorias ficaram'} sem grupo.`,
+  erroGeral: 'Erro ao salvar. Tente novamente.',
+  nomeLabel: 'Nome do grupo',
+} as const
 export const AJUSTES_FORMAS = {
   titulo: 'Formas de pagamento',
   subtitulo: 'Adicione, renomeie, arquive ou exclua meios de pagamento da casa',
