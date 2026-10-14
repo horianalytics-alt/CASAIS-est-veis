@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { GerenciadorCategorias } from '@/components/ajustes/gerenciador-categorias'
 import { GerenciadorGrupos } from '@/components/ajustes/gerenciador-grupos'
+import { GerenciadorOrcamentos } from '@/components/ajustes/gerenciador-orcamentos'
+import { hojeEmSaoPaulo } from '@/lib/hoje'
 import { AJUSTES_CATEGORIAS } from '@/features/ajustes/copy'
 
 export const metadata: Metadata = {
@@ -28,7 +30,9 @@ export default async function PaginaAjustesCategorias() {
   const { data: memberId } = await supabase.rpc('get_user_member_id_self')
   if (!memberId) redirect('/onboarding')
 
-  const [{ data: categorias }, { data: grupos }] = await Promise.all([
+  const mesAtual = hojeEmSaoPaulo().slice(0, 7)
+
+  const [{ data: categorias }, { data: grupos }, { data: orcamentos }] = await Promise.all([
     supabase
       .from('categories')
       .select('*')
@@ -39,6 +43,10 @@ export default async function PaginaAjustesCategorias() {
       .select('*')
       .order('sort_order', { ascending: true })
       .order('name', { ascending: true }),
+    supabase
+      .from('v_orcamento_progresso')
+      .select('budget_id, category_id, category_name, month, budget_amount')
+      .order('month', { ascending: false }),
   ])
 
   return (
@@ -59,6 +67,17 @@ export default async function PaginaAjustesCategorias() {
           </p>
         </div>
       </div>
+
+      <GerenciadorOrcamentos
+        categorias={categorias ?? []}
+        orcamentosIniciais={(orcamentos ?? []).map((o) => ({
+          id: o.budget_id ?? '',
+          category_id: o.category_id,
+          category_name: o.category_name,
+          month: o.month ?? mesAtual,
+          budget_amount: o.budget_amount,
+        })).filter((o) => o.id !== '')}
+      />
 
       <GerenciadorGrupos gruposIniciais={grupos ?? []} />
 
