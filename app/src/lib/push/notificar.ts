@@ -36,7 +36,7 @@ export type AutorDoPush = { familyId: string; memberId: string; nome: string }
 export type ChavesVapid = { publicKey: string; privateKey: string; subject: string }
 
 export type RelatorioDeEnvio = {
-  /** inscrições dos outros membros encontradas no banco */
+  /** aparelhos de destino: endpoints distintos dos outros membros, já sem os que também são do autor */
   destinos: number
   /** aceitas pelo serviço de push */
   enviados: number

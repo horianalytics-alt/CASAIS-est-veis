@@ -89,8 +89,10 @@ Policies vigentes de `push_subscriptions` (lidas de `pg_policies`, não mudam):
 ### 3.1 `src/lib/supabase/servico.ts` (`import 'server-only'`, SEM `'use server'`)
 
 ```ts
-export type InscricaoDeDestino = { id: string; endpoint: string; p256dh: string; auth: string }
-// Inscrições dos OUTROS membros da família: WHERE family_id = $1 AND member_id <> $2.
+// (versão final — ver §11, C1) ids = todas as linhas com o mesmo endpoint
+export type InscricaoDeDestino = { ids: string[]; endpoint: string; p256dh: string; auth: string }
+// Lê WHERE family_id = $1; devolve só linhas de OUTROS membros, sem endpoint que também
+// está no nome do autor (navegador compartilhado), um item por endpoint.
 export async function inscricoesDosOutrosMembros(familyId: string, autorMemberId: string): Promise<InscricaoDeDestino[]>
 // Apaga inscrições mortas: WHERE family_id = $1 AND id IN ($2). Devolve quantas saíram.
 export async function apagarInscricoes(familyId: string, ids: string[]): Promise<number>
@@ -253,7 +255,7 @@ Famílias de teste: e-mails `push-<tag>-<stamp>@example.com`, limpeza no `afterA
 |---|---|---|---|
 | `service_role` em produção | — | ignora RLS | um arquivo, 2 funções, filtro explícito, uuid validado, teste de mutação, Sentinela revisa (R-1) |
 | SSRF por endpoint forjado | média sem D9 | servidor faz POST para host arbitrário | D9, nos dois pontos |
-| Aparelho compartilhado (Heitor e Carol no mesmo navegador) | baixa | mesmo endpoint em 2 membros → o autor recebe a própria notificação naquele aparelho | **pendência**: decidir se `salvarInscricaoPush` remove o endpoint dos outros membros (exigiria `service_role` numa 3ª função) — pergunta ao Maestro |
+| Aparelho compartilhado (Heitor e Carol no mesmo navegador) | baixa | mesmo endpoint em 2 membros → o autor recebe a própria notificação naquele aparelho | **corrigido na execução** (§11, C1): o envio pula endpoint que também é do autor — sem 3ª função de `service_role` |
 | Spam entre membros | baixa | um membro em loop dispara muitas notificações ao parceiro | aceito (2 pessoas da mesma casa); sem rate limit nesta entrega |
 | `web-push` não empacotar no Turbopack | baixa | build quebra | verificado no `next build`; se precisar de `serverExternalPackages`, `next.config.ts` está FORA da minha lista → paro e reporto |
 | `after` estourar `maxDuration` | baixa | notificação perdida | `timeout: 10000` por envio, `allSettled` em paralelo |
@@ -284,5 +286,31 @@ Desvio previsto, registrado já no plano: `Desvio: arquivo temporário em src/ap
 ## 10. Perguntas ao Maestro (nenhuma bloqueia a execução)
 
 1. D10 — manter `salvarInscricaoPush`/`removerInscricaoPush`? (Recomendo sim.)
-2. Aparelho compartilhado: `salvarInscricaoPush` deve tirar o mesmo endpoint de OUTRO membro? Exige uma 3ª função no `servico.ts`.
+2. ~~Aparelho compartilhado~~ — resolvido no envio (§11, C1). Efeito a confirmar: num navegador
+   usado pelos DOIS, o parceiro também deixa de receber ali os avisos do autor (quem está no
+   aparelho pode ser o próprio autor). Nos aparelhos só dele, recebe normalmente.
 3. Editar/excluir lançamento também notifica? Hoje não (o briefing nomeia só as 3 actions).
+
+## 11. Execução — desvios e correções do review
+
+Desvios em relação ao plano acima:
+
+- `Desvio: arquivo temporário src/app/prova-server-only/{page,cliente}.tsx — prova pedida pelo Maestro de que o next build quebra; criado, build falhou, apagado, git status de src/app vazio antes e depois.`
+- `Desvio: database.ts não recommitado — o gen types depois da 00012 saiu idêntico ao commitado (oxfmt + diff = 0). A 00013 foi aplicada por OUTRO agente em paralelo, que regenerou e commitou database.ts no 306cef7.`
+- `Desvio: security-review (skill) não rodou — exige que o cwd da sessão seja o repositório, e não é. Substituído por code-review high nos 8 arquivos + revisão manual do checklist de segurança.`
+
+Achados do `code-review` (high) aceitos, cada um com teste vermelho antes e verde depois:
+
+| # | Achado | Correção |
+|---|---|---|
+| C1 | navegador compartilhado: o autor recebia a própria notificação | `servico.ts` lê a família, exclui as linhas do autor E qualquer endpoint que também é dele, deduplica por endpoint (`ids[]`) |
+| C2 | `salvarInscricaoPush` apagava antes de inserir: falha no insert perdia a inscrição viva | insere primeiro; em 23505 só troca a linha se as chaves mudaram (a antiga já não decifra nada) |
+| C3 | corte do nome em 40 partia emoji (surrogate solto) | `Array.from(...)` por code point |
+
+Rejeitados (justificativa no relatório): sem chamadores no front (é a troca do Antigravity, por
+desenho); resolução de identidade repetida / cliente por chamada / consulta do autor em
+paralelo (custo de 1 ida ao banco; mexer no `obterContextoDaFamilia` atinge todas as actions);
+apagar em 403 (um VAPID mal configurado apagaria TODAS as inscrições); acerto em centavos
+(`settlement.ts` soma em centavos e já entrega reais à tela; a action não soma, só valida 2
+casas); Zod em inglês (refutado por execução: as mensagens saem em português pelo mapa global
+de `resultado.ts`, agora travado em teste).
