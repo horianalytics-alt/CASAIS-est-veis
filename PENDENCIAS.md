@@ -102,6 +102,31 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
   do digitado por 1 centavo, em silêncio.
 - **Severidade:** BAIXA. Correção simples (arredondamento decimal-safe).
 
+### P-010 — Sem Server Action para criar/editar orçamento por categoria
+- **Origem:** Dash, entrega de `/analises` (orçamento/patrimônio/simulador),
+  2026-10-14.
+- **O quê:** o card de progresso de orçamento (`v_orcamento_progresso`) já
+  lê e desenha certo, mas não existe NENHUMA forma de escrever em
+  `category_budgets` — nem Server Action, nem tela. Em produção, o card
+  sempre aparece vazio até isso existir.
+- **Severidade:** ALTA para o produto (feature inteira inutilizável), mas
+  sem risco de segurança.
+- **Próximo passo:** Estrutura cria `src/actions/orcamentos.ts`
+  (`definirOrcamento`/`excluirOrcamento`, mesmo padrão de
+  `categorias.ts`); Fachada ou Dash constrói a tela (sugestão do Dash:
+  Ajustes > Categorias).
+
+### P-011 — Paleta categórica reprova no validador do dataviz
+- **Origem:** Dash, mesma entrega.
+- **O quê:** `node scripts/validate_palette.js` reprova a paleta de
+  `src/styles/chart-palette.ts` nos 8 slots, claro e escuro (banda de
+  luminância e piso de croma). Só a série 1 (`#2F6DB5` claro,
+  `#6FA8E8` escuro) passa em todas as checagens — e é a única usada nos
+  gráficos desta entrega (linha única, barra de cor constante).
+- **Severidade:** BAIXA hoje (série 1 passa), mas bloqueia usar mais de 1
+  hue categórico em gráfico futuro sem re-trabalhar a paleta.
+- **Próximo passo:** Vitrine re-faz o passo da paleta categórica.
+
 ### P-004 — 5 vulnerabilidades `npm audit` de severidade alta
 - **Cadeia:** `braces` → `micromatch` → `fast-glob` → `@next/eslint-plugin-next`
   → `eslint-config-next`.
