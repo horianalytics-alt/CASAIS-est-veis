@@ -58,13 +58,13 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
   em 2026-10-12. Push feito, deploy automático na Vercel confirmado.
 - **Status:** fechado. Mantido aqui só como registro histórico.
 
-### P-003 — Open Finance
+### P-003 — Open Finance — CANCELADO
 - **Origem:** Heitor, 2026-10-11 — "futuramente penso em deixar esse app open finance".
-- **Status:** fora do escopo da Onda 1 e da Onda 2. O schema já reserva o
-  terreno: `accounts.external_id` existe para amarrar conta local a conta de
-  instituição externa.
-- **O que falta decidir:** qual agregador (Pluggy, Belvo, Open Finance direto),
-  que é decisão de custo e de regulação, não técnica.
+- **Status:** CANCELADO por decisão do Heitor em 2026-10-13 ("se isso for por
+  causa do open finance esquece, não quero mais"). Não entra em nenhuma fase
+  futura. O campo `accounts.external_id` fica no schema sem uso — não vale a
+  pena remover só por isso, mas nenhuma pesquisa de agregador (Pluggy/Belvo)
+  será feita.
 
 ---
 
