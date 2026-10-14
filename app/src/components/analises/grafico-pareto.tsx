@@ -1,6 +1,7 @@
 'use client'
 
 import { formatBRL } from '@/lib/format'
+import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ANALISES } from '@/features/analises/copy'
@@ -11,6 +12,7 @@ interface GraficoParetoProps {
 }
 
 export function GraficoPareto({ itens }: GraficoParetoProps) {
+  const { oculto } = useOcultarValores()
   const total = itens.reduce((acc, curr) => acc + curr.valor, 0)
 
   if (total <= 0 || itens.length === 0) {
@@ -68,7 +70,7 @@ export function GraficoPareto({ itens }: GraficoParetoProps) {
                   ) : null}
                 </span>
                 <span className="font-mono num-tabular">
-                  − {formatBRL(cat.valor)}{' '}
+                  − {formatBRL(cat.valor, oculto)}{' '}
                   <span className="text-muted-foreground text-[length:var(--texto-micro)]">
                     ({cat.percentualIndividual.toFixed(1)}%)
                   </span>

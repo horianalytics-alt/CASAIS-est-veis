@@ -1,3 +1,5 @@
+'use client'
+
 import * as React from 'react'
 import {
   ArrowDownLeft,
@@ -13,6 +15,7 @@ import { ValorMonetario } from '@/components/financeiro/valor-monetario'
 import { ValorSaldo } from '@/components/financeiro/valor-saldo'
 import { INICIO } from '@/features/transacoes/copy'
 import { formatBRL } from '@/lib/format'
+import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
 import { cn } from '@/lib/utils'
 
 export interface ResumoDoMesProps {
@@ -45,6 +48,7 @@ export function ResumoDoMes({
   investimentos = 0,
   aReceber = 0,
 }: ResumoDoMesProps) {
+  const { oculto } = useOcultarValores()
   const saldo = Math.round((entrou - saiu) * 100) / 100
   const taxaComprometimento = entrou > 0 ? Math.min(100, Math.round((saiu / entrou) * 100)) : 0
 
@@ -76,7 +80,7 @@ export function ResumoDoMes({
             <div className="flex items-center gap-1.5 bg-muted/60 px-2.5 py-1 rounded-full border border-border/80">
               <Percent className="size-3 text-muted-foreground" aria-hidden="true" />
               <span className="text-foreground text-xs font-semibold num-tabular">
-                {taxaComprometimento}% da receita
+                {oculto ? '••••' : `${taxaComprometimento}% da receita`}
               </span>
             </div>
           </div>
@@ -100,7 +104,7 @@ export function ResumoDoMes({
               <ValorMonetario valor={entrou} tipo="receita" tamanho="destaque" className="text-base sm:text-xl font-bold truncate" />
               {receitasTotal && receitasTotal > entrou ? (
                 <span className="text-muted-foreground text-[10px] sm:text-[11px] truncate mt-0.5">
-                  de {formatBRL(receitasTotal)} prev.
+                  de {formatBRL(receitasTotal, oculto)} prev.
                 </span>
               ) : (
                 <span className="text-muted-foreground text-[10px] sm:text-[11px] truncate mt-0.5">
@@ -126,7 +130,7 @@ export function ResumoDoMes({
               <ValorMonetario valor={saiu} tipo="despesa" tamanho="destaque" className="text-base sm:text-xl font-bold truncate" />
               {despesasTotal && despesasTotal > saiu ? (
                 <span className="text-muted-foreground text-[10px] sm:text-[11px] truncate mt-0.5">
-                  de {formatBRL(despesasTotal)} prev.
+                  de {formatBRL(despesasTotal, oculto)} prev.
                 </span>
               ) : (
                 <span className="text-muted-foreground text-[10px] sm:text-[11px] truncate mt-0.5">

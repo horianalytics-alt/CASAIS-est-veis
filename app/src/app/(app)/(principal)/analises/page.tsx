@@ -148,7 +148,7 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
   const classeNavMes = buttonVariants({ variant: 'outline', size: 'icone-toque' })
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-[var(--esp-6)] px-[var(--esp-4)] py-[var(--esp-6)]">
+    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-[var(--esp-6)] px-[var(--esp-4)] py-[var(--esp-6)]">
       {/* Top Header */}
       <div className="flex flex-col gap-[var(--esp-3)] sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-[var(--esp-2)]">
@@ -196,18 +196,16 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
       {/* Previsão de fixos e parcelas (próximos 6 meses) */}
       <PrevisaoFixos meses={previsaoMeses} />
 
-      {/* Mapa de Calor e Hábitos */}
-      <div className="grid gap-[var(--esp-6)] xl:grid-cols-2">
-        <MapaDeCalorDias anoMes={mes} transacoes={transacoes} />
-        <div className="flex flex-col justify-between">
-          <IndicadoresInteligencia
-            totalBeneficios={totalBeneficios}
-            totalFuteis={totalFuteis}
-            rotulosFuteis={rotulosFuteis}
-            metas={metasInfo}
-          />
-        </div>
-      </div>
+      {/* Indicadores de Inteligência Financeira: Benefícios, Supérfluos e Metas */}
+      <IndicadoresInteligencia
+        totalBeneficios={totalBeneficios}
+        totalFuteis={totalFuteis}
+        rotulosFuteis={rotulosFuteis}
+        metas={metasInfo}
+      />
+
+      {/* Mapa de Calor: Dias de Maior Gasto */}
+      <MapaDeCalorDias anoMes={mes} transacoes={transacoes} />
     </main>
   )
 }

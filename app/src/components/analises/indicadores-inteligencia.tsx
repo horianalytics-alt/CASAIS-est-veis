@@ -1,6 +1,7 @@
 'use client'
 
 import { formatBRL } from '@/lib/format'
+import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Sparkles, Utensils, Target } from 'lucide-react'
@@ -25,17 +26,19 @@ export function IndicadoresInteligencia({
   rotulosFuteis,
   metas,
 }: IndicadoresInteligenciaProps) {
+  const { oculto } = useOcultarValores()
+
   return (
-    <div className="grid gap-[var(--esp-4)] sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       {/* Eficiência de Benefícios */}
       <Card>
         <CardHeader className="pb-[var(--esp-2)]">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-[var(--esp-2)] text-[length:var(--texto-corpo)] font-semibold">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold truncate">
               <Utensils className="size-4 text-[var(--beneficio)]" aria-hidden="true" />
               {ANALISES.beneficiosTitulo}
             </CardTitle>
-            <Badge variant="outline" className="border-border-input text-[length:var(--texto-micro)]">
+            <Badge variant="outline" className="shrink-0 border-border-input text-xs">
               VR / VA
             </Badge>
           </div>
@@ -43,7 +46,7 @@ export function IndicadoresInteligencia({
         </CardHeader>
         <CardContent className="flex flex-col gap-[var(--esp-2)]">
           <span className="font-mono text-[length:var(--texto-subtitulo)] font-semibold num-tabular text-[var(--beneficio)]">
-            + {formatBRL(totalBeneficios)}
+            + {formatBRL(totalBeneficios, oculto)}
           </span>
           <p className="text-muted-foreground text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)]">
             Valor coberto por benefícios que preservou a renda da família neste período.
@@ -67,7 +70,7 @@ export function IndicadoresInteligencia({
         </CardHeader>
         <CardContent className="flex flex-col gap-[var(--esp-2)]">
           <span className="font-mono text-[length:var(--texto-subtitulo)] font-semibold num-tabular text-[var(--despesa)]">
-            − {formatBRL(totalFuteis)}
+            − {formatBRL(totalFuteis, oculto)}
           </span>
           {rotulosFuteis.length > 0 ? (
             <div className="flex flex-wrap gap-1 pt-1">
@@ -76,7 +79,7 @@ export function IndicadoresInteligencia({
                   key={i}
                   className="bg-muted text-muted-foreground rounded-xs px-1.5 py-0.5 text-[length:var(--texto-micro)]"
                 >
-                  {r.rotulo}: {formatBRL(r.total)}
+                  {r.rotulo}: {formatBRL(r.total, oculto)}
                 </span>
               ))}
             </div>
@@ -122,8 +125,8 @@ export function IndicadoresInteligencia({
                     />
                   </div>
                   <div className="flex items-center justify-between font-mono text-[length:var(--texto-micro)] text-muted-foreground num-tabular">
-                    <span>{formatBRL(m.saldoAtual)}</span>
-                    <span>Meta: {formatBRL(m.meta)}</span>
+                    <span>{formatBRL(m.saldoAtual, oculto)}</span>
+                    <span>Meta: {formatBRL(m.meta, oculto)}</span>
                   </div>
                 </div>
               )

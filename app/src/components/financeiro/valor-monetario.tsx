@@ -1,5 +1,8 @@
+'use client'
+
 import { TriangleAlert } from 'lucide-react'
 import { formatBRL } from '@/lib/format'
+import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
 import { cn } from '@/lib/utils'
 
 /**
@@ -90,10 +93,12 @@ export function ValorMonetario({
   tipo,
   pago = true,
   contabil = false,
-  oculto = false,
+  oculto: propOculto,
   tamanho = 'linha',
   className,
 }: ValorMonetarioProps) {
+  const { oculto: contextOculto } = useOcultarValores()
+  const oculto = propOculto ?? contextOculto
   const negativoContabil = contabil && valor < 0
 
   // Sempre o módulo: o sinal e os parênteses são nossos, não do toLocaleString.

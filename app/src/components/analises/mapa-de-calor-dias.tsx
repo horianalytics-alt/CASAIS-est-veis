@@ -1,6 +1,7 @@
 'use client'
 
 import { formatBRL } from '@/lib/format'
+import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ANALISES } from '@/features/analises/copy'
 
@@ -16,6 +17,7 @@ interface MapaDeCalorDiasProps {
 }
 
 export function MapaDeCalorDias({ anoMes, transacoes }: MapaDeCalorDiasProps) {
+  const { oculto } = useOcultarValores()
   const [ano, mes] = anoMes.split('-').map(Number)
   const totalDias = new Date(ano, mes, 0).getDate()
 
@@ -65,14 +67,14 @@ export function MapaDeCalorDias({ anoMes, transacoes }: MapaDeCalorDiasProps) {
               <div
                 key={dia}
                 className={`flex aspect-square flex-col items-center justify-center rounded-md p-1 transition-all text-[length:var(--texto-micro)] ${classeCor}`}
-                title={`Dia ${dia}: ${gasto > 0 ? `− ${formatBRL(gasto)}` : 'Sem gastos'}`}
+                title={`Dia ${dia}: ${gasto > 0 ? `− ${formatBRL(gasto, oculto)}` : 'Sem gastos'}`}
                 role="img"
                 aria-label={`Dia ${dia}: ${gasto > 0 ? `despesa − ${formatBRL(gasto)}` : 'sem gastos'}`}
               >
                 <span>{dia}</span>
                 {gasto > 0 ? (
                   <span className="hidden font-mono text-[9px] truncate sm:block">
-                    {Math.round(gasto)}
+                    {oculto ? '••••' : Math.round(gasto)}
                   </span>
                 ) : null}
               </div>

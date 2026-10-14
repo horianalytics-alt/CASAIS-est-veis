@@ -4,6 +4,7 @@ import { sair } from '@/actions/auth'
 import { NavegacaoInferior } from '@/components/navegacao/navegacao-inferior'
 import { NavegacaoLateral } from '@/components/navegacao/navegacao-lateral'
 import { BotaoOcultarValores } from '@/components/navegacao/botao-ocultar-valores'
+import { OcultarValoresProvider } from '@/components/providers/ocultar-valores-provider'
 import { Button } from '@/components/ui/button'
 import { APP } from '@/features/comum/copy'
 import { NAVEGACAO } from '@/features/transacoes/copy'
@@ -19,7 +20,8 @@ import { NAVEGACAO } from '@/features/transacoes/copy'
  */
 export default function LayoutPrincipal({ children }: LayoutProps<'/'>) {
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
+    <OcultarValoresProvider>
+      <div className="flex min-h-screen flex-col lg:flex-row">
       {/* Barra Lateral Permanente para Desktop (>= 1024px) */}
       <Suspense fallback={<div className="hidden lg:flex w-64 border-r border-border" />}>
         <NavegacaoLateral />
@@ -53,6 +55,7 @@ export default function LayoutPrincipal({ children }: LayoutProps<'/'>) {
       <Suspense fallback={<div className="border-border fixed bottom-0 inset-x-0 z-20 h-16 border-t pb-[env(safe-area-inset-bottom)] lg:hidden" />}>
         <NavegacaoInferior />
       </Suspense>
-    </div>
+      </div>
+    </OcultarValoresProvider>
   )
 }

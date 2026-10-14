@@ -1,6 +1,7 @@
 'use client'
 
 import { formatBRL } from '@/lib/format'
+import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
 import { SERIES_CLARO, SERIES_ESCURO, SERIE_OUTROS, MARCADORES } from '@/styles/chart-palette'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ANALISES } from '@/features/analises/copy'
@@ -16,6 +17,7 @@ interface GraficoRoscaCategoriasProps {
 }
 
 export function GraficoRoscaCategorias({ itens }: GraficoRoscaCategoriasProps) {
+  const { oculto } = useOcultarValores()
   const total = itens.reduce((acc, curr) => acc + curr.valor, 0)
 
   if (total <= 0 || itens.length === 0) {
@@ -143,7 +145,7 @@ export function GraficoRoscaCategorias({ itens }: GraficoRoscaCategoriasProps) {
               {ANALISES.totalGasto}
             </span>
             <span className="font-mono text-xs font-semibold num-tabular text-despesa">
-              − {formatBRL(total)}
+              − {formatBRL(total, oculto)}
             </span>
           </div>
         </div>
@@ -173,7 +175,7 @@ export function GraficoRoscaCategorias({ itens }: GraficoRoscaCategoriasProps) {
                   {s.percentual.toFixed(1)}%
                 </span>
                 <span className="font-medium text-foreground">
-                  − {formatBRL(s.valor)}
+                  − {formatBRL(s.valor, oculto)}
                 </span>
               </div>
             </div>
