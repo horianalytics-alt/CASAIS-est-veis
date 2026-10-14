@@ -31,7 +31,11 @@ try {
   const { data: idHeitor } = await heitor.rpc('get_user_member_id_self')
   console.log(`familia: ${familyId}`)
 
-  const carol = await entrar('carol.financas.teste@gmail.com', process.env.SEED_SENHA)
+  // E-mail da Carol vem SO da env var (sem fallback): desde 2026-10-13 a conta
+  // dela usa o e-mail real, que nao fica versionado no repositorio.
+  const emailCarol = process.env.SEED_EMAIL_PARCEIRA
+  if (!emailCarol) throw new Error('defina SEED_EMAIL_PARCEIRA (e-mail da Carol) no ambiente')
+  const carol = await entrar(emailCarol, process.env.SEED_SENHA)
 
   const { data: contas } = await heitor.from('accounts').select('id,name').limit(1)
   const { data: cats } = await heitor.from('categories').select('id').limit(1)
