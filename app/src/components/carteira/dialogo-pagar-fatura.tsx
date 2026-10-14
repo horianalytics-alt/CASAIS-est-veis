@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { CreditCard, CheckCircle2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { pagarFatura } from '@/actions/fatura'
 import { todayISO } from '@/lib/format'
 import { invoicePeriodLabel } from '@/lib/invoice'
 import { Button } from '@/components/ui/button'
@@ -79,33 +79,27 @@ export function DialogoPagarFatura({
     setPendente(true)
     setErro(null)
 
-    try {
-      const supabase = createClient()
-      const { error: erroRpc } = await supabase.rpc('pay_invoice', {
-        p_card_account_id: fatura.account_id,
-        p_from_account_id: contaOrigemId,
-        p_invoice_year: fatura.invoice_year,
-        p_invoice_month: fatura.invoice_month,
-        p_date: dataPagamento,
-      })
+    const resposta = await pagarFatura({
+      cartaoId: fatura.account_id,
+      contaOrigemId,
+      anoFatura: fatura.invoice_year,
+      mesFatura: fatura.invoice_month,
+      data: dataPagamento,
+    })
 
-      if (erroRpc) {
-        setErro(erroRpc.message || 'Erro ao registrar pagamento da fatura.')
-        setPendente(false)
-        return
-      }
-
-      setSucesso(true)
+    if (!resposta.ok) {
+      setErro(resposta.erro ?? 'Erro ao registrar pagamento da fatura.')
       setPendente(false)
-      setTimeout(() => {
-        setAberto(false)
-        setSucesso(false)
-        router.refresh()
-      }, 1000)
-    } catch {
-      setErro('Falha na conexão ao tentar pagar a fatura.')
-      setPendente(false)
+      return
     }
+
+    setSucesso(true)
+    setPendente(false)
+    setTimeout(() => {
+      setAberto(false)
+      setSucesso(false)
+      router.refresh()
+    }, 1000)
   }
 
   return (

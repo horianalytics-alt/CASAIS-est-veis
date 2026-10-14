@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, CheckCircle2, Handshake } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { registrarAcerto } from '@/actions/acerto'
 import { todayISO } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import {
@@ -50,32 +50,26 @@ export function DialogoAcertar({
     setPendente(true)
     setErro(null)
 
-    try {
-      const supabase = createClient()
-      const { error: erroRpc } = await supabase.rpc('settle_up', {
-        p_from_member_id: devedorId,
-        p_to_member_id: credorId,
-        p_amount: valor,
-        p_date: dataAcerto,
-      })
+    const resposta = await registrarAcerto({
+      deMembroId: devedorId,
+      paraMembroId: credorId,
+      valor,
+      data: dataAcerto,
+    })
 
-      if (erroRpc) {
-        setErro(erroRpc.message || 'Erro ao registrar o acerto de contas.')
-        setPendente(false)
-        return
-      }
-
-      setSucesso(true)
+    if (!resposta.ok) {
+      setErro(resposta.erro ?? 'Erro ao registrar o acerto de contas.')
       setPendente(false)
-      setTimeout(() => {
-        setAberto(false)
-        setSucesso(false)
-        router.refresh()
-      }, 1000)
-    } catch {
-      setErro('Falha de conexão ao tentar registrar o acerto.')
-      setPendente(false)
+      return
     }
+
+    setSucesso(true)
+    setPendente(false)
+    setTimeout(() => {
+      setAberto(false)
+      setSucesso(false)
+      router.refresh()
+    }, 1000)
   }
 
   return (

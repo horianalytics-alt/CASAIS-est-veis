@@ -6,6 +6,8 @@ import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { FormPerfil } from '@/components/ajustes/form-perfil'
+import { BotaoNotificacoes } from '@/components/ajustes/botao-notificacoes'
+import { Bell } from 'lucide-react'
 import { AJUSTES_PERFIL } from '@/features/ajustes/copy'
 
 export const metadata: Metadata = {
@@ -60,6 +62,19 @@ export default async function PaginaAjustesPerfil() {
           nomeInicial={membro.display_name}
           rendaInicial={membro.monthly_income}
         />
+      </div>
+
+      <div className="bg-card border-border/80 rounded-xl border p-5 shadow-xs flex flex-col gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Bell className="size-4 text-muted-foreground" aria-hidden="true" />
+            <h2 className="text-sm font-semibold">Notificações</h2>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Receba alertas quando seu parceiro registrar lançamentos, pagar faturas ou acertar contas.
+          </p>
+        </div>
+        <BotaoNotificacoes />
       </div>
     </main>
   )
