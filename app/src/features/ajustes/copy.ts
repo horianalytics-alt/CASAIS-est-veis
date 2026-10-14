@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Copy da tela de Ajustes (/ajustes) e suas subpáginas em pt-BR.
  */
 
@@ -155,3 +155,30 @@ export const AJUSTES_FORMAS = {
   cancelar: 'Cancelar',
 } as const
 
+export const AJUSTES_ORCAMENTOS = {
+  titulo: 'Orçamentos do mês',
+  subtitulo: 'Limites de gasto por categoria para planejar e acompanhar',
+  novoOrcamento: 'Novo orçamento',
+  editarOrcamento: 'Editar orçamento',
+  novoDescricao: 'Defina um limite de gasto mensal para uma categoria.',
+  editarDescricao: 'Altere o limite de gasto para essa categoria e mês.',
+  categoriaLabel: 'Categoria',
+  categoriaPlaceholder: 'Selecione uma categoria',
+  categoriaSemElegiveis: 'Nenhuma categoria ativa de despesa ou investimento',
+  jaTemOrcamento: '(já tem orçamento)',
+  mesLabel: 'Mês',
+  limiteLabel: 'Limite (R$)',
+  limitePlaceholder: '0,00',
+  salvar: 'Salvar',
+  atualizar: 'Atualizar',
+  salvando: 'Salvando…',
+  cancelar: 'Cancelar',
+  semOrcamentos: (mesRotulo: string) =>
+    `Nenhum orçamento definido para ${mesRotulo}. Clique em Novo orçamento para começar.`,
+  excluirTitulo: 'Excluir orçamento?',
+  excluirDescricao: (catNome: string, mesRotulo: string) =>
+    `Tem certeza que deseja remover o orçamento de "${catNome}" em ${mesRotulo}? O histórico de gastos da categoria não será afetado.`,
+  excluirBotao: 'Excluir orçamento',
+  excluindo: 'Excluindo…',
+  erroGeral: 'Não foi possível salvar o orçamento.',
+} as const
