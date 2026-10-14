@@ -117,4 +117,6 @@ export const LANCAR = {
   ehFutilLabel: 'Gasto fútil (compra por impulso)',
   rotuloDoFutilLabel: 'O que motivou ou qual foi o item? (opcional)',
   rotuloDoFutilPlaceholder: 'Ex.: Delivery por preguiça, doce, roupa extra',
+  filtroGrupoLabel: 'Filtrar por grupo',
+  filtroGrupoTodas: 'Todas as categorias',
 } as const
