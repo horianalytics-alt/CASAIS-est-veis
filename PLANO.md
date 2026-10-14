@@ -212,3 +212,66 @@ tenant-escape.mjs      → NAO EXPLORAVEL (bloqueio acidental — ver A-001)
 Tabelas e views confirmadas vivas por consulta REST com `service_role`: as 9
 tabelas e as 4 views respondem HTTP 200; `transactions` com chave `anon`
 responde **HTTP 401** (`REVOKE ALL FROM anon` ativo).
+
+---
+
+## 8 Onda 2 (Fase B) — metas/orçamento, patrimônio, simulador
+
+Push real está em planejamento/execução separados (ver
+`docs/planos/estrutura-push-real.md`, disparado em 2026-10-14). Esta seção
+cobre os outros 3 blocos da Fase B, que não compartilham arquivo com o push
+e podem rodar em paralelo a ele.
+
+**Open Finance CANCELADO** (Heitor, 2026-10-13) — não entra em nenhuma fase.
+`accounts.external_id` fica reservado no schema sem uso.
+
+### 8.1 Metas por conta / Orçamento por categoria
+
+- **Schema:** `account_goals` e `category_budgets` já existem
+  (`00001_initial_schema.sql`) — Estrutura confirma se o shape atual
+  (valores, periodicidade) atende antes de escrever a view, e só migra se
+  faltar coluna.
+- **View nova:** `v_orcamento_progresso` (`security_invoker=true`,
+  `Skill(skill="supabase:supabase")` cobre a obrigação — carregar antes de
+  qualquer `CREATE VIEW`), cruzando `category_budgets` com soma de
+  `transactions` do mês por categoria.
+- **Forma do gráfico** (`Skill(skill="dataviz")`, carregada neste plano):
+  progresso de orçamento é **magnitude com um polo** (quanto já gastei vs.
+  o limite) — barra horizontal com marcador de meta, não anel/donut (a
+  skill desaconselha donut para comparação de magnitude). Cor: sequencial
+  de 1 hue até ~80% do limite; acima disso, paleta de status (`warning`
+  perto do limite, `critical` ao estourar) — nunca reaproveitar hue
+  categórico para status.
+- **Dono do chart:** Dash. Dono do card/layout em volta: Fachada.
+
+### 8.2 Patrimônio
+
+- **View nova:** `v_patrimonio_mensal` (`security_invoker=true`, teste de
+  isolamento obrigatório — outra família não lê o patrimônio desta),
+  acumulando saldo de todas as contas por mês.
+- **Forma do gráfico:** patrimônio ao longo do tempo é **mudança no
+  tempo** → linha, eixo único (nunca dois eixos y para "patrimônio" e
+  "variação %" juntos — a skill marca dual-axis como erro nº 1). Se
+  precisar mostrar entrada/saída dentro do mesmo gráfico, usar
+  indexação a uma base comum ou small multiples, não um segundo eixo.
+- **Dono do chart:** Dash.
+
+### 8.3 Simulador de gasto fútil
+
+- **Lógica:** `src/lib/simulador.ts` (Estrutura) — juros compostos em
+  centavos inteiros (nunca float, mesma regra do resto do projeto),
+  testado com casos de borda (0 meses, taxa 0, valor 0).
+- **Não é view nem tabela** — é função pura de cálculo; a tela em
+  `/analises` ou `/ajustes` (Fachada decide onde) chama com o valor que o
+  Heitor já marcou como `is_futile` nos lançamentos.
+- **Forma:** se vier com gráfico (projeção "e se eu não tivesse gasto"),
+  é **mudança no tempo** → linha, mesma regra de eixo único do patrimônio.
+  Dono do chart (se houver): Dash. Se for só um número/tile, Fachada
+  resolve sem o Dash (dataviz: "nem tudo é gráfico" — às vezes é stat
+  tile).
+
+### 8.4 Ordem de delegação
+
+Estrutura (schema + views + `simulador.ts`) primeiro, sequencial — Dash
+consome schema + paleta do Vitrine, roda depois. Fachada (card/layout em
+volta dos gráficos do Dash) roda depois do Dash, nunca em paralelo.
