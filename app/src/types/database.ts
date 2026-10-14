@@ -413,6 +413,7 @@ export type Database = {
           recurrence_index: number | null;
           recurrence_months: number | null;
           recurrence_parent_id: string | null;
+          settlement_to_member_id: string | null;
           to_account_id: string | null;
           type: string;
           updated_at: string;
@@ -443,6 +444,7 @@ export type Database = {
           recurrence_index?: number | null;
           recurrence_months?: number | null;
           recurrence_parent_id?: string | null;
+          settlement_to_member_id?: string | null;
           to_account_id?: string | null;
           type: string;
           updated_at?: string;
@@ -472,6 +474,7 @@ export type Database = {
           recurrence_index?: number | null;
           recurrence_months?: number | null;
           recurrence_parent_id?: string | null;
+          settlement_to_member_id?: string | null;
           to_account_id?: string | null;
           type?: string;
           updated_at?: string;
@@ -553,6 +556,20 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "payment_methods";
             referencedColumns: ["family_id", "id"];
+          },
+          {
+            foreignKeyName: "transactions_family_id_settlement_to_member_id_fkey";
+            columns: ["family_id", "settlement_to_member_id"];
+            isOneToOne: false;
+            referencedRelation: "family_members";
+            referencedColumns: ["family_id", "id"];
+          },
+          {
+            foreignKeyName: "transactions_family_id_settlement_to_member_id_fkey";
+            columns: ["family_id", "settlement_to_member_id"];
+            isOneToOne: false;
+            referencedRelation: "v_settlement";
+            referencedColumns: ["family_id", "member_id"];
           },
           {
             foreignKeyName: "transactions_family_id_to_account_id_fkey";
@@ -694,6 +711,8 @@ export type Database = {
           share: number | null;
           total_owed: number | null;
           total_paid: number | null;
+          total_settled_received: number | null;
+          total_settled_sent: number | null;
         };
         ComputedFields: never;
         Relationships: [
@@ -782,6 +801,7 @@ export type Database = {
           recurrence_index: number | null;
           recurrence_months: number | null;
           recurrence_parent_id: string | null;
+          settlement_to_member_id: string | null;
           to_account_id: string | null;
           type: string;
           updated_at: string;

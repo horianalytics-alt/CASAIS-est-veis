@@ -3,6 +3,7 @@
 // sem fixar family_id. Um membro consegue trocar o proprio family_id e
 // entrar na familia de outra pessoa?
 import { createClient } from '@supabase/supabase-js'
+import { limparTeste } from './limpeza-utils.mjs'
 
 const URL = 'https://wxhfgstgjjlmqauogeid.supabase.co'
 const ANON = process.env.ANON_KEY
@@ -11,6 +12,7 @@ const admin = createClient(URL, SERVICE, { auth: { persistSession: false } })
 
 const stamp = Date.now()
 const created = []
+const createdFamilies = []
 let failures = 0
 let checks = 0
 
@@ -45,6 +47,7 @@ async function mk(label, familyName, memberName) {
   })
   if (fErr) throw new Error(`create_family ${label}: ${fErr.message}`)
   const row = Array.isArray(fam) ? fam[0] : fam
+  createdFamilies.push(row.family_id)
   return { cli, familyId: row.family_id, memberId: row.member_id, uid: data.user.id }
 }
 
@@ -205,7 +208,12 @@ try {
   console.error('ERRO:', e.message)
   failures++
 } finally {
-  for (const uid of created) await admin.auth.admin.deleteUser(uid).catch(() => {})
-  console.log(`limpeza: ${created.length} usuario(s) removido(s)`)
+  // Antes: deleteUser(...).catch(() => {}) e nada mais. Apagar o usuário NÃO
+  // apaga a família (só o membro, por cascata), e o lançamento de B
+  // (created_by RESTRICT) travava a exclusão do usuário em silêncio — sobravam
+  // "Casa A", "Casa B" e o usuário de B a cada execução. Agora a limpeza
+  // compartilhada apaga lançamentos -> famílias -> usuários e conta o que saiu.
+  const erros = await limparTeste(admin, createdFamilies, created)
+  if (erros.length > 0) failures++
 }
 process.exit(failures > 0 ? 1 : 0)
