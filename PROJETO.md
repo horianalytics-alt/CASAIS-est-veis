@@ -161,10 +161,13 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
   notificação (nem em navegador compartilhado com o parceiro — corrigido
   no review). `pagarFatura`/`registrarAcerto` como Server Actions
   substituem as chamadas diretas de `pay_invoice`/`settle_up` do navegador
-  (fecha o risco R-13). **Falta:** chaves VAPID configuradas na Vercel (ver
-  pendências — eu já gerei o par, só falta você colar na Vercel) e o front
-  do Antigravity trocar as chamadas diretas pelas novas actions + botão
-  "Ativar notificações".
+  (fecha o risco R-13). Chaves VAPID configuradas na Vercel pelo Heitor.
+  Front (Antigravity, `925e96d`) publicado e verificado: os dois diálogos
+  trocados (mapeamento conferido linha a linha — `deMembroId`/`paraMembroId`
+  e `cartaoId`/`contaOrigemId` sem inversão), `BotaoNotificacoes` com os 5
+  estados (carregando/sem-suporte/não-inscrito/inscrito/pendente), desfaz a
+  inscrição do navegador se a Server Action falhar. **Falta:** teste real
+  com dois dispositivos (Heitor ativa, Carol lança algo, Heitor recebe).
 - **Metas por conta / Orçamento por categoria / Patrimônio / Simulador de
   gasto fútil** — back-end completo (`306cef7`, migration 00013):
   `v_orcamento_progresso` e `v_patrimonio_mensal` (ambas
