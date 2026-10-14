@@ -14,6 +14,9 @@ import { MapaDeCalorDias } from '@/components/analises/mapa-de-calor-dias'
 import { IndicadoresInteligencia } from '@/components/analises/indicadores-inteligencia'
 import { BotaoExportarCsv } from '@/components/analises/botao-exportar-csv'
 import { PrevisaoFixos } from '@/components/analises/previsao-fixos'
+import { GraficoOrcamento } from '@/components/analises/grafico-orcamento'
+import { GraficoPatrimonio } from '@/components/analises/grafico-patrimonio'
+import { SimuladorFutil } from '@/components/analises/simulador-futil'
 
 export const metadata: Metadata = { title: ANALISES.titulo }
 
@@ -40,7 +43,7 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
   const mes = ehMesValido(mesPedido) ? mesPedido : mesAtual
   const { inicio, fim } = limitesDoMes(mes)
 
-  const [resumos, categorias, contas, transacoesDoMes, metas] = await Promise.all([
+  const [resumos, categorias, contas, transacoesDoMes, metas, orcamentos, patrimonio] = await Promise.all([
     supabase
       .from('v_monthly_summary')
       .select('*')
@@ -56,6 +59,19 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
     supabase
       .from('account_goals')
       .select('account_id, amount'),
+    // Onda 2 (Dash). RLS das views (security_invoker) resolve a família; o mês
+    // é o da página, que vem de hojeEmSaoPaulo() — a view não filtra mês (UTC).
+    supabase
+      .from('v_orcamento_progresso')
+      .select('budget_id, category_name, category_archived_at, budget_amount, spent_amount, remaining_amount, used_ratio, tx_count')
+      .eq('month', mes),
+    // Até o mês selecionado: um paid_date futuro nunca aparece como "agora".
+    supabase
+      .from('v_patrimonio_mensal')
+      .select('month, net_change, total_balance')
+      .lte('month', mes)
+      .order('month', { ascending: false })
+      .limit(12),
   ])
 
   const listaCategorias = categorias.data ?? []
@@ -122,6 +138,22 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
     }
   }
 
+  // Mesmo conjunto de totalFuteis, somado em centavos inteiros (sem resíduo de
+  // float) — é o valor de partida sugerido ao simulador.
+  const futilDoMesCentavos = transacoes.reduce(
+    (soma, t) => (t.is_futile ? soma + Math.round(Number(t.amount) * 100) : soma),
+    0,
+  )
+
+  // Momento do dado (página dinâmica: render = leitura), no fuso do casal.
+  const atualizadoEm = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date())
+
   const rotulosFuteis = Array.from(rotulosFuteisMap.entries())
     .map(([rotulo, total]) => ({ rotulo, total }))
     .sort((a, b) => b.total - a.total)
@@ -184,6 +216,15 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
         <BotaoExportarCsv anoMes={mes} transacoes={transacoesExportaveis} />
       </div>
 
+      {/* Orçamento do mês (Dash, PLANO.md 8.1): barra horizontal + marcador de meta */}
+      <GraficoOrcamento
+        linhas={orcamentos.data ?? []}
+        erro={orcamentos.error !== null}
+        mesRotulo={rotuloDoMes(mes)}
+        emAndamento={mes === mesAtual}
+        atualizadoEm={atualizadoEm}
+      />
+
       {/* Grid de Gráficos Principais */}
       <div className="grid gap-[var(--esp-6)] xl:grid-cols-2">
         <GraficoRoscaCategorias itens={itensCategorias} />
@@ -192,6 +233,15 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
 
       {/* Evolução Mensal */}
       <GraficoBarrasMensais historico={historicoMensal} />
+
+      {/* Patrimônio (Dash, PLANO.md 8.2): linha, eixo único */}
+      <GraficoPatrimonio
+        linhas={patrimonio.data ?? []}
+        erro={patrimonio.error !== null}
+        mes={mes}
+        mesAtual={mesAtual}
+        atualizadoEm={atualizadoEm}
+      />
 
       {/* Previsão de fixos e parcelas (próximos 6 meses) */}
       <PrevisaoFixos meses={previsaoMeses} />
@@ -203,6 +253,9 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
         rotulosFuteis={rotulosFuteis}
         metas={metasInfo}
       />
+
+      {/* Simulador de gasto fútil (Dash, PLANO.md 8.3): stat + linha, eixo único */}
+      <SimuladorFutil futilDoMesCentavos={futilDoMesCentavos} mesRotulo={rotuloDoMes(mes)} />
 
       {/* Mapa de Calor: Dias de Maior Gasto */}
       <MapaDeCalorDias anoMes={mes} transacoes={transacoes} />

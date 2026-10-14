@@ -34,5 +34,81 @@ export const ANALISES = {
   jaPago: 'Já pago',
   aReceber: 'A receber',
   semCompromissos: 'Sem lançamentos agendados',
+
+  // --- Onda 2 (Dash): orçamento, patrimônio, simulador -----------------------
+  // A definição de cada KPI é a MESMA de docs/planos/dash-orcamento-patrimonio-simulador.md §2.
+  atualizadoEm: (quando: string) => `Atualizado em ${quando} (horário de Brasília)`,
+  comoCalculamos: 'Como calculamos',
+  verTabela: 'Ver tabela',
+  emAndamento: 'mês em andamento',
+  parcial: 'parcial',
+
+  orcamentoTitulo: 'Orçamento do mês',
+  orcamentoDescricao: (mes: string) => `Quanto já foi gasto de cada limite em ${mes}.`,
+  orcamentoDefinicao:
+    'Gasto = despesas e investimentos com data de compra no mês, pagos ou não (compra no cartão conta antes da fatura ser paga). Receitas e transferências não contam.',
+  orcamentoVazioTitulo: 'Nenhum orçamento neste mês',
+  orcamentoVazioDescricao: (mes: string) =>
+    `Ainda não há limite de gasto por categoria para ${mes}. Quando houver, o progresso de cada um aparece aqui.`,
+  orcamentoErro: 'Não foi possível carregar os orçamentos. Recarregue a página para tentar de novo.',
+  orcamentoDe: 'de',
+  orcamentoRestam: (valor: string) => `Restam ${valor}`,
+  orcamentoAcima: (valor: string) => `${valor} acima do limite`,
+  orcamentoNoLimite: 'Limite atingido',
+  orcamentoLancamentos: (n: number) => (n === 1 ? '1 lançamento' : `${n} lançamentos`),
+  orcamentoArquivada: '(arquivada)',
+  orcamentoStatusAtencao: 'Atenção',
+  orcamentoStatusEstourado: 'Estourou',
+  orcamentoLegendaMeta: 'Limite do orçamento (100%)',
+  orcamentoLegendaNormal: 'Abaixo de 80%',
+  orcamentoLegendaAtencao: 'De 80% a 100%',
+  orcamentoLegendaEstourado: 'Acima do limite',
+
+  patrimonioTitulo: 'Patrimônio da família',
+  patrimonioDescricao: 'Saldo somado de todas as contas no fim de cada mês.',
+  patrimonioDefinicao:
+    'Soma do saldo de todas as contas no fim de cada mês, inclusive cartões e contas arquivadas. Cada movimento conta no mês em que foi pago: compra no cartão entra quando a fatura é paga.',
+  patrimonioEm: (mes: string) => `Patrimônio em ${mes}`,
+  patrimonioVariacao: (meses: number) =>
+    meses === 1 ? 'Variação no mês' : `Variação em ${meses} meses`,
+  patrimonioAteHoje: 'até hoje',
+  patrimonioUmMes: 'Ainda há só um mês de histórico. A linha aparece a partir do segundo mês.',
+  patrimonioVazioTitulo: 'Sem histórico de patrimônio até aqui',
+  patrimonioVazioDescricao: (mes: string) =>
+    `Não há patrimônio registrado até ${mes}. Ele é calculado a partir das contas da família: se ainda não há nenhuma, cadastre uma em Ajustes.`,
+  patrimonioErro: 'Não foi possível carregar o patrimônio. Recarregue a página para tentar de novo.',
+  patrimonioColunaMes: 'Mês',
+  patrimonioColunaValor: 'Patrimônio',
+  patrimonioColunaVariacao: 'Variação do mês',
+  patrimonioGraficoRotulo: (de: string, ate: string) =>
+    `Gráfico de linha do patrimônio da família de ${de} a ${ate}`,
+
+  simuladorTitulo: 'E se não tivesse gasto?',
+  simuladorDescricao: 'Quanto um gasto evitável renderia se fosse investido.',
+  simuladorDefinicao: 'Juros compostos mensais sobre o valor, sem aportes nem impostos.',
+  simuladorValor: 'Valor (R$)',
+  simuladorTaxa: 'Rendimento ao mês (%)',
+  simuladorMeses: 'Prazo (meses)',
+  simuladorUsarFuteis: (mes: string, valor: string) => `Usar os supérfluos de ${mes} (${valor})`,
+  simuladorResultado: (meses: number) =>
+    meses === 1 ? 'Em 1 mês, valeria' : `Em ${meses} meses, valeria`,
+  simuladorRendimento: 'Rendimento',
+  simuladorPreencha: 'Informe um valor para ver quanto ele renderia.',
+  simuladorSemCurva: 'Com prazo de 0 meses ou valor zero não há curva para mostrar.',
+  simuladorErros: {
+    valor_texto: 'Valor inválido. Use só números, como 250 ou 1.250,90.',
+    taxa_texto: 'Taxa inválida. Use até duas casas, como 1 ou 1,07.',
+    meses_texto: 'Prazo inválido. Use um número inteiro de meses, como 12.',
+    valor_grande_demais: 'Valor acima do limite aceito (R$ 999.999.999.999,99).',
+    valor_invalido: 'Valor acima do limite aceito (R$ 999.999.999.999,99).',
+    taxa_invalida: 'Taxa acima de 100% ao mês. Use um valor menor.',
+    meses_invalido: 'Prazo acima de 600 meses (50 anos). Use um prazo menor.',
+    resultado_grande_demais: 'O resultado ficou grande demais para calcular. Reduza o prazo ou a taxa.',
+  },
+  simuladorEixoMes: (n: number) => (n === 0 ? 'hoje' : `mês ${n}`),
+  simuladorGraficoRotulo: (meses: number) =>
+    `Gráfico de linha do valor investido mês a mês, de hoje até o mês ${meses}`,
+  simuladorColunaMes: 'Mês',
+  simuladorColunaValor: 'Valor',
 } as const
 

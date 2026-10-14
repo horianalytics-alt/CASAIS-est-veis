@@ -1,0 +1,312 @@
+{
+  "console": {
+    "a_1440_claro": [
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected",
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected",
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected"
+    ],
+    "a_768_claro": [
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected",
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected"
+    ],
+    "a_390_claro": [
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected",
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected"
+    ],
+    "a_1440_escuro": [
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected",
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected"
+    ],
+    "a_390_escuro": [
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected",
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected"
+    ],
+    "a_privacidade": [
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected",
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected",
+      "[pageerror] Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\nhttps://react.dev/link/hydration-mismatch\n\n  ...\n    <SegmentViewNode type=\"layout\" pagePath=\"(app)/(pri...\">\n      <SegmentTrieNode>\n      <script>\n      <script>\n      <LayoutPrincipal>\n        <OcultarValoresProvider>\n          <div className=\"flex min-h...\">\n            <Suspense fallback={{...}}>\n              <NavegacaoLateral>\n                <aside aria-label=\"Navegação ...\" className=\"hidden lg:...\">\n                  <div>\n                  <div className=\"border-t b...\">\n                    <div className=\"flex items...\">\n                      <span>\n                      <BotaoOcultarValores>\n                        <Button type=\"button\" variant=\"ghost\" size=\"icone-toque\" ...>\n                          <button\n                            data-slot=\"button\"\n                            data-variant=\"ghost\"\n                            data-size=\"icone-toque\"\n                            className={\"group/button inline-flex shrink-0 items-center justify-center rounded-lg bord...\"}\n                            type=\"button\"\n                            onClick={function OcultarValoresProvider.useCallback[alternar]}\n+                           aria-label=\"Mostrar valores financeiros\"\n-                           aria-label=\"Ocultar valores financeiros\"\n+                           title=\"Mostrar valores\"\n-                           title=\"Ocultar valores\"\n                          >\n                            <EyeOff className=\"size-5\" aria-hidden=\"true\">\n                              <svg\n                                ref={null}\n                                xmlns=\"http://www.w3.org/2000/svg\"\n                                width={24}\n                                height={24}\n                                viewBox=\"0 0 24 24\"\n                                fill=\"none\"\n                                stroke=\"currentColor\"\n                                strokeWidth={2}\n                                strokeLinecap=\"round\"\n                                strokeLinejoin=\"round\"\n+                               className=\"lucide lucide-eye-off size-5\"\n-                               className=\"lucide lucide-eye size-5\"\n                                aria-hidden=\"true\"\n                              >\n                                <path\n+                                 d=\"M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0...\"\n-                                 d=\"M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 ...\"\n                                >\n+                               <path d=\"M14.084 14.158a3 3 0 0 1-4.242-4.242\">\n-                               <circle cx=\"12\" cy=\"12\" r=\"3\">\n                                ...\n                    ...\n            ...\n"
+    ],
+    "a_390_toque": [
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected",
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected"
+    ],
+    "a_setembro": [
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected",
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected"
+    ],
+    "c_vazio_e_estados": [
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected",
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected",
+      "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "[log] [HMR] connected"
+    ]
+  },
+  "rede": {
+    "analises_1440": {
+      "status": 200,
+      "ms": 954,
+      "nav": {
+        "ttfb": 83,
+        "domContentLoaded": 436,
+        "load": 439,
+        "transferKB": 23
+      }
+    },
+    "analises_768": {
+      "status": 200,
+      "ms": 1176,
+      "nav": {
+        "ttfb": 175,
+        "domContentLoaded": 631,
+        "load": 656,
+        "transferKB": 23
+      }
+    },
+    "analises_390": {
+      "status": 200,
+      "ms": 1104,
+      "nav": {
+        "ttfb": 240,
+        "domContentLoaded": 575,
+        "load": 577,
+        "transferKB": 23
+      }
+    },
+    "analises_1440_escuro": {
+      "status": 200,
+      "ms": 1045,
+      "nav": {
+        "ttfb": 147,
+        "domContentLoaded": 517,
+        "load": 518,
+        "transferKB": 23
+      }
+    },
+    "analises_390_escuro": {
+      "status": 200,
+      "ms": 1047,
+      "nav": {
+        "ttfb": 153,
+        "domContentLoaded": 525,
+        "load": 528,
+        "transferKB": 23
+      }
+    }
+  },
+  "verificacoes": [
+    {
+      "nome": "sem NaN/Infinity no texto (A 1440 claro)",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "sem NaN/Infinity em atributo SVG (A 1440 claro)",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "barra acessível /Lazer: Estourou\\./",
+      "passou": true,
+      "detalhe": "1 encontrada(s)"
+    },
+    {
+      "nome": "barra acessível /Alimentação: Atenção\\./",
+      "passou": true,
+      "detalhe": "1 encontrada(s)"
+    },
+    {
+      "nome": "barra acessível /Mercado: R\\$/",
+      "passou": true,
+      "detalhe": "1 encontrada(s)"
+    },
+    {
+      "nome": "barra acessível /Transporte: R\\$/",
+      "passou": true,
+      "detalhe": "1 encontrada(s)"
+    },
+    {
+      "nome": "grupo do gráfico de patrimônio acessível",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "sem NaN/Infinity no texto (A 1440 claro, após simulador)",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "sem NaN/Infinity em atributo SVG (A 1440 claro, após simulador)",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "sem NaN/Infinity no texto (A 768 claro)",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "sem NaN/Infinity em atributo SVG (A 768 claro)",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "390px sem scroll horizontal",
+      "passou": true,
+      "detalhe": "scrollWidth=390"
+    },
+    {
+      "nome": "sem NaN/Infinity no texto (A 390 claro)",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "sem NaN/Infinity em atributo SVG (A 390 claro)",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "1440 escuro aplicou .dark",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "1440 escuro: linha do patrimônio desenhada e diferente do fundo",
+      "passou": true,
+      "detalhe": "{\"linha\":\"rgb(111, 168, 232)\",\"fundo\":\"rgb(23, 28, 32)\"}"
+    },
+    {
+      "nome": "sem NaN/Infinity no texto (A 1440 escuro)",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "sem NaN/Infinity em atributo SVG (A 1440 escuro)",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "390 escuro aplicou .dark",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "390 escuro: linha do patrimônio desenhada e diferente do fundo",
+      "passou": true,
+      "detalhe": "{\"linha\":\"rgb(111, 168, 232)\",\"fundo\":\"rgb(23, 28, 32)\"}"
+    },
+    {
+      "nome": "sem NaN/Infinity no texto (A 390 escuro)",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "sem NaN/Infinity em atributo SVG (A 390 escuro)",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "privacidade: nenhum R$ com dígito nos cards novos",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "privacidade: botão \"Usar os supérfluos\" não aparece",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "privacidade: variação sem cor de receita/despesa",
+      "passou": true,
+      "detalhe": "valor text-[length:var(--texto-valor-linha)] font-medium"
+    },
+    {
+      "nome": "toque: tooltip do patrimônio continua após o tap",
+      "passou": true,
+      "detalhe": "1 tooltip(s)"
+    },
+    {
+      "nome": "toque: tooltip da barra de orçamento continua após o tap",
+      "passou": true,
+      "detalhe": "1 tooltip(s)"
+    },
+    {
+      "nome": "sem NaN/Infinity no texto (C vazio)",
+      "passou": true,
+      "detalhe": ""
+    },
+    {
+      "nome": "sem NaN/Infinity em atributo SVG (C vazio)",
+      "passou": true,
+      "detalhe": ""
+    }
+  ],
+  "barras": [
+    "Lazer: Estourou. R$ 260,35 de R$ 200,00, 130%. R$ 60,35 acima do limite.",
+    "Alimentação: Atenção. R$ 270,00 de R$ 300,00, 90%. Restam R$ 30,00.",
+    "Mercado: R$ 600,00 de R$ 1.000,00, 60%. Restam R$ 400,00.",
+    "Transporte: R$ 0,00 de R$ 400,00, 0%. Restam R$ 400,00.",
+    "Gráfico de rosca: total de despesas R$ 3.330,35 divididas em 4 categorias",
+    "Mai/26: receita + R$ 6.000,00",
+    "Mai/26: despesa − R$ 3.370,00",
+    "Jun/26: receita + R$ 6.000,00",
+    "Jun/26: despesa − R$ 3.450,00",
+    "Jul/26: receita + R$ 6.000,00",
+    "Jul/26: despesa − R$ 3.460,00",
+    "Ago/26: receita + R$ 6.000,00",
+    "Ago/26: despesa − R$ 3.550,00",
+    "Set/26: receita + R$ 6.000,00",
+    "Set/26: despesa − R$ 3.290,00",
+    "Out/26: receita + R$ 6.050,00",
+    "Out/26: despesa − R$ 3.180,35",
+    "Dia 3: despesa − R$ 450,00",
+    "Dia 4: despesa − R$ 189,90",
+    "Dia 6: despesa − R$ 180,35",
+    "Dia 8: despesa − R$ 150,00",
+    "Dia 9: despesa − R$ 80,10",
+    "Dia 10: despesa − R$ 2.200,00",
+    "Dia 11: despesa − R$ 80,00"
+  ],
+  "tooltipPatrimonio": "R$ 19.408,75\nabril de 2026",
+  "tecladoPatrimonioHome": "novembro de 2025: R$ 13.259,60",
+  "textoOrcamento": "Orçamento do mês\nmês em andamento\nQuanto já foi gasto de cada limite em outubro de 2026.\nLazer\nEstourou\n· 130%\nR$ 260,35 de R$ 200,00 · 2 lançamentos\nR$ 60,35 acima do limite\nAlimentação\nAtenção\n· 90%\nR$ 270,00 de R$ 300,00 · 2 lançamentos\nRestam R$ 30,00\nMercado\n60%\nR$ 600,00 de R$ 1.000,00 · 2 lançamentos\nRestam R$ 400,00\nTransporte\n0%\nR$ 0,00 de R$ 400,00 · 0 lançamentos\nRestam R$ 400,00\nLimite do orçamento (100%)\nAbaixo de 80%\nDe 80% a 100%\nAcima do limite\nComo calculamos\n\nAtualizado em 14/10, 16:38 (horário de Brasília)",
+  "textoPatrimonio": "Patrimônio da família\nSaldo somado de todas as contas no fim de cada mês.\nPatrimônio em outubro de 2026 · parcial\nR$ 35.158,40\nVariação em 11 meses (até hoje)\n+R$ 21.898,80\nR$ 10 mil\nR$ 20 mil\nR$ 30 mil\nR$ 40 mil\nnov/25\ndez/25\njan/26\nfev/26\nmar/26\nabr/26\nmai/26\njun/26\njul/26\nago/26\nset/26\nout/26\nR$ 13.259,60\nnovembro de 2025\nnovembro de 2025: R$ 13.259,60\nVer tabela\nComo calculamos\n\nAtualizado em 14/10, 16:38 (horário de Brasília)",
+  "tabelaPatrimonio": "Mês\tPatrimônio\tVariação do mês\nnovembro de 2025\tR$ 13.259,60\t+R$ 2.760,00\ndezembro de 2025\tR$ 15.249,25\t+R$ 1.989,65\njaneiro de 2026\tR$ 15.099,25\t−R$ 150,00\nfevereiro de 2026\tR$ 18.019,25\t+R$ 2.920,00\nmarço de 2026\tR$ 16.609,25\t−R$ 1.410,00\nabril de 2026\tR$ 19.408,75\t+R$ 2.799,50\nmaio de 2026\tR$ 22.038,75\t+R$ 2.630,00\njunho de 2026\tR$ 24.588,75\t+R$ 2.550,00\njulho de 2026\tR$ 27.128,75\t+R$ 2.540,00\nagosto de 2026\tR$ 29.578,75\t+R$ 2.450,00\nsetembro de 2026\tR$ 32.288,75\t+R$ 2.710,00\noutubro de 2026 (parcial)\tR$ 35.158,40\t+R$ 2.869,65",
+  "textoSimulador": "E se não tivesse gasto?\nQuanto um gasto evitável renderia se fosse investido.\nValor (R$)\nRendimento ao mês (%)\nPrazo (meses)\nUsar os supérfluos de outubro de 2026 (R$ 370,25)\nEm 12 meses, valeria\nR$ 417,21\nRendimento\n+R$ 46,96\nR$ 0\nR$ 200\nR$ 400\nR$ 600\nhoje\nmês 2\nmês 4\nmês 6\nmês 8\nmês 10\nmês 12\nR$ 417,21\nVer tabela\nComo calculamos",
+  "campoValor": "370,25",
+  "erroPrazo": [
+    "Prazo acima de 600 meses (50 anos). Use um prazo menor."
+  ],
+  "prazoZero": "E se não tivesse gasto?\nQuanto um gasto evitável renderia se fosse investido.\nValor (R$)\nRendimento ao mês (%)\nPrazo (meses)\nUsar os supérfluos de outubro de 2026 (R$ 370,25)\nEm 0 meses, valeria\nR$ 370,25\nRendimento\n+R$ 0,00\n\nCom prazo de 0 meses ou valor zero não há curva para mostrar.\n\nComo calculamos",
+  "simulador120": "E se não tivesse gasto?\nQuanto um gasto evitável renderia se fosse investido.\nValor (R$)\nRendimento ao mês (%)\nPrazo (meses)\nUsar os supérfluos de outubro de 2026 (R$ 370,25)\nEm 120 meses, valeria\nR$ 1.327,90\nRendimento\n+R$ 957,65\nR$ 0\nR$ 500\nR$ 1 mil\nR$ 1,5 mil\nhoje\nmês 11\nmês 22\nmês 33\nmês 44\nmês 55\nmês 66\nmês 77\nmês 88\nmês 99\nmês 110\nmês 120\nR$ 1.327,90\nVer tabela\nComo calculamos",
+  "cores_1440_escuro": {
+    "linha": "rgb(111, 168, 232)",
+    "fundo": "rgb(23, 28, 32)"
+  },
+  "cores_390_escuro": {
+    "linha": "rgb(111, 168, 232)",
+    "fundo": "rgb(23, 28, 32)"
+  },
+  "textoOrcamentoSetembro": "Orçamento do mês\nQuanto já foi gasto de cada limite em setembro de 2026.\nMercado\nAtenção\n· 88%\nR$ 790,00 de R$ 900,00 · 1 lançamento\nRestam R$ 110,00\nLimite do orçamento (100%)\nAbaixo de 80%\nDe 80% a 100%\nAcima do limite\nComo calculamos\n\nAtualizado em 14/10, 16:39 (horário de Brasília)",
+  "textoPatrimonioSetembro": "Patrimônio da família\nSaldo somado de todas as contas no fim de cada mês.\nPatrimônio em setembro de 2026\nR$ 32.288,75\nVariação em 11 meses\n+R$ 21.789,15\nR$ 10 mil\nR$ 20 mil\nR$ 30 mil\nR$ 40 mil\nout/25\nnov/25\ndez/25\njan/26\nfev/26\nmar/26\nabr/26\nmai/26\njun/26\njul/26\nago/26\nset/26\nR$ 32.288,75\nVer tabela\nComo calculamos\n\nAtualizado em 14/10, 16:39 (horário de Brasília)",
+  "textoVazio": "Orçamento do mês\nmês em andamento\nQuanto já foi gasto de cada limite em outubro de 2026.\n\nNenhum orçamento neste mês\n\nAinda não há limite de gasto por categoria para outubro de 2026. Quando houver, o progresso de cada um aparece aqui.\n\nComo calculamos\n\nAtualizado em 14/10, 16:39 (horário de Brasília)\n---\nPatrimônio da família\nSaldo somado de todas as contas no fim de cada mês.\n\nSem histórico de patrimônio até aqui\n\nNão há patrimônio registrado até outubro de 2026. Ele é calculado a partir das contas da família: se ainda não há nenhuma, cadastre uma em Ajustes.\n\nComo calculamos\n\nAtualizado em 14/10, 16:39 (horário de Brasília)",
+  "textoErro": "Orçamento do mês\nmês em andamento\nQuanto já foi gasto de cada limite em outubro de 2026.\n\nNão foi possível carregar os orçamentos. Recarregue a página para tentar de novo.\n\nComo calculamos\n\nAtualizado em 14/10, 16:00 (horário de Brasília)\n\nPatrimônio da família\nSaldo somado de todas as contas no fim de cada mês.\n\nNão foi possível carregar o patrimônio. Recarregue a página para tentar de novo.\n\nComo calculamos\n\nAtualizado em 14/10, 16:00 (horário de Brasília)"
+}
