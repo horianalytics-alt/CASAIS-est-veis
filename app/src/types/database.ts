@@ -745,6 +745,59 @@ export type Database = {
           },
         ];
       };
+      v_orcamento_progresso: {
+        Row: {
+          budget_amount: number | null;
+          budget_id: string | null;
+          category_archived_at: string | null;
+          category_color: string | null;
+          category_icon: string | null;
+          category_id: string | null;
+          category_name: string | null;
+          category_type: string | null;
+          family_id: string | null;
+          month: string | null;
+          remaining_amount: number | null;
+          spent_amount: number | null;
+          tx_count: number | null;
+          used_ratio: number | null;
+        };
+        ComputedFields: never;
+        Relationships: [
+          {
+            foreignKeyName: "category_budgets_family_id_category_id_fkey";
+            columns: ["family_id", "category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["family_id", "id"];
+          },
+          {
+            foreignKeyName: "category_budgets_family_id_fkey";
+            columns: ["family_id"];
+            isOneToOne: false;
+            referencedRelation: "families";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      v_patrimonio_mensal: {
+        Row: {
+          family_id: string | null;
+          month: string | null;
+          net_change: number | null;
+          total_balance: number | null;
+        };
+        ComputedFields: never;
+        Relationships: [
+          {
+            foreignKeyName: "accounts_family_id_fkey";
+            columns: ["family_id"];
+            isOneToOne: false;
+            referencedRelation: "families";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       v_settlement: {
         Row: {
           balance: number | null;
