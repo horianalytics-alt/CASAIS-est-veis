@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { formatBRL } from '@/lib/format'
 import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -13,6 +14,12 @@ interface GraficoParetoProps {
 
 export function GraficoPareto({ itens }: GraficoParetoProps) {
   const { oculto } = useOcultarValores()
+  const [animado, setAnimado] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimado(true), 50)
+    return () => clearTimeout(timer)
+  }, [])
   const total = itens.reduce((acc, curr) => acc + curr.valor, 0)
 
   if (total <= 0 || itens.length === 0) {
@@ -79,9 +86,9 @@ export function GraficoPareto({ itens }: GraficoParetoProps) {
               {/* Barra de progresso */}
               <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
                 <div
-                  className="h-full bg-[var(--despesa)] transition-all duration-300"
+                  className="h-full bg-[var(--despesa)] transition-all duration-700 ease-out"
                   style={{
-                    width: `${cat.percentualIndividual}%`,
+                    width: animado ? `${cat.percentualIndividual}%` : '0%',
                     opacity: cat.pertenceAos80 ? 1 : 0.4,
                   }}
                 />

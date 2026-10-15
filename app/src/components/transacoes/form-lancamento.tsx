@@ -261,7 +261,9 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
         tocarSomSucesso()
         setConcluido(true)
         deveReiniciar.current = true
-        router.replace(destinoAposSalvar(valores.data, resposta.dados, 1))
+        setTimeout(() => {
+          router.replace(destinoAposSalvar(valores.data, resposta.dados, 1))
+        }, 120)
       } else {
         tocarSomErro()
       }
@@ -353,7 +355,9 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
         setConcluido(true)
         deveReiniciar.current = true
         const primeiraData = valores.itens[0]?.data || hoje
-        router.replace(destinoAposSalvar(primeiraData, resposta.dados, valores.itens.length))
+        setTimeout(() => {
+          router.replace(destinoAposSalvar(primeiraData, resposta.dados, valores.itens.length))
+        }, 120)
       } else {
         tocarSomErro()
       }

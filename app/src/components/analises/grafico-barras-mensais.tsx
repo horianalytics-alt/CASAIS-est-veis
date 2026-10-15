@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { formatBRL } from '@/lib/format'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ANALISES } from '@/features/analises/copy'
@@ -30,6 +31,13 @@ const MESES_ABREV: Record<string, string> = {
 }
 
 export function GraficoBarrasMensais({ historico }: GraficoBarrasMensaisProps) {
+  const [animado, setAnimado] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimado(true), 50)
+    return () => clearTimeout(timer)
+  }, [])
+
   if (historico.length === 0) {
     return (
       <Card>
@@ -101,16 +109,16 @@ export function GraficoBarrasMensais({ historico }: GraficoBarrasMensaisProps) {
                 >
                   {/* Barra de Receita */}
                   <div
-                    className="w-1/2 rounded-t-sm bg-[var(--receita)] transition-all duration-300 hover:opacity-85"
-                    style={{ height: `${Math.max(alturaReceita, 4)}px` }}
+                    className="w-1/2 rounded-t-sm bg-[var(--receita)] transition-all duration-700 ease-out hover:opacity-85"
+                    style={{ height: `${animado ? Math.max(alturaReceita, 4) : 0}px` }}
                     title={`Receitas: + ${formatBRL(d.receitas)}`}
                     role="img"
                     aria-label={`${rotulo}: receita + ${formatBRL(d.receitas)}`}
                   />
                   {/* Barra de Despesa */}
                   <div
-                    className="w-1/2 rounded-t-sm bg-[var(--despesa)] transition-all duration-300 hover:opacity-85"
-                    style={{ height: `${Math.max(alturaDespesa, 4)}px` }}
+                    className="w-1/2 rounded-t-sm bg-[var(--despesa)] transition-all duration-700 ease-out hover:opacity-85"
+                    style={{ height: `${animado ? Math.max(alturaDespesa, 4) : 0}px` }}
                     title={`Despesas: − ${formatBRL(d.despesas)}`}
                     role="img"
                     aria-label={`${rotulo}: despesa − ${formatBRL(d.despesas)}`}

@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import { TriangleAlert } from 'lucide-react'
 import { formatBRL } from '@/lib/format'
 import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
@@ -50,6 +51,8 @@ export interface ValorMonetarioProps {
   oculto?: boolean
   tamanho?: 'heroi' | 'destaque' | 'linha'
   className?: string
+  /** Animar valor subindo do zero ao valor real */
+  animar?: boolean
 }
 
 /** Mapa determinístico de (tipo, pago) -> cor, da seção 2.3 do handoff. */
@@ -96,13 +99,57 @@ export function ValorMonetario({
   oculto: propOculto,
   tamanho = 'linha',
   className,
+  animar,
 }: ValorMonetarioProps) {
   const { oculto: contextOculto } = useOcultarValores()
   const oculto = propOculto ?? contextOculto
-  const negativoContabil = contabil && valor < 0
+
+  const deveAnimar = animar ?? (tamanho === 'heroi' || tamanho === 'destaque')
+  const [valorExibido, setValorExibido] = useState(valor)
+  const valorAnteriorRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!deveAnimar || oculto) {
+      setValorExibido(valor)
+      valorAnteriorRef.current = valor
+      return
+    }
+
+    const valorInicial = valorAnteriorRef.current ?? 0
+    valorAnteriorRef.current = valor
+
+    const diferenca = valor - valorInicial
+    if (Math.abs(diferenca) < 0.01) {
+      setValorExibido(valor)
+      return
+    }
+
+    const duracao = 600
+    const inicioTempo = performance.now()
+    let idAnimacao: number
+
+    function animarPasso(agora: number) {
+      const decorrido = agora - inicioTempo
+      const progresso = Math.min(decorrido / duracao, 1)
+      const ease = 1 - Math.pow(1 - progresso, 3)
+      setValorExibido(valorInicial + diferenca * ease)
+
+      if (progresso < 1) {
+        idAnimacao = requestAnimationFrame(animarPasso)
+      } else {
+        setValorExibido(valor)
+      }
+    }
+
+    idAnimacao = requestAnimationFrame(animarPasso)
+    return () => cancelAnimationFrame(idAnimacao)
+  }, [valor, deveAnimar, oculto])
+
+  const valorParaExibir = deveAnimar && !oculto ? valorExibido : valor
+  const negativoContabil = contabil && valorParaExibir < 0
 
   // Sempre o módulo: o sinal e os parênteses são nossos, não do toLocaleString.
-  const textoDoValor = formatBRL(Math.abs(valor), oculto)
+  const textoDoValor = formatBRL(Math.abs(valorParaExibir), oculto)
 
   // Oculto: sem sinal e sem parênteses, senão eles entregariam o que o olho
   // estava escondendo. A largura da caixa é preservada pelo próprio ••••.

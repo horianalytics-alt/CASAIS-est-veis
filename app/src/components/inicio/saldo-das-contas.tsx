@@ -90,7 +90,7 @@ export function SaldoDasContas({ contas }: SaldoDasContasProps) {
 
                   <div className="flex items-baseline justify-between pt-1 border-t border-border/40">
                     <span className="text-muted-foreground text-xs">Saldo</span>
-                    <ValorSaldo valor={conta.current_balance ?? 0} className="font-bold text-base" />
+                    <ValorSaldo valor={conta.current_balance ?? 0} animar className="font-bold text-base" />
                   </div>
                 </div>
               )

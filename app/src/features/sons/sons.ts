@@ -26,13 +26,21 @@ export function salvarPreferenciaSom(ativo: boolean): void {
   }
 }
 
+let contextoGlobal: AudioContext | null = null
+
 function obterContextoAudio(): AudioContext | null {
   if (typeof window === 'undefined') return null
   try {
-    const Ctx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-    return Ctx ? new Ctx() : null
+    if (!contextoGlobal || contextoGlobal.state === 'closed') {
+      const Ctx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+      contextoGlobal = Ctx ? new Ctx() : null
+    }
+    if (contextoGlobal && contextoGlobal.state === 'suspended') {
+      contextoGlobal.resume().catch(() => {})
+    }
+    return contextoGlobal
   } catch {
     return null
   }
@@ -64,11 +72,8 @@ export function tocarSomSucesso(): void {
 
     osc.start(agora)
     osc.stop(agora + 0.16)
-    osc.onended = () => {
-      ctx.close().catch(() => {})
-    }
   } catch {
-    ctx.close().catch(() => {})
+    // Falha silenciosa
   }
 }
 
@@ -98,10 +103,7 @@ export function tocarSomErro(): void {
 
     osc.start(agora)
     osc.stop(agora + 0.17)
-    osc.onended = () => {
-      ctx.close().catch(() => {})
-    }
   } catch {
-    ctx.close().catch(() => {})
+    // Falha silenciosa
   }
 }

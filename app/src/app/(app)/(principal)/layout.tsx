@@ -3,6 +3,7 @@ import { LogOut } from 'lucide-react'
 import { sair } from '@/actions/auth'
 import { NavegacaoInferior } from '@/components/navegacao/navegacao-inferior'
 import { NavegacaoLateral } from '@/components/navegacao/navegacao-lateral'
+import { BarraProgresso } from '@/components/navegacao/barra-progresso'
 import { BotaoOcultarValores } from '@/components/navegacao/botao-ocultar-valores'
 import { OcultarValoresProvider } from '@/components/providers/ocultar-valores-provider'
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,9 @@ import { NAVEGACAO } from '@/features/transacoes/copy'
 export default function LayoutPrincipal({ children }: LayoutProps<'/'>) {
   return (
     <OcultarValoresProvider>
+      <Suspense fallback={null}>
+        <BarraProgresso />
+      </Suspense>
       <div className="flex min-h-screen flex-col lg:flex-row">
       {/* Barra Lateral Permanente para Desktop (>= 1024px) */}
       <Suspense fallback={<div className="hidden lg:flex w-64 border-r border-border" />}>
