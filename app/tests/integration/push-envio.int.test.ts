@@ -203,9 +203,21 @@ describe.skipIf(!temAmbiente)('push real + pagarFatura/registrarAcerto contra o 
     console.log(`contagem global DEPOIS: ${JSON.stringify(depois)}`)
     const { count: sobras } = await admin.from('push_subscriptions')
       .select('*', { count: 'exact', head: true }).in('family_id', familias)
+    // Sobras do que ESTE arquivo criou. A contagem global (acima, só no log) não
+    // serve de asserção: o `npx vitest run` roda as outras suítes de integração
+    // em paralelo, e elas criam e apagam as próprias famílias no mesmo banco.
+    const { count: sobraFam } = await admin.from('families')
+      .select('*', { count: 'exact', head: true }).in('id', familias)
+    const usuariosVivos: string[] = []
+    for (const uid of usuarios) {
+      const { data } = await admin.auth.admin.getUserById(uid)
+      if (data?.user) usuariosVivos.push(uid)
+    }
+    console.log(`contagem global ANTES era: ${JSON.stringify(contagemAntes)}`)
     expect(erros).toEqual([])
     expect(sobras).toBe(0)
-    expect(depois).toEqual(contagemAntes)
+    expect(sobraFam).toBe(0)
+    expect(usuariosVivos).toEqual([])
   }, 90_000)
 
   const despesaA1 = () => ({
