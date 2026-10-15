@@ -266,6 +266,8 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
           familyId={familyId}
           mesExibido={mes}
           idsIniciais={(lancamentos.data ?? []).map((t) => t.id)}
+          membros={membros}
+          meuId={idDoMembro}
         />
       )}
     </main>

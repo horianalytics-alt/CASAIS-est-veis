@@ -6,17 +6,22 @@ import { useRouter } from 'next/navigation'
 import { Bell, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { rotuloDoMes } from '@/lib/hoje'
+import { formatBRL } from '@/lib/format'
+import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
 import { tocarSomSucesso } from '@/features/sons/sons'
 
 export interface OuvinteRealtimeProps {
   familyId: string
   mesExibido: string
   idsIniciais: string[]
+  membros?: { id: string; display_name: string }[]
+  meuId?: string | null
 }
 
 interface AvisoOutroMes {
   mes: string
   rotulo: string
+  titulo: string
   descricao?: string
   noMesmoMes?: boolean
 }
@@ -25,8 +30,11 @@ export function OuvinteRealtime({
   familyId,
   mesExibido,
   idsIniciais,
+  membros = [],
+  meuId,
 }: OuvinteRealtimeProps) {
   const router = useRouter()
+  const { oculto } = useOcultarValores()
   const idsConhecidos = React.useRef(new Set<string>(idsIniciais))
   const [aviso, setAviso] = React.useState<AvisoOutroMes | null>(null)
 
@@ -62,7 +70,13 @@ export function OuvinteRealtime({
           filter: `family_id=eq.${familyId}`,
         },
         (payload) => {
-          const nova = payload.new as { id?: string; date?: string; description?: string } | undefined
+          const nova = payload.new as {
+            id?: string
+            date?: string
+            description?: string
+            amount?: number
+            paid_by_member_id?: string
+          } | undefined
           const antiga = payload.old as { id?: string } | undefined
           const id = nova?.id ?? antiga?.id
 
@@ -79,12 +93,23 @@ export function OuvinteRealtime({
           const dataTx = nova?.date
           const mesTx = dataTx ? dataTx.slice(0, 7) : null
 
+          // Monta dados do toast com nome do autor e respeito ao Modo Privacidade
+          const autor = membros.find((m) => m.id === nova?.paid_by_member_id)
+          const nomeAutor = autor ? autor.display_name : 'Seu parceiro'
+          const valorFormatado =
+            !oculto && typeof nova?.amount === 'number'
+              ? ` (${formatBRL(nova.amount)})`
+              : ''
+          const textoDescricao = `${nova?.description || 'Lançamento'}${valorFormatado}`
+          const titulo = `${nomeAutor} acabou de lançar`
+
           // Se a transação for de outro mês, avisa e dá o link
           if (mesTx && mesTx !== mesExibido) {
             setAviso({
               mes: mesTx,
               rotulo: rotuloDoMes(mesTx),
-              descricao: nova?.description,
+              titulo,
+              descricao: textoDescricao,
               noMesmoMes: false,
             })
             return
@@ -99,7 +124,8 @@ export function OuvinteRealtime({
             setAviso({
               mes: mesExibido,
               rotulo: rotuloDoMes(mesExibido),
-              descricao: nova?.description,
+              titulo,
+              descricao: textoDescricao,
               noMesmoMes: true,
             })
           }
@@ -112,7 +138,7 @@ export function OuvinteRealtime({
     return () => {
       supabase.removeChannel(canal)
     }
-  }, [familyId, mesExibido, router])
+  }, [familyId, mesExibido, router, membros, oculto])
 
   if (!aviso) return null
 
@@ -126,11 +152,11 @@ export function OuvinteRealtime({
         <Bell className="size-4" aria-hidden="true" />
       </div>
       <div className="flex flex-col text-xs">
-        <span className="text-foreground font-medium">
-          {aviso.noMesmoMes ? 'Novo lançamento sincronizado!' : 'Novo lançamento registrado'}
+        <span className="text-foreground font-semibold">
+          {aviso.titulo}
         </span>
-        <span className="text-muted-foreground truncate max-w-[190px]">
-          {aviso.descricao ? <strong>{aviso.descricao}</strong> : null}
+        <span className="text-muted-foreground truncate max-w-[210px]">
+          {aviso.descricao}
           {!aviso.noMesmoMes && ` em ${aviso.rotulo}`}
         </span>
       </div>
