@@ -287,18 +287,27 @@ export function ItemTransacao({
         }}
         aria-current={destacado ? 'true' : undefined}
         className={cn(
-          'flex flex-col gap-2.5 p-3.5 sm:p-4 rounded-xl border border-border/70 bg-card hover:border-border hover:shadow-2xs transition-colors relative z-10 select-none cursor-pointer touch-pan-y',
+          'group flex flex-col gap-2.5 p-3.5 sm:p-4 rounded-xl border border-border/70 bg-card hover:border-border hover:shadow-2xs transition-colors relative z-10 select-none cursor-pointer touch-pan-y',
           bordaClasse,
           destacado && 'ring-2 ring-primary/40',
           selecionado && 'border-primary/60 ring-2 ring-primary/30 shadow-xs',
         )}
       >
-        {/* Topo: Checkbox (apenas no modo seleção) + Ícone + Descrição + Valor e Ações */}
+        {/* Topo: Checkbox (no modo seleção ou hover desktop) + Ícone + Descrição + Valor e Ações */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            {/* Checkbox renderizado apenas se modoSelecao estiver ativo */}
-            {modoSelecao && aoAlternarSelecao && (
-              <div className="shrink-0 flex items-center pr-1 animate-in fade-in zoom-in-75 duration-150">
+            {/* Checkbox: sempre visível em modoSelecao, ou no hover em PCs/Notebooks */}
+            {aoAlternarSelecao && (
+              <div
+                className={cn(
+                  'shrink-0 items-center pr-1 transition-opacity duration-150',
+                  modoSelecao
+                    ? 'flex opacity-100 animate-in fade-in zoom-in-75 duration-150'
+                    : 'hidden sm:flex opacity-0 group-hover:opacity-100',
+                )}
+                onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
                 <Checkbox
                   checked={selecionado}
                   onCheckedChange={() => aoAlternarSelecao(transacao.id)}

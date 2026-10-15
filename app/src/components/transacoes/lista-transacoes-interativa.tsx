@@ -13,6 +13,7 @@ import {
   Trash2,
   SlidersHorizontal,
   Check,
+  CheckSquare,
   AlertCircle,
 } from 'lucide-react'
 import { ItemTransacao } from './item-transacao'
@@ -72,6 +73,8 @@ export function ListaTransacoesInterativa({
 
   // Seleção múltipla
   const [selecionados, setSelecionados] = React.useState<Set<string>>(new Set())
+  const [modoSelecaoManual, setModoSelecaoManual] = React.useState(false)
+  const modoSelecaoAtivo = modoSelecaoManual || selecionados.size > 0
 
   // Diálogos de Exclusão
   const [transacaoParaExcluir, setTransacaoParaExcluir] = React.useState<Transacao | null>(null)
@@ -232,6 +235,7 @@ export function ListaTransacoesInterativa({
 
   const desmarcarTodos = React.useCallback(() => {
     setSelecionados(new Set())
+    setModoSelecaoManual(false)
   }, [])
 
   // Ações de Exclusão
@@ -440,6 +444,42 @@ export function ListaTransacoesInterativa({
             </SelectContent>
           </Select>
         </div>
+
+        {/* Botão de Modo de Seleção / Seleção em Massa (PCs, Tablets, Notebooks e Mobile) */}
+        <Button
+          type="button"
+          variant={modoSelecaoAtivo ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => {
+            if (modoSelecaoAtivo) {
+              setModoSelecaoManual(false)
+              setSelecionados(new Set())
+            } else {
+              setModoSelecaoManual(true)
+            }
+          }}
+          className={cn(
+            'h-8 text-xs gap-1.5 rounded-lg shrink-0 transition-colors',
+            modoSelecaoAtivo
+              ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+              : 'border-border/80 bg-muted/30 hover:bg-muted/60 text-muted-foreground hover:text-foreground',
+          )}
+        >
+          <CheckSquare className="size-3.5" />
+          <span>{modoSelecaoAtivo ? 'Concluir seleção' : 'Selecionar'}</span>
+        </Button>
+
+        {modoSelecaoAtivo && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={alternarTodos}
+            className="h-8 text-xs gap-1.5 rounded-lg text-primary hover:bg-primary/10 font-medium shrink-0"
+          >
+            <span>{todosFiltradosSelecionados ? 'Desmarcar todos' : 'Selecionar todos'}</span>
+          </Button>
+        )}
       </div>
 
       {/* 3. Conteúdo da Lista / Tabela */}
@@ -471,10 +511,11 @@ export function ListaTransacoesInterativa({
                 nomeMembro={mapaMembros.get(t.paid_by_member_id)}
                 destacado={t.id === idDestacado}
                 selecionado={selecionados.has(t.id)}
-                modoSelecao={selecionados.size > 0}
+                modoSelecao={modoSelecaoAtivo}
                 aoAlternarSelecao={alternarSelecao}
                 aoIniciarSelecao={(id) => {
                   setSelecionados(new Set([id]))
+                  setModoSelecaoManual(true)
                 }}
                 aoEditar={(item) => setTransacaoParaEditar(item)}
                 aoExcluir={(item) => setTransacaoParaExcluir(item)}

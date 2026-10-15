@@ -144,8 +144,9 @@ export function TabelaTransacoesDesktop({
               <tr
                 key={t.id}
                 aria-current={destacado ? 'true' : undefined}
+                onClick={() => aoAlternarSelecao?.(t.id)}
                 className={cn(
-                  'transition-colors group hover:bg-muted/40',
+                  'transition-colors group hover:bg-muted/40 cursor-pointer select-none',
                   getBordaTipo(tipo, Boolean(t.is_benefit)),
                   destacado && 'bg-primary/10',
                   estaSelecionado && 'bg-primary/5',
@@ -153,7 +154,7 @@ export function TabelaTransacoesDesktop({
               >
                 {/* Checkbox de Seleção */}
                 {temSelecao && (
-                  <td className="py-3 px-3 text-center">
+                  <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       checked={estaSelecionado}
                       onCheckedChange={() => aoAlternarSelecao?.(t.id)}
@@ -255,7 +256,10 @@ export function TabelaTransacoesDesktop({
 
                 {/* Ações (Editar & Excluir) */}
                 {temAcoes && (
-                  <td className="py-3 px-3 text-center whitespace-nowrap">
+                  <td
+                    className="py-3 px-3 text-center whitespace-nowrap"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex items-center justify-center gap-1">
                       {aoEditar && (
                         <button
