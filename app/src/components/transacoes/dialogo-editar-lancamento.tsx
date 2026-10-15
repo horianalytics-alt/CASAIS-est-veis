@@ -30,6 +30,26 @@ import { cn } from '@/lib/utils'
 import type { Database } from '@/types/database'
 
 type Transacao = Database['public']['Tables']['transactions']['Row']
+type TipoLancamento = 'despesa' | 'receita' | 'transferencia'
+
+const OPCOES_DE_TIPO: ReadonlyArray<{ valor: TipoLancamento; rotulo: string; classeAtiva: string }> = [
+  {
+    valor: 'despesa',
+    rotulo: 'Despesa',
+    classeAtiva: 'border-despesa/40 bg-despesa/10 text-despesa shadow-2xs font-bold',
+  },
+  {
+    valor: 'receita',
+    rotulo: 'Receita',
+    classeAtiva: 'border-receita/40 bg-receita/10 text-receita shadow-2xs font-bold',
+  },
+  {
+    valor: 'transferencia',
+    rotulo: 'Transferência',
+    classeAtiva:
+      'border-transferencia/40 bg-transferencia/10 text-transferencia shadow-2xs font-bold',
+  },
+]
 
 export interface ItemSelectOpcao {
   id: string
@@ -66,7 +86,7 @@ export function DialogoEditarLancamento({
   const [camposComErro, setCamposComErro] = React.useState<Record<string, string[]>>({})
 
   // Estados do formulário
-  const [tipo, setTipo] = React.useState<'despesa' | 'receita' | 'transferencia'>('despesa')
+  const [tipo, setTipo] = React.useState<TipoLancamento>('despesa')
   const [descricao, setDescricao] = React.useState('')
   const [valorTexto, setValorTexto] = React.useState('')
   const [data, setData] = React.useState(todayISO())
@@ -81,7 +101,7 @@ export function DialogoEditarLancamento({
   // Preenche dados ao abrir com a transação
   React.useEffect(() => {
     if (transacao && aberto) {
-      const tipoAtual = (transacao.type as 'despesa' | 'receita' | 'transferencia') ?? 'despesa'
+      const tipoAtual = (transacao.type as TipoLancamento) ?? 'despesa'
       setTipo(tipoAtual)
       setDescricao(transacao.description || '')
       setValorTexto(
@@ -107,7 +127,7 @@ export function DialogoEditarLancamento({
     }
   }, [transacao, aberto, contas, membros])
 
-  const handleMudarTipo = (novoTipo: 'despesa' | 'receita' | 'transferencia') => {
+  const handleMudarTipo = (novoTipo: TipoLancamento) => {
     setTipo(novoTipo)
     if (novoTipo === 'transferencia' && (!contaDestinoId || contaDestinoId === contaId)) {
       const outra = contas.find((c) => c.id !== contaId)?.id || ''
@@ -234,49 +254,37 @@ export function DialogoEditarLancamento({
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 py-1 text-xs">
-          {/* 1. Tipo de Lançamento */}
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-medium">Tipo</Label>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleMudarTipo('despesa')}
-                className={cn(
-                  'py-2 px-3 rounded-lg border font-semibold text-center transition-all',
-                  tipo === 'despesa'
-                    ? 'border-despesa/40 bg-despesa/10 text-despesa shadow-2xs font-bold'
-                    : 'border-border/70 hover:bg-muted/50 text-muted-foreground',
-                )}
-              >
-                Despesa
-              </button>
-              <button
-                type="button"
-                onClick={() => handleMudarTipo('receita')}
-                className={cn(
-                  'py-2 px-3 rounded-lg border font-semibold text-center transition-all',
-                  tipo === 'receita'
-                    ? 'border-receita/40 bg-receita/10 text-receita shadow-2xs font-bold'
-                    : 'border-border/70 hover:bg-muted/50 text-muted-foreground',
-                )}
-              >
-                Receita
-              </button>
-              <button
-                type="button"
-                onClick={() => handleMudarTipo('transferencia')}
-                className={cn(
-                  'py-2 px-3 rounded-lg border font-semibold text-center transition-all',
-                  tipo === 'transferencia'
-                    ? 'border-transferencia/40 bg-transferencia/10 text-transferencia shadow-2xs font-bold'
-                    : 'border-border/70 hover:bg-muted/50 text-muted-foreground',
-                )}
-              >
-                Transferência
-              </button>
+          {/* 1. Tipo de Lançamento — mesmo padrão de form-lancamento.tsx: fieldset +
+              legend + rádio nativo visualmente oculto. O leitor de tela anuncia
+              "Tipo, grupo" e "Despesa, rádio, marcado 1 de 3"; setas trocam a opção. */}
+          <fieldset
+            className="flex flex-col gap-1.5"
+            aria-describedby={camposComErro.tipo ? 'erro-tipo' : undefined}
+          >
+            <legend className="text-xs font-medium">Tipo</legend>
+            <div className="mt-1.5 grid grid-cols-3 gap-2">
+              {OPCOES_DE_TIPO.map((opcao) => (
+                <label
+                  key={opcao.valor}
+                  className={cn(
+                    'py-2 px-3 rounded-lg border font-semibold text-center transition-all cursor-pointer has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50 has-[:focus-visible]:border-ring',
+                    tipo === opcao.valor ? opcao.classeAtiva : 'border-border/70 hover:bg-muted/50 text-muted-foreground',
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="edit-tipo"
+                    value={opcao.valor}
+                    checked={tipo === opcao.valor}
+                    onChange={() => handleMudarTipo(opcao.valor)}
+                    className="sr-only"
+                  />
+                  {opcao.rotulo}
+                </label>
+              ))}
             </div>
             {camposComErro.tipo && <CampoErro id="erro-tipo" mensagens={camposComErro.tipo} />}
-          </div>
+          </fieldset>
 
           {/* 2. Descrição */}
           <div className="flex flex-col gap-1.5">
@@ -341,13 +349,15 @@ export function DialogoEditarLancamento({
           {/* 4. Conta de Origem e Categoria / Conta de Destino */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-medium">
+              <Label htmlFor="edit-conta" className="text-xs font-medium">
                 {tipo === 'transferencia' ? 'Conta de origem' : 'Conta'}
               </Label>
               <Select value={contaId} onValueChange={handleMudarContaOrigem}>
                 <SelectTrigger
+                  id="edit-conta"
                   className="h-9 text-xs"
                   aria-invalid={camposComErro.contaId ? true : undefined}
+                  aria-describedby={camposComErro.contaId ? 'erro-conta' : undefined}
                 >
                   <SelectValue placeholder="Selecione a conta" />
                 </SelectTrigger>
@@ -366,11 +376,17 @@ export function DialogoEditarLancamento({
 
             {tipo === 'transferencia' ? (
               <div className="flex flex-col gap-1.5">
-                <Label className="text-xs font-medium">Conta de destino</Label>
+                <Label htmlFor="edit-conta-destino" className="text-xs font-medium">
+                  Conta de destino
+                </Label>
                 <Select value={contaDestinoId} onValueChange={setContaDestinoId}>
                   <SelectTrigger
+                    id="edit-conta-destino"
                     className="h-9 text-xs"
                     aria-invalid={camposComErro.contaDestinoId ? true : undefined}
+                    aria-describedby={
+                      camposComErro.contaDestinoId ? 'erro-conta-destino' : undefined
+                    }
                   >
                     <SelectValue placeholder="Selecione o destino" />
                   </SelectTrigger>
@@ -388,14 +404,18 @@ export function DialogoEditarLancamento({
               </div>
             ) : (
               <div className="flex flex-col gap-1.5">
-                <Label className="text-xs font-medium">Categoria</Label>
+                <Label htmlFor="edit-categoria" className="text-xs font-medium">
+                  Categoria
+                </Label>
                 <Select
                   value={categoriaId || '__nenhuma__'}
                   onValueChange={(val) => setCategoriaId(val === '__nenhuma__' ? '' : val)}
                 >
                   <SelectTrigger
+                    id="edit-categoria"
                     className="h-9 text-xs"
                     aria-invalid={camposComErro.categoriaId ? true : undefined}
+                    aria-describedby={camposComErro.categoriaId ? 'erro-categoria' : undefined}
                   >
                     <SelectValue placeholder="Sem categoria" />
                   </SelectTrigger>
@@ -418,11 +438,15 @@ export function DialogoEditarLancamento({
           {/* 5. Quem pagou */}
           {membros.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-medium">Quem realizou o pagamento</Label>
+              <Label htmlFor="edit-membro" className="text-xs font-medium">
+                Quem realizou o pagamento
+              </Label>
               <Select value={membroId} onValueChange={setMembroId}>
                 <SelectTrigger
+                  id="edit-membro"
                   className="h-9 text-xs"
                   aria-invalid={camposComErro.pagoPorId ? true : undefined}
+                  aria-describedby={camposComErro.pagoPorId ? 'erro-membro' : undefined}
                 >
                   <SelectValue placeholder="Selecione o membro" />
                 </SelectTrigger>
