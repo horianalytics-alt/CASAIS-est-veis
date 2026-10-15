@@ -2,6 +2,7 @@
 
 import { formatBRL } from '@/lib/format'
 import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
+import { ValorMonetario } from '@/components/financeiro/valor-monetario'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Sparkles, Utensils, Target } from 'lucide-react'
@@ -45,9 +46,13 @@ export function IndicadoresInteligencia({
           <CardDescription>{ANALISES.beneficiosDescricao}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-[var(--esp-2)]">
-          <span className="font-mono text-[length:var(--texto-subtitulo)] font-semibold num-tabular text-[var(--beneficio)]">
-            + {formatBRL(totalBeneficios, oculto)}
-          </span>
+          <ValorMonetario
+            valor={totalBeneficios}
+            tipo="receita"
+            tamanho="destaque"
+            animar
+            className="text-[var(--beneficio)] text-lg sm:text-xl font-bold font-mono"
+          />
           <p className="text-muted-foreground text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)]">
             Valor coberto por benefícios que preservou a renda da família neste período.
           </p>
@@ -69,9 +74,13 @@ export function IndicadoresInteligencia({
           <CardDescription>{ANALISES.futeisDescricao}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-[var(--esp-2)]">
-          <span className="font-mono text-[length:var(--texto-subtitulo)] font-semibold num-tabular text-[var(--despesa)]">
-            − {formatBRL(totalFuteis, oculto)}
-          </span>
+          <ValorMonetario
+            valor={totalFuteis}
+            tipo="despesa"
+            tamanho="destaque"
+            animar
+            className="text-lg sm:text-xl font-bold font-mono"
+          />
           {rotulosFuteis.length > 0 ? (
             <div className="flex flex-wrap gap-1 pt-1">
               {rotulosFuteis.slice(0, 4).map((r, i) => (
