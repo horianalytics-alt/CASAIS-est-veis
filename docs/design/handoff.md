@@ -50,7 +50,7 @@ Arquivos TS (módulos com consumidor declarado, ver seção 6):
 
 | Caminho | Quem importa |
 |---|---|
-| `app/src/styles/chart-palette.ts` | **Dash**, em `app/src/components/charts/**` (Onda 2) |
+| `app/src/styles/chart-palette.ts` | **Dash**: `app/src/components/analises/grafico-rosca-categorias.tsx` e `previsao-fixos.tsx` (ver §5) |
 | `app/src/styles/tema.ts` | **Fachada**: seletor de paleta/modo em `/ajustes` e o script anti-flash |
 
 ---
@@ -297,27 +297,44 @@ Varredura de SVG, rodada no único SVG emitido:
 
 ## 5. Paleta de séries de gráfico (para o Dash)
 
-Arquivo: `app/src/styles/chart-palette.ts`. **Quem importa: o Dash**, em `app/src/components/charts/**`, a partir da Onda 2. O módulo TS se justifica porque o Recharts recebe cor como prop em TypeScript. Na Onda 1 nada o importa, e isso é deliberado (a paleta nasce junto do sistema de cor para ser validada junto).
+Arquivo: `app/src/styles/chart-palette.ts`. **Quem importa (estado em 2026-10-15):** `app/src/components/analises/grafico-rosca-categorias.tsx` (`SERIES_CLARO`/`SERIES_ESCURO`, `SERIE_OUTROS`, `MARCADORES`) e `app/src/components/analises/previsao-fixos.tsx` (`corDaSerie` 0..2). `grafico-linha.tsx` e `grafico-orcamento.tsx` usam só `var(--chart-1)`. O módulo TS se justifica porque a cor entra como prop/estilo em TypeScript.
+
+> **Re-trabalho P-011 (2026-10-15).** A paleta original foi validada com um script próprio (ΔE CIE76 em Lab, sem banda de L nem piso de croma) e reprovou no validador do `dataviz` (OKLab ΔE×100, CVD Machado 2009). **O gate agora é `dataviz/scripts/validate_palette.js`**; `series-de.js` continua só para a consistência TS↔CSS e o contraste por superfície (o ΔE CIE76 que ele imprime não é o critério).
 
 API: `SERIES_CLARO`, `SERIES_ESCURO`, `SERIE_OUTROS`, `MARCADORES`, `MAX_SERIES` (8), `paletaSeries(modo)`, `corDaSerie(indice, modo)`, `marcadorDaSerie(indice)`, tipos `ModoTema` e `Marcador`.
 
 **`corDaSerie` não cicla.** Índice `>= 8` devolve a cor de "Outros". Ciclar daria a duas categorias diferentes a mesma cor, o que é mentira visual num gráfico de gastos. O Dash agrupa o excedente em "Outros". Se precisar de mais de 8 categorias distinguíveis, é pedido de mudança ao Vitrine, não um `% 8`.
 
-| # | Nome | Claro | /background · /card | Escuro | /background · /card |
+| # | Nome | Claro | /background · /card · /muted | Escuro | /background · /card · /muted |
 |---|---|---|---|---|---|
-| 1 | azul | `#2F6DB5` | 4.96 · 5.28 | `#6FA8E8` | 7.44 · 6.90 |
-| 2 | telha | `#C2552F` | 4.26 · 4.53 | `#F08A5E` | 7.49 · 6.95 |
-| 3 | teal | `#0E7F78` | 4.56 · 4.85 | `#3FBDB2` | 8.05 · 7.47 |
-| 4 | violeta | `#7A5BC4` | 4.79 · 5.10 | `#A992E8` | 7.02 · 6.51 |
-| 5 | oliva | `#6E7A1F` | 4.42 · 4.70 | `#AFBE4A` | 9.07 · 8.41 |
-| 6 | magenta | `#A83A6E` | 5.64 · 6.01 | `#E87FAE` | 7.12 · 6.60 |
-| 7 | ocre | `#9A6B10` | 4.40 · 4.68 | `#D9A838` | 8.47 · 7.85 |
-| 8 | castanho | `#5B4636` | 8.31 · 8.85 | `#C9A68A` | 8.20 · 7.61 |
-| outros | cinza | `#7D878C` | 3.45 · 3.67 | `#6E7A81` | 4.20 · 3.89 |
+| 1 | azul | `#2F6DB5` | 4.96 · 5.28 · 4.61 | `#5794DF` | 5.91 · 5.48 · 5.00 |
+| 2 | telha | `#C2552F` | 4.26 · 4.53 · 3.95 | `#D15B41` | 4.66 · 4.32 · 3.94 |
+| 3 | teal | `#0D8A71` | 4.03 · 4.29 · 3.74 | `#1B947E` | 4.92 · 4.56 · 4.16 |
+| 4 | violeta | `#7A5BC4` | 4.79 · 5.10 · 4.44 | `#8760CB` | 4.02 · 3.73 · 3.40 |
+| 5 | oliva | `#6E7A1F` | 4.42 · 4.70 · 4.10 | `#7CA245` | 6.27 · 5.81 · 5.30 |
+| 6 | magenta | `#A83A6E` | 5.64 · 6.01 · 5.24 | `#BA4E84` | 3.98 · 3.69 · 3.36 |
+| 7 | ocre | `#AB7A10` | 3.57 · 3.80 · 3.32 | `#B18E15` | 5.95 · 5.52 · 5.03 |
+| 8 | castanho | `#7D4005` | 7.56 · 8.05 · 7.02 | `#9B572E` | 3.35 · 3.10 · **2.83** |
+| outros | cinza | `#7D878C` | 3.45 · 3.67 · — | `#6E7A81` | 4.20 · 3.89 · — |
 
-Série de gráfico é elemento gráfico (WCAG 1.4.11, limiar 3:1), não texto: pior caso 4.26:1 (telha claro) e 7.02:1 no escuro. Rótulo de texto do gráfico usa `--foreground` ou `--muted-foreground`, que passam 4.5:1.
+Superfícies: claro `--background #F7F8F7`, `--card #FFFFFF`, `--muted #EDF0EF`; escuro `#101417`, `#171C20`, `#1E242A` (= `--popover`). Valores no claro mantidos: slots 1, 2, 4, 5 e 6. Trocados: 3 (C 0.091 abaixo do piso), 7 e 8 (castanho tinha L 0.412 e C 0.038; o ocre clareou para manter ocre↔castanho ≥ 15). No escuro, todos os slots foram trocados, porque os 8 estavam acima da banda L 0.48–0.67 (inclusive o azul `#6FA8E8`, L 0.718).
 
-Separação perceptual (ΔE CIE76 entre **todos** os 28 pares, medida do arquivo emitido): menor **29.2** no claro (oliva vs ocre) e **27.7** no escuro (azul vs violeta). Alvo era `>=20`. Saída em `docs/design/evidencias/series-de.out`.
+Série de gráfico é elemento gráfico (WCAG 1.4.11, limiar 3:1), não texto. Pior caso sobre o card: 3.80:1 (ocre claro) e 3.10:1 (castanho escuro). **Única exceção medida:** castanho escuro sobre `--muted`/`--popover` = 2.83:1. Fora do card, a série 8 só aparece acompanhada de rótulo de texto (amostra de cor na tooltip e na legenda, sempre com o nome ao lado). Rótulo de texto do gráfico usa `--foreground` ou `--muted-foreground` (4.5:1+), nunca a cor da série.
+
+Saída do validador (pares adjacentes, `--surface` = card):
+
+| Checagem | Claro | Escuro |
+|---|---|---|
+| Banda de L | PASS (0.440–0.613 em 0.43–0.77) | PASS (0.528–0.664 em 0.48–0.67) |
+| Piso de croma 0.10 | PASS (mín 0.105) | PASS (mín 0.105) |
+| CVD adjacente (alvo 8) | PASS **10.4** (magenta↔oliva, deutan) | PASS **10.4** (teal↔telha, deutan) |
+| Visão normal adjacente (piso 15) | PASS **18.0** (castanho↔ocre) | PASS **15.8** (castanho↔ocre) |
+| Contraste vs superfície | PASS (≥ 3:1 em card e bg) | PASS em card e bg; WARN 2.83 em `#1E242A` |
+| Todos os pares, séries 1–3 | PASS CVD 10.4 / normal 15.8 | PASS CVD 10.4 / normal 16.1 |
+
+**Limite de séries por forma.** Barra empilhada, linha, rosca e barras lado a lado (só vizinhos se tocam) aceitam as 8. Dispersão, bolha, mapa e small multiples (qualquer par pode encostar) aceitam **no máximo 3** (séries 1–3). O conjunto das 8 não passa no teste de todos os pares (pior par: oliva↔ocre, slots 5 e 7, normal 9.8 claro / 8.4 escuro). Reordenar não resolve, porque o conjunto de todos os pares não depende da ordem; para mais de 3 séries nessas formas, agrupe em "Outros" ou divida em facetas.
+
+**Rosca: vizinhos de "Outros".** "Outros" vem depois da série 7 e antes da 1. Medido: S7↔Outros 13.6 claro / 17.0 escuro; S1↔Outros 14.6 claro / 14.2 escuro (normal). Fica abaixo de 15, mas "Outros" é cinza neutro, de outra natureza, e não um nono matiz. O validador não o inclui. A rosca precisa do gap de 2px e de nome+valor escritos por fatia, que já são obrigatórios.
 
 Consistência: `--chart-1..5` e `--serie-outros` no `globals.css` (necessários ao shadcn `chart`) são cópias das cinco primeiras séries; o script `series-de.js` confere que CSS e TS não divergem (resultado: sem divergência nos dois modos).
 
@@ -424,7 +441,7 @@ A skill foi invocada com a rota (tokens e assets) e os números já medidos. Apl
 | Critério WCAG | Resultado sobre os artefatos do Vitrine |
 |---|---|
 | 1.4.3 contraste de texto | passa: menor razão de texto **4.56:1** (`--despesa` claro sobre `--accent` Ameixa); o chassi vai de 5.13:1 a 17.84:1 |
-| 1.4.11 contraste não textual | passa: `--border-forte` **3.45:1** (pior), foco **6.19:1** (pior), séries **4.26:1** (pior claro); `--border` decorativa isenta e declarada |
+| 1.4.11 contraste não textual | passa: `--border-forte` **3.45:1** (pior), foco **6.19:1** (pior), séries sobre o card **3.80:1** (pior claro, ocre) / **3.10:1** (pior escuro, castanho); exceção: castanho escuro sobre `--muted` 2.83:1, só com rótulo (§5); `--border` decorativa isenta e declarada |
 | 1.4.1 uso de cor | **tratado por regra** (C-2, C-3, sinal, ícone + palavra); depende de a Fachada cumprir |
 | 1.1.1 conteúdo não textual | OG precisa de `alt` em `metadata.openGraph.images`; marca no cabeçalho tem rótulo (seção 4.4) |
 | 2.5.5 alvo de toque | **risco aberto, não verificável agora**: tamanhos padrão do shadcn costumam ser menores que 44px; regra A-1 |

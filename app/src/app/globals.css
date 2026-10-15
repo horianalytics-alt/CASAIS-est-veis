@@ -54,10 +54,11 @@
   --negativo: #D93845;
   --beneficio: #0891B2;
 
-  /* séries de gráfico: as 5 primeiras de chart-palette.ts (shadcn chart) */
+  /* séries de gráfico: as 5 primeiras de chart-palette.ts (shadcn chart).
+     Gate: dataviz validate_palette.js, ALL CHECKS PASS (2026-10-15, P-011). */
   --chart-1: #2F6DB5;
   --chart-2: #C2552F;
-  --chart-3: #0E7F78;
+  --chart-3: #0D8A71;
   --chart-4: #7A5BC4;
   --chart-5: #6E7A1F;
   --serie-outros: #7D878C;
@@ -154,11 +155,11 @@
   --negativo: #FB7185;
   --beneficio: #22D3EE;
 
-  --chart-1: #6FA8E8;
-  --chart-2: #F08A5E;
-  --chart-3: #3FBDB2;
-  --chart-4: #A992E8;
-  --chart-5: #AFBE4A;
+  --chart-1: #5794DF;
+  --chart-2: #D15B41;
+  --chart-3: #1B947E;
+  --chart-4: #8760CB;
+  --chart-5: #7CA245;
   --serie-outros: #6E7A81;
 
   /* sem sombra no escuro: o cartão ganha borda fina */
