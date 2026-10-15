@@ -1,9 +1,9 @@
 # PROJETO.md — Finanças a Dois
 
 > Retrato ÚNICO do estado atual. Sempre sobrescrito, nunca acumulado.
-> Última atualização: 2026-10-14, por Maestro, após push real completo,
-> orçamento/patrimônio/simulador completos, recuperação de senha in-place
-> e UX de velocidade percebida (Rodadas 6-8).
+> Última atualização: 2026-10-15, por Maestro, após seleção múltipla/editar/
+> excluir lançamentos (front completo, back em finalização) e refinamento
+> mobile (swipe-to-delete, long-press, bordas semânticas).
 > Histórico de entregas: `ENTREGA.md` (quando existir). Plano vivo: `PLANO.md`
 > (revisão 2 em `C:\Users\Heitor PC\.claude\plans\harmonic-jingling-eclipse.md`).
 
@@ -183,7 +183,29 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
   Análises corrigidos (`9b3a0f1`): container `max-w-7xl`, grid responsivo
   sem espremer. Modo privacidade (ocultar valores) agora funciona de
   verdade em toda a árvore autenticada — estava desconectado do contexto.
-- Feedback sonoro (WebAudio) com toggle em Ajustes.
+- Feedback sonoro (WebAudio) com toggle em Ajustes; destravamento correto
+  no primeiro gesto do usuário (corrigia bug "som nunca toca" real relatado
+  pelo Heitor); som distinto para lançamento do parceiro via Realtime
+  (`b1f099a`/`0685423`).
+- Push: causa raiz de "notificação nunca chega" identificada — inscrição
+  nunca era de fato salva no servidor (tabela `push_subscriptions` vazia).
+  Logging estruturado adicionado (`4f386e5`) para diagnosticar envios
+  futuros; urgência elevada para `high` (contorna Doze mode do Android).
+  Heitor precisa desativar/reativar notificações em Ajustes > Perfil para
+  recriar a inscrição.
+- **Selecionar/editar/excluir lançamentos, front completo** (Antigravity,
+  `9b6c0b6`..`61cfb3e`): checkbox de seleção múltipla (long-press no
+  mobile, clique na linha no desktop, botão "Selecionar" explícito),
+  barra flutuante de ações em lote, modais de editar (individual e em
+  massa) e excluir (com opção "só este" ou "toda a série" para parcelas).
+  Exclusão já usa a Server Action real (`excluirLancamento`); edição
+  ainda usa `.update()` direto do navegador como placeholder — Server
+  Actions `atualizarLancamento`/`atualizarLancamentosEmMassa` em
+  finalização pelo Estrutura (ver Pendente).
+- Refinamento visual mobile (Antigravity, `e84843d`/`a8a2d00`/`61cfb3e`):
+  swipe-to-delete nos cards, cards edge-to-edge, bordas coloridas
+  semânticas por tipo de lançamento (receita/despesa/investimento/vale),
+  badge "Vale" com destaque, hover com checkbox em desktop/tablet.
 - Banco de teste limpo (duas vezes nesta sessão): 125 famílias/86 usuários
   de teste acumulados removidos primeiro; depois a auditoria Sentinela R4
   criou mais 4 famílias de teste para os testes hostis e CAIU por rate limit
@@ -213,12 +235,15 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
 
 ### Pendente
 
-- **Vibração/renotify no push** (`public/sw.js`) — pedido no briefing da
-  Rodada 8, ainda não construído (o commit `3eb189b` é anterior a esse
-  briefing).
-- **Teste real do push com dois dispositivos** — back+front completos,
-  falta só validar na prática (Heitor ativa, Carol lança algo, Heitor
-  recebe).
+- **`atualizarLancamento`/`atualizarLancamentosEmMassa`** (Estrutura, em
+  finalização) — fecha o placeholder temporário do Antigravity
+  (`.update()` direto do navegador nos modais de editar). Briefing para o
+  Antigravity trocar as chamadas ainda não escrito — aguardando o
+  Estrutura entregar.
+- **Teste real do push com dois dispositivos, pós-correção de
+  diagnóstico** — Heitor precisa desativar/reativar notificações em
+  Ajustes > Perfil para recriar a inscrição que nunca foi salva; depois
+  testar de novo.
 - **P-007/P-008/P-009** (achados Sentinela R4, severidade MÉDIA/BAIXA): tipo
   de conta mutável fora da Action, índice único com brechas de normalização
   (P-008 já corrigido na migration 00011, confirmar status em
