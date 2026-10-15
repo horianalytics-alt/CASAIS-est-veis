@@ -106,6 +106,14 @@ export function ListaTransacoesInterativa({
     return Object.entries(mapaCategorias).map(([id, name]) => ({ id, name }))
   }, [listaCategorias, mapaCategorias])
 
+  // Identifica se há transferência entre os itens selecionados
+  const temTransferenciaNaSelecao = React.useMemo(() => {
+    return Array.from(selecionados).some((id) => {
+      const t = transacoes.find((tr) => tr.id === id)
+      return t?.type === 'transferencia'
+    })
+  }, [selecionados, transacoes])
+
   // Mapa de id do membro para display_name
   const mapaMembros = React.useMemo(() => {
     return new Map(membros.map((m) => [m.id, m.display_name]))
@@ -639,8 +647,17 @@ export function ListaTransacoesInterativa({
         contas={contasDisponiveis}
         categorias={categoriasDisponiveis}
         membros={membros}
-        onSalvo={() => {
-          dispararFeedback('Lançamentos atualizados em lote com sucesso.')
+        temTransferenciaNaSelecao={temTransferenciaNaSelecao}
+        onSalvo={(atualizados, total) => {
+          if (atualizados === total) {
+            dispararFeedback(
+              `${total === 1 ? '1 lançamento atualizado' : `${total} lançamentos atualizados`} com sucesso.`,
+            )
+          } else {
+            dispararFeedback(
+              `${atualizados} de ${total} lançamentos foram atualizados com sucesso.`,
+            )
+          }
           setSelecionados(new Set())
         }}
       />
