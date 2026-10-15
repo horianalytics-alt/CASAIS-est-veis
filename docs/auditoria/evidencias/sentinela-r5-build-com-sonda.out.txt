@@ -1,0 +1,74 @@
+▲ Next.js 16.4.0 (Turbopack)
+✓ Running next.config.ts took 36ms
+- Cache Components enabled
+- Partial Prefetching enabled
+
+  Creating an optimized production build ...
+✓ Finished writing to filesystem cache in 16.2s
+
+> Build error occurred
+Error: Turbopack build failed with 2 errors:
+./docs/auditoria/evidencias/r5-build-sonda/app/src/lib/supabase/servico.ts:1:1
+Error: You're importing a module that depends on "server-only". This API is only available in Server Components in the App Router, but you are using it in the Pages Router.
+    Learn more: https://nextjs.org/docs/app/building-your-application/rendering/server-components
+[31m[1m>[0m [90m1 |[0m [36mimport[0m [32m'server-only'[0m
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { createClient } [36mfrom[0m [32m'@supabase/supabase-js'[0m
+  [90m4 |[0m [36mimport[0m [36mtype[0m { [33mDatabase[0m } [36mfrom[0m [32m'@/types/database'[0m
+
+Ecmascript file had an error
+
+Import traces:
+  Server Component:
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/lib/supabase/servico.ts
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/lib/push/notificar.ts
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/actions/lancamento.ts
+
+  Client Component Browser:
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/lib/supabase/servico.ts [Client Component Browser]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/components/sentinela-r5-sonda.tsx [Client Component Browser]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/components/auth/form-login.tsx [Client Component Browser]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/components/auth/form-login.tsx [Server Component]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/app/(auth)/login/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/lib/supabase/servico.ts [Client Component SSR]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/components/sentinela-r5-sonda.tsx [Client Component SSR]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/components/auth/form-login.tsx [Client Component SSR]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/components/auth/form-login.tsx [Server Component]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/app/(auth)/login/page.tsx [Server Component]
+
+
+./docs/auditoria/evidencias/r5-build-sonda/app/src/lib/supabase/servico.ts:1:1
+Error: 'server-only' cannot be imported from a Client Component module
+[31m[1m>[0m [90m1 |[0m [36mimport[0m [32m'server-only'[0m
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { createClient } [36mfrom[0m [32m'@supabase/supabase-js'[0m
+  [90m4 |[0m [36mimport[0m [36mtype[0m { [33mDatabase[0m } [36mfrom[0m [32m'@/types/database'[0m
+
+It should only be used from a Server Component.
+
+Import traces:
+  Server Component:
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/lib/supabase/servico.ts
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/lib/push/notificar.ts
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/actions/lancamento.ts
+
+  Client Component Browser:
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/lib/supabase/servico.ts [Client Component Browser]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/components/sentinela-r5-sonda.tsx [Client Component Browser]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/components/auth/form-login.tsx [Client Component Browser]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/components/auth/form-login.tsx [Server Component]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/app/(auth)/login/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/lib/supabase/servico.ts [Client Component SSR]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/components/sentinela-r5-sonda.tsx [Client Component SSR]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/components/auth/form-login.tsx [Client Component SSR]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/components/auth/form-login.tsx [Server Component]
+    ./docs/auditoria/evidencias/r5-build-sonda/app/src/app/(auth)/login/page.tsx [Server Component]
+
+
+    at ignore-listed frames

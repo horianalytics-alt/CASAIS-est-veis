@@ -1,0 +1,274 @@
+- generic:
+  - generic [aria-hidden]:
+    - complementary:
+      - generic:
+        - generic:
+          - generic:
+            - generic: Finanças a Dois
+            - generic: Finanças do Casal
+        - navigation:
+          - list:
+            - listitem:
+              - link:
+                - /url: /inicio
+                - generic: Início
+            - listitem:
+              - link:
+                - /url: /carteira
+                - generic: Carteira
+            - listitem:
+              - link:
+                - /url: /lancar
+                - generic: Lançar
+            - listitem:
+              - link:
+                - /url: /acerto
+                - generic: Acerto
+            - listitem:
+              - link:
+                - /url: /analises
+                - generic: Análises
+            - listitem:
+              - link:
+                - /url: /ajustes
+                - generic: Ajustes
+      - generic:
+        - generic:
+          - generic: Privacidade
+          - button
+        - generic:
+          - button:
+            - generic: Sair
+    - generic:
+      - generic:
+        - main:
+          - generic:
+            - link:
+              - /url: /inicio?mes=2026-09
+            - heading [level=1]: outubro de 2026
+            - link:
+              - /url: /inicio?mes=2026-11
+          - generic:
+            - generic: Visão Geral do Mês
+            - link:
+              - /url: /analises?mes=2026-10
+              - generic: Ver gráficos & análises
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Saldo do mês
+                  - generic: +R$ 2.879,50
+                  - paragraph: Receitas pagas menos despesas pagas deste mês
+                - generic:
+                  - generic: Comprometimento
+                  - generic: 4% da receita
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Entrou
+                  - generic:
+                    - generic: +R$ 3.000,00
+                    - generic: Recebido no mês
+              - generic:
+                - generic:
+                  - generic: Saiu
+                  - generic:
+                    - generic: −R$ 120,50
+                    - generic: Pago no mês
+              - generic:
+                - generic:
+                  - generic: A pagar
+                  - generic:
+                    - generic: −R$ 0,00
+                    - generic: Pendente de pgto
+              - generic:
+                - generic:
+                  - generic: A Receber
+                  - generic:
+                    - generic: +R$ 0,00
+                    - generic: Entradas pendentes
+          - generic:
+            - generic:
+              - generic: Saldo das contas
+              - link:
+                - /url: /carteira
+                - generic: Ver carteira
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic: Conta de Sentinela UI
+                    - generic: Conta corrente
+                  - generic:
+                    - generic: Saldo
+                    - generic: +R$ 2.829,50
+                - generic:
+                  - generic:
+                    - generic: Poupança R5
+                    - generic: Conta corrente
+                  - generic:
+                    - generic: Saldo
+                    - generic: +R$ 50,00
+          - generic:
+            - generic: Lançamentos
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - button: Tudo
+                      - button: Despesas
+                      - button: Receitas
+                  - generic: 3 lançamentos
+                - generic:
+                  - generic:
+                    - textbox:
+                      - /placeholder: "Buscar descrição ou valor (ex: Mercado ou 150)..."
+                  - generic:
+                    - combobox:
+                      - generic: Todas as categorias
+                  - generic:
+                    - combobox:
+                      - generic: "Data: mais recentes"
+                  - button:
+                    - generic: Selecionar
+                - generic:
+                  - generic:
+                    - table:
+                      - rowgroup:
+                        - row:
+                          - columnheader:
+                            - checkbox
+                          - columnheader: Data
+                          - columnheader: Descrição
+                          - columnheader: Categoria
+                          - columnheader: Conta
+                          - columnheader: Quem pagou
+                          - columnheader: Valor
+                          - columnheader: Status
+                          - columnheader: Ações
+                      - rowgroup:
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell: 10/10/2026
+                          - cell:
+                            - generic:
+                              - generic: Guardar R5
+                              - generic: Transferência
+                          - cell: —
+                          - cell:
+                            - generic: Conta de Sentinela UI
+                          - cell:
+                            - generic: Sentinela UI
+                          - cell:
+                            - generic: R$ 50,00
+                          - cell
+                          - cell:
+                            - generic:
+                              - button
+                              - button
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell: 08/10/2026
+                          - cell:
+                            - generic:
+                              - generic: Mercado teste R5
+                              - generic: Despesa
+                          - cell:
+                            - generic: Moradia
+                          - cell:
+                            - generic: Conta de Sentinela UI
+                          - cell:
+                            - generic: Sentinela UI
+                          - cell:
+                            - generic: −R$ 120,50
+                          - cell:
+                            - generic: Pago
+                          - cell:
+                            - generic:
+                              - button
+                              - button
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell: 05/10/2026
+                          - cell:
+                            - generic:
+                              - generic: Salário teste R5
+                              - generic: Receita
+                          - cell: —
+                          - cell:
+                            - generic: Conta de Sentinela UI
+                          - cell:
+                            - generic: Sentinela UI
+                          - cell:
+                            - generic: +R$ 3.000,00
+                          - cell:
+                            - generic: Pago
+                          - cell:
+                            - generic:
+                              - button
+                              - button
+  - alert
+  - dialog [ref=f4e432]:
+    - generic [ref=f4e439]:
+      - heading "Editar lançamento" [level=2] [ref=f4e440]
+      - paragraph [ref=f4e441]: Altere os campos necessários e confirme as modificações.
+    - alert [ref=f4e488]:
+      - generic [ref=f4e491]: Selecione a conta de destino.
+    - generic [ref=f4e442]:
+      - generic [ref=f4e443]:
+        - generic [ref=f4e444]: Tipo
+        - generic [ref=f4e445]:
+          - button "Despesa" [ref=f4e446]
+          - button "Receita" [ref=f4e447]
+          - button "Transferência" [ref=f4e448]
+      - generic [ref=f4e449]:
+        - generic [ref=f4e450]: Descrição
+        - textbox "Descrição" [ref=f4e451]:
+          - /placeholder: "Ex: Mercado Semanal"
+          - text: Mercado teste R5
+      - generic [ref=f4e452]:
+        - generic [ref=f4e453]:
+          - generic [ref=f4e454]: Valor (R$)
+          - textbox "Valor (R$)" [ref=f4e455]:
+            - /placeholder: 0,00
+            - text: 120,50
+        - generic [ref=f4e456]:
+          - generic [ref=f4e457]: Data
+          - textbox "Data" [ref=f4e458]: 2026-10-08
+      - generic [ref=f4e459]:
+        - generic [ref=f4e460]:
+          - generic [ref=f4e461]: Conta de origem
+          - combobox [ref=f4e462]:
+            - generic: Conta de Sentinela UI
+          - combobox [aria-hidden] [ref=f4e463]
+        - generic [ref=f4e464]:
+          - generic [ref=f4e465]: Conta de destino
+          - combobox [ref=f4e466]:
+            - generic: Selecione o destino
+          - combobox [aria-hidden] [ref=f4e487]
+      - generic [ref=f4e468]:
+        - generic [ref=f4e469]: Quem realizou o pagamento
+        - combobox [ref=f4e470]:
+          - generic: Sentinela UI
+        - combobox [aria-hidden] [ref=f4e471]
+      - generic [ref=f4e472]:
+        - generic [ref=f4e473]:
+          - checkbox "Lançamento já foi pago / liquidado" [checked] [ref=f4e474]
+          - checkbox [checked] [aria-hidden]
+          - generic [ref=f4e475] [cursor=pointer]: Lançamento já foi pago / liquidado
+        - generic [ref=f4e476]:
+          - generic [ref=f4e477]: Data em que foi pago
+          - textbox "Data em que foi pago" [ref=f4e478]: 2026-10-08
+      - generic [ref=f4e479]:
+        - generic [ref=f4e480]: Observação (opcional)
+        - textbox "Observação (opcional)" [ref=f4e481]:
+          - /placeholder: Notas adicionais...
+      - generic [ref=f4e482]:
+        - button "Cancelar" [ref=f4e483] [cursor=pointer]
+        - button "Salvar alterações" [active] [ref=f4e484] [cursor=pointer]
+    - button "Fechar" [ref=f4e486] [cursor=pointer]

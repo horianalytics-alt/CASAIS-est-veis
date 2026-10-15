@@ -1,0 +1,1 @@
+[{"email":"sentinela-r5-ui-1792071096180@example.com","tx":3,"familia":1,"usuario":"removido"},{"email":"sentinela-r5-atacante-1792071096180@example.com","tx":0,"familia":1,"usuario":"removido"}]

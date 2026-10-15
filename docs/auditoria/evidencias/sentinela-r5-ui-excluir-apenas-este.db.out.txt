@@ -1,0 +1,20 @@
+[
+ {
+  "description": "Salário teste R5",
+  "date": "2026-10-05",
+  "recurrence_index": null,
+  "recurrence_parent_id": null
+ },
+ {
+  "description": "Mercado teste R5",
+  "date": "2026-10-08",
+  "recurrence_index": null,
+  "recurrence_parent_id": null
+ },
+ {
+  "description": "Guardar R5",
+  "date": "2026-10-10",
+  "recurrence_index": null,
+  "recurrence_parent_id": null
+ }
+]

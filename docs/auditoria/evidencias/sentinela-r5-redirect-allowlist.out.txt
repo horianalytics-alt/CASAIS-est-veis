@@ -1,0 +1,24 @@
+{
+  "dominio_hostil": {
+    "pedido": "https://evil.example/nova-senha",
+    "redirect_to_no_link": "https://financascasais-hori13.vercel.app/",
+    "status": 303,
+    "location_origem_caminho": "https://financascasais-hori13.vercel.app/"
+  },
+  "subdominio_vercel_hostil": {
+    "pedido": "https://financascasais.vercel.app.evil.example/nova-senha",
+    "redirect_to_no_link": "https://financascasais-hori13.vercel.app/",
+    "status": 303,
+    "location_origem_caminho": "https://financascasais-hori13.vercel.app/"
+  },
+  "controle_dominio_legitimo": {
+    "pedido": "https://financascasais.vercel.app/nova-senha",
+    "redirect_to_no_link": "https://financascasais-hori13.vercel.app/",
+    "status": 303,
+    "location_origem_caminho": "https://financascasais-hori13.vercel.app/"
+  },
+  "limpeza": {
+    "deleteUser": "ok",
+    "aindaExiste": false
+  }
+}

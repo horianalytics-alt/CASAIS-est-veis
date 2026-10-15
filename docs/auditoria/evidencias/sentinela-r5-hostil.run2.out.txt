@@ -1,0 +1,44 @@
+
+ RUN  v5.0.3 C:/dev/financas-a-dois/docs/auditoria/evidencias
+
+stdout | sentinela-r5-hostil.test.ts > 8. exclusão de lançamento > "single" na 1ª parcela de uma série de 3
+OBS 8.excluir_single_pai => {"parcelasCriadas":3,"antes":3,"resposta":{"ok":true,"dados":{"excluidos":1}},"depois":0}
+
+stdout | sentinela-r5-hostil.test.ts
+OBS setup => {"A1":"e7a4733a-74ec-48bd-aceb-bdfb15eda38f","A2fam":"e7a4733a-74ec-48bd-aceb-bdfb15eda38f","B1":"36bff14f-e458-4369-8aae-0a291e2f53ac","ids":{"catA":"c98bb00e-e3ab-4736-86ff-c42968b93ba2","catB":"901ec013-02d0-447f-b9d4-2eb07d85de5c","txA":"3bb6402d-0c5e-422e-b989-02820329997d","txA2":"482609ca-3f23-4a17-8562-5fb48a409742","compraA":"b1d1c235-f4e9-426a-a3a1-e3bd7f2e7234","faturaA":"[2026,10]","txB":"b9d7a940-dd6c-469d-b66c-f44a99339a60","compraB":"a5f28d11-bcf2-469e-a7f7-a15d9f82db6b","faturaB":"[2026,10]","grupoB":"7789fd8d-41d4-4ba1-a755-c2cf67fe10b9"}}
+
+stdout | sentinela-r5-hostil.test.ts
+LIMPEZA => 10 lançamento(s), 2/2 família(s), 3/3 usuário(s); erros=[]
+REGISTROS CRIADOS => {"usuarios":["d7f0b319-bc77-47a7-8244-b6d22e73b9c1","10e59ac2-43b3-431f-aa8a-ea846000ce1b","2bf08fa3-11e6-493e-8be0-f64c044e7225"],"familias":["e7a4733a-74ec-48bd-aceb-bdfb15eda38f","36bff14f-e458-4369-8aae-0a291e2f53ac"]}
+
+ ❯ sentinela-r5-hostil.test.ts (17 tests | 1 failed) 10000ms
+   ❯ 8. exclusão de lançamento (2)
+     × "single" na 1ª parcela de uma série de 3 180ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  sentinela-r5-hostil.test.ts > 8. exclusão de lançamento > "single" na 1ª parcela de uma série de 3
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ sentinela-r5-hostil.test.ts:545:25
+    543|     const depois = (await admin.from('transactions').select('id').in('…
+    544|     obs('8.excluir_single_pai', { parcelasCriadas: serie.length, antes…
+    545|     expect.soft(depois).toBe(antes! - 1)
+       |                         ^
+    546|   })
+    547|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 16 passed (17)
+   Start at  10:27:35
+   Duration  10.53s (tests 96%, transform 2%, import 2%)
+

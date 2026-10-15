@@ -1,0 +1,10 @@
+Sentinela R5 — varredura do bundle de CLIENTE (.next/static) do build de controle da cópia descartável
+(build de controle = código idêntico ao HEAD 580a506, sem a sonda; next build exit=0).
+Valores nunca impressos: só contagem de arquivos que contêm o valor literal.
+
+arquivos estaticos: 64
+SUPABASE_SERVICE_ROLE_KEY no bundle cliente: 0 arquivo(s)
+SUPABASE_DB_PASSWORD no bundle cliente: 0 arquivo(s)
+SEED_SENHA no bundle cliente: 0 arquivo(s)
+ANON (esperado, publico): 1
+arquivos com "service_role" ou "servico: leitura": 0

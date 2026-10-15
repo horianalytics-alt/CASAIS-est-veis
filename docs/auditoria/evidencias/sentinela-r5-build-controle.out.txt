@@ -1,0 +1,44 @@
+▲ Next.js 16.4.0 (Turbopack)
+✓ Running next.config.ts took 47ms
+- Cache Components enabled
+- Partial Prefetching enabled
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.1s
+  Running TypeScript ...
+  Finished TypeScript in 9.8s ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/21) ...
+✓ Finished filesystem cache database compaction in 14.2s
+  Generating static pages using 15 workers (5/21) 
+  Generating static pages using 15 workers (10/21) 
+  Generating static pages using 15 workers (15/21) 
+✓ Generating static pages using 15 workers (21/21) in 2.0s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ◐ /acerto
+├ ◐ /ajustes
+├ ◐ /ajustes/categorias
+├ ◐ /ajustes/contas
+├ ◐ /ajustes/familia
+├ ◐ /ajustes/formas-pagamento
+├ ◐ /ajustes/perfil
+├ ◐ /analises
+├ ○ /cadastro
+├ ◐ /carteira
+├ ◐ /inicio
+├ ◐ /lancar
+├ ◐ /login
+├ ○ /manifest.webmanifest
+├ ○ /nova-senha
+├ ƒ /onboarding
+└ ○ /recuperar-senha
+
+
+○  (Static)             prerendered as static content
+◐  (Partial Prerender)  prerendered as static HTML with dynamic server-streamed content
+ƒ  (Dynamic)            server-rendered on demand
+

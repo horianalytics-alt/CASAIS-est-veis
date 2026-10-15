@@ -1,0 +1,29 @@
+{
+  "rotulo": "antes-de-tudo",
+  "quando": "2026-10-15T13:23:00.249Z",
+  "auth_users": 2,
+  "auth_users_sentinela_r5": 0,
+  "familias_sentinela_r5": 0,
+  "global": {
+    "families": 1,
+    "family_members": 2,
+    "accounts": 3,
+    "categories": 15,
+    "transactions": 13,
+    "push_subscriptions": 0,
+    "category_groups": 1,
+    "category_budgets": 0
+  },
+  "familia_real": {
+    "family_members": 2,
+    "accounts": 3,
+    "categories": 15,
+    "transactions": 13,
+    "push_subscriptions": 0,
+    "category_groups": 1,
+    "category_budgets": 0,
+    "soma_valores": "34537221.00",
+    "max_updated_at": "2026-10-15T01:37:51.989353+00:00",
+    "join_code_inalterado": true
+  }
+}

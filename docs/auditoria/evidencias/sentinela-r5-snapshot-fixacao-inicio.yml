@@ -1,0 +1,60 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e2]:
+    - complementary "Navegação lateral principal" [ref=f3e3]:
+      - generic [ref=f3e4]:
+        - generic [ref=f3e9]:
+          - generic [ref=f3e10]: Finanças a Dois
+          - generic [ref=f3e11]: Finanças do Casal
+        - navigation "Menu principal" [ref=f3e12]:
+          - list [ref=f3e13]:
+            - listitem [ref=f3e14]:
+              - link "Início" [ref=f3e15] [cursor=pointer]:
+                - /url: /inicio
+            - listitem [ref=f3e20]:
+              - link "Carteira" [ref=f3e21] [cursor=pointer]:
+                - /url: /carteira
+            - listitem [ref=f3e26]:
+              - link "Lançar" [ref=f3e27] [cursor=pointer]:
+                - /url: /lancar
+            - listitem [ref=f3e31]:
+              - link "Acerto" [ref=f3e32] [cursor=pointer]:
+                - /url: /acerto
+            - listitem [ref=f3e38]:
+              - link "Análises" [ref=f3e39] [cursor=pointer]:
+                - /url: /analises
+            - listitem [ref=f3e44]:
+              - link "Ajustes" [ref=f3e45] [cursor=pointer]:
+                - /url: /ajustes
+      - generic [ref=f3e50]:
+        - generic [ref=f3e51]:
+          - generic [ref=f3e52]: Privacidade
+          - button "Ocultar valores financeiros" [ref=f3e53] [cursor=pointer]
+        - button "Sair" [ref=f3e55] [cursor=pointer]
+    - main [ref=f3e59]:
+      - heading "Início" [level=1] [ref=f3e60]
+      - generic [ref=f3e61]:
+        - generic [ref=f3e62]:
+          - generic [ref=f3e63]: Saldo das contas
+          - link "Ver carteira" [ref=f3e69] [cursor=pointer]:
+            - /url: /carteira
+        - generic [ref=f3e74]:
+          - generic [ref=f3e75]:
+            - generic [ref=f3e76]:
+              - generic "Conta de Atacante R5" [ref=f3e81]
+              - generic [ref=f3e82]: Conta corrente
+            - generic [ref=f3e83]:
+              - generic [ref=f3e84]: Saldo
+              - generic [ref=f3e85]: +R$ 0,00
+          - generic [ref=f3e86]:
+            - generic [ref=f3e87]:
+              - generic "Poupança R5" [ref=f3e92]
+              - generic [ref=f3e93]: Conta corrente
+            - generic [ref=f3e94]:
+              - generic [ref=f3e95]: Saldo
+              - generic [ref=f3e96]: +R$ 0,00
+      - generic [ref=f3e99]:
+        - heading "Tudo pronto para começar" [level=2] [ref=f3e100]
+        - paragraph [ref=f3e101]: Seus lançamentos vão aparecer aqui. Comece registrando um gasto ou uma entrada.
+        - link "Lançar o primeiro" [ref=f3e103] [cursor=pointer]:
+          - /url: /lancar
+  - alert [ref=f3e104]

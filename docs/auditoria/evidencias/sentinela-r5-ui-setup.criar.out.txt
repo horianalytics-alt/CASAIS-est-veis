@@ -1,0 +1,1 @@
+[{"tag":"ui","email":"sentinela-r5-ui-1792071096180@example.com","uid":"8a321a04-6fd0-4a96-bfa0-0174a06a5117","familyId":"628ec901-268d-4585-a956-06ce8c19314b"},{"tag":"atacante","email":"sentinela-r5-atacante-1792071096180@example.com","uid":"cc971006-8a14-42d7-b45e-2a72256baffb","familyId":"c6fa3780-f5a4-4afa-b2e3-6ed046c15dd2"}]
