@@ -628,13 +628,6 @@ export type Database = {
             referencedRelation: "v_account_balances";
             referencedColumns: ["family_id", "account_id"];
           },
-          {
-            foreignKeyName: "transactions_recurrence_parent_id_fkey";
-            columns: ["recurrence_parent_id"];
-            isOneToOne: false;
-            referencedRelation: "transactions";
-            referencedColumns: ["id"];
-          },
         ];
       };
     };
