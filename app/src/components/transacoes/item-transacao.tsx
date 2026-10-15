@@ -9,12 +9,15 @@ import {
   User,
   CreditCard,
   Tag,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import {
   ValorMonetario,
   type TipoDeValor,
 } from '@/components/financeiro/valor-monetario'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { INICIO } from '@/features/transacoes/copy'
 import { isoToBR } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -55,12 +58,16 @@ export interface ItemTransacaoProps {
   nomeMembro?: string | null
   /** Acabou de ser salvo: fundo de destaque para a pessoa achar na lista. */
   destacado?: boolean
+  selecionado?: boolean
+  aoAlternarSelecao?: (id: string) => void
+  aoEditar?: (transacao: Transacao) => void
+  aoExcluir?: (transacao: Transacao) => void
 }
 
 /**
  * Item de Transação no Mobile e Tablet:
  * Card com alta legibilidade, ícone temático colorido, badges claros de membro e status,
- * e valor monetário em destaque com alto contraste.
+ * valor monetário em destaque, checkbox de seleção em lote e ações rápidas de editar e excluir.
  */
 export function ItemTransacao({
   transacao,
@@ -68,6 +75,10 @@ export function ItemTransacao({
   nomeConta,
   nomeMembro,
   destacado = false,
+  selecionado = false,
+  aoAlternarSelecao,
+  aoEditar,
+  aoExcluir,
 }: ItemTransacaoProps) {
   const tipo = tipoConhecido(transacao.type)
   const { Icone, classe } = getIconeETipo(tipo)
@@ -77,16 +88,28 @@ export function ItemTransacao({
     <li
       aria-current={destacado ? 'true' : undefined}
       className={cn(
-        'flex flex-col gap-2.5 p-3.5 rounded-xl border border-border/70 bg-card hover:border-border hover:shadow-2xs transition-all',
+        'flex flex-col gap-2.5 p-3.5 rounded-xl border border-border/70 bg-card hover:border-border hover:shadow-2xs transition-all relative',
         destacado && 'ring-2 ring-primary/40 bg-primary/5',
+        selecionado && 'border-primary/60 bg-primary/5 ring-1 ring-primary/30',
       )}
     >
-      {/* Topo: Ícone + Descrição + Valor */}
+      {/* Topo: Checkbox + Ícone + Descrição + Valor e Ações */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          {aoAlternarSelecao && (
+            <div className="shrink-0 flex items-center pr-0.5">
+              <Checkbox
+                checked={selecionado}
+                onCheckedChange={() => aoAlternarSelecao(transacao.id)}
+                aria-label={`Selecionar ${transacao.description}`}
+              />
+            </div>
+          )}
+
           <div className={cn('flex size-8 items-center justify-center rounded-lg border shrink-0', classe)}>
             <Icone className="size-4" aria-hidden="true" />
           </div>
+
           <div className="flex flex-col min-w-0">
             <span className="font-semibold text-sm text-foreground truncate" title={transacao.description}>
               {transacao.description}
@@ -97,7 +120,7 @@ export function ItemTransacao({
           </div>
         </div>
 
-        <div className="shrink-0 text-right">
+        <div className="shrink-0 flex flex-col items-end gap-1">
           {tipo ? (
             <ValorMonetario
               valor={transacao.amount}
@@ -106,6 +129,33 @@ export function ItemTransacao({
               className="font-bold text-sm sm:text-base"
             />
           ) : null}
+
+          {(aoEditar || aoExcluir) && (
+            <div className="flex items-center gap-1">
+              {aoEditar && (
+                <button
+                  type="button"
+                  onClick={() => aoEditar(transacao)}
+                  className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                  title="Editar lançamento"
+                  aria-label={`Editar ${transacao.description}`}
+                >
+                  <Pencil className="size-3.5" />
+                </button>
+              )}
+              {aoExcluir && (
+                <button
+                  type="button"
+                  onClick={() => aoExcluir(transacao)}
+                  className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  title="Excluir lançamento"
+                  aria-label={`Excluir ${transacao.description}`}
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
