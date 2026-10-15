@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Instrument_Sans, IBM_Plex_Mono } from "next/font/google";
 import { SwRegistro } from "@/components/pwa/sw-registro";
+import { DestravarAudio } from "@/components/providers/destravar-audio";
 import { TemaScript } from "@/components/providers/tema-script";
 import { APP } from "@/features/comum/copy";
 import "./globals.css";
@@ -98,6 +99,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full flex flex-col">
         <SwRegistro />
+        <DestravarAudio />
         {children}
       </body>
     </html>

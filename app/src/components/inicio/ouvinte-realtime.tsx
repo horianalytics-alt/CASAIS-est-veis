@@ -8,7 +8,22 @@ import { createClient } from '@/lib/supabase/client'
 import { rotuloDoMes } from '@/lib/hoje'
 import { formatBRL } from '@/lib/format'
 import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
-import { tocarSomSucesso } from '@/features/sons/sons'
+import { tocarSomParceiro } from '@/features/sons/sons'
+
+/**
+ * O INSERT do próprio autor também chega por Realtime — muitas vezes antes de
+ * o id entrar em `idsConhecidos` — e quem lançou já ouviu `tocarSomSucesso` no
+ * formulário. O som de parceiro só vale para o que OUTRO membro criou.
+ * Critério é `created_by_member_id`, não `paid_by_member_id`: dá para lançar
+ * uma despesa paga pelo outro. Sem `meuId` não há como saber: toca.
+ */
+export function foiCriadoPeloParceiro(
+  criadoPor: string | null | undefined,
+  meuId: string | null | undefined,
+): boolean {
+  if (!meuId) return true
+  return criadoPor !== meuId
+}
 
 export interface OuvinteRealtimeProps {
   familyId: string
@@ -76,6 +91,7 @@ export function OuvinteRealtime({
             description?: string
             amount?: number
             paid_by_member_id?: string
+            created_by_member_id?: string
           } | undefined
           const antiga = payload.old as { id?: string } | undefined
           const id = nova?.id ?? antiga?.id
@@ -86,15 +102,28 @@ export function OuvinteRealtime({
               return
             }
 
-            // Transação criada pelo parceiro! Toca som de notificação
-            tocarSomSucesso()
+            // O meu próprio lançamento: o formulário já tocou o som de sucesso e
+            // já navega para o mês certo. Nada de aviso "acabou de lançar" nem
+            // de som de parceiro na minha tela. O refresh fica (já existia):
+            // é a rede de segurança para a lista refletir o novo lançamento.
+            if (!foiCriadoPeloParceiro(nova?.created_by_member_id, meuId)) {
+              if (id) idsConhecidos.current.add(id)
+              router.refresh()
+              return
+            }
+
+            // Som distinto do de sucesso: dá para saber sem olhar a tela que
+            // foi o parceiro, e não eu, quem lançou.
+            tocarSomParceiro()
           }
 
           const dataTx = nova?.date
           const mesTx = dataTx ? dataTx.slice(0, 7) : null
 
           // Monta dados do toast com nome do autor e respeito ao Modo Privacidade
-          const autor = membros.find((m) => m.id === nova?.paid_by_member_id)
+          // "Fulano acabou de lançar" = quem CRIOU, não quem pagou.
+          const idDoAutor = nova?.created_by_member_id ?? nova?.paid_by_member_id
+          const autor = membros.find((m) => m.id === idDoAutor)
           const nomeAutor = autor ? autor.display_name : 'Seu parceiro'
           const valorFormatado =
             !oculto && typeof nova?.amount === 'number'
@@ -138,7 +167,7 @@ export function OuvinteRealtime({
     return () => {
       supabase.removeChannel(canal)
     }
-  }, [familyId, mesExibido, router, membros, oculto])
+  }, [familyId, mesExibido, router, membros, oculto, meuId])
 
   if (!aviso) return null
 

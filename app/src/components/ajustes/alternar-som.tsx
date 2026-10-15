@@ -5,6 +5,7 @@ import { Volume2, VolumeX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AJUSTES } from '@/features/ajustes/copy'
 import {
+  destravarAudio,
   lerPreferenciaSom,
   salvarPreferenciaSom,
   tocarSomSucesso,
@@ -22,6 +23,9 @@ export function AlternarSom() {
     setAtivo(novo)
     salvarPreferenciaSom(novo)
     if (novo) {
+      // O ouvinte global rodou ANTES deste clique, com o som ainda desligado,
+      // e por isso não destravou nada. Destrava aqui, ainda dentro do gesto.
+      destravarAudio()
       tocarSomSucesso()
     }
   }
