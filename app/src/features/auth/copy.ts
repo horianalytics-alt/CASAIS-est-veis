@@ -66,5 +66,7 @@ export const NOVA_SENHA = {
   irParaInicio: 'Ir para o início',
   irParaLogin: 'Voltar para entrar',
   pedirNovoLink: 'Pedir novo link de recuperação',
+  conferindoLink: 'Conferindo o link…',
+  linkInvalido: 'Esse link expirou ou é inválido. Peça a recuperação de senha de novo.',
 } as const
 
