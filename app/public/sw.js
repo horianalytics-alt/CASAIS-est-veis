@@ -89,6 +89,10 @@ self.addEventListener('push', (event) => {
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
       data: { url: dados.url ?? '/inicio' },
+      vibrate: [200, 100, 200],
+      silent: false,
+      tag: 'financas-a-dois',
+      renotify: true,
     }),
   )
 })
