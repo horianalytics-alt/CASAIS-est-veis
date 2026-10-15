@@ -1,8 +1,9 @@
 # PROJETO.md — Finanças a Dois
 
 > Retrato ÚNICO do estado atual. Sempre sobrescrito, nunca acumulado.
-> Última atualização: 2026-10-14, por Maestro, após push real e metas/
-> orçamento/patrimônio/simulador (back-end) + UX/UI renovada (front).
+> Última atualização: 2026-10-14, por Maestro, após push real completo,
+> orçamento/patrimônio/simulador completos, recuperação de senha in-place
+> e UX de velocidade percebida (Rodadas 6-8).
 > Histórico de entregas: `ENTREGA.md` (quando existir). Plano vivo: `PLANO.md`
 > (revisão 2 em `C:\Users\Heitor PC\.claude\plans\harmonic-jingling-eclipse.md`).
 
@@ -168,12 +169,12 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
   estados (carregando/sem-suporte/não-inscrito/inscrito/pendente), desfaz a
   inscrição do navegador se a Server Action falhar. **Falta:** teste real
   com dois dispositivos (Heitor ativa, Carol lança algo, Heitor recebe).
-- **Metas por conta / Orçamento por categoria / Patrimônio / Simulador de
-  gasto fútil** — back-end completo (`306cef7`, migration 00013):
-  `v_orcamento_progresso` e `v_patrimonio_mensal` (ambas
-  `security_invoker=true`, isolamento testado), `src/lib/simulador.ts`
-  (juros compostos em centavos inteiros). **Falta:** telas (Dash +
-  Fachada) — ainda não planejadas/delegadas.
+- **Patrimônio e simulador de gasto fútil, completos** (`0b9496b`): gráfico
+  de linha de patrimônio (12 meses, eixo único) e simulador de juros
+  compostos em `/analises`, construídos pelo Dash seguindo as formas do
+  `dataviz` (barra para orçamento nunca donut, linha para série temporal
+  nunca dual-axis). Números reconciliados contra SQL bruto. Isolamento RLS
+  provado entre famílias.
 - Previsão de fixos/parcelas nos próximos 6 meses, em Análises.
 - UX/UI de `/inicio`, `/lancar`, `/acerto`, `/carteira` renovada
   (Antigravity, `bee799a`): cores funcionais por tipo (entrada/saída/
@@ -190,27 +191,42 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
   Só restam Heitor e Carol em `auth.users`, família real intacta em ambas as
   limpezas.
 
+- **Orçamento por categoria, completo de ponta a ponta** (`7b57e75`
+  back-end, `05e401a`/`65ca804` front): `definirOrcamento`/`excluirOrcamento`
+  (upsert nativo sobre `UNIQUE(family_id, category_id, month)`, atômico),
+  card `GerenciadorOrcamentos` em Ajustes > Categorias, filtro de só
+  categorias ativas de despesa/investimento no seletor (decisão de produto).
+  Verificado: `tsc`/`vitest`/`next build` limpos, fluxo completo
+  criar→editar→excluir testado end-to-end.
+- **Recuperação de senha in-place no login** (`1d6317c`): modal direto em
+  `/login`, preenche e-mail automaticamente se já digitado, rota
+  `/recuperar-senha` continua ativa para quem acessa direto,
+  `form-nova-senha.tsx` trata token PKCE e hash fragment.
+- **UX de velocidade percebida e filtros avançados** (`3eb189b`): barra de
+  progresso de navegação no topo, count-up de números (respeita Modo
+  Privacidade — não anima quando oculto, verificado no código), feedback
+  tátil em botões, entrada suave de cards/listas, som de sucesso corrigido
+  (não corta mais no redirect), som+toast quando o parceiro lança algo com
+  Realtime aberto, filtros novos em `/inicio` (categoria, busca por
+  texto/valor, ordenação por data/valor) — tudo client-side, sem nova
+  consulta ao servidor.
+
 ### Pendente
 
-- **Chaves VAPID na Vercel (bloqueante para o push funcionar de ponta a
-  ponta):** par gerado em 2026-10-14 (`npx web-push generate-vapid-keys`).
-  Só o Heitor pode configurar — ver "Só você pode fazer" no `PLANO.md`
-  seção relevante. Variáveis: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (Production +
-  Preview) e `VAPID_PRIVATE_KEY` (Production + Preview, **sem**
-  `NEXT_PUBLIC_`, nunca no repositório).
-- **Front do push** (Antigravity, briefing ainda não escrito): trocar as
-  chamadas diretas de `pay_invoice`/`settle_up` em
-  `dialogo-pagar-fatura.tsx`/`dialogo-acertar.tsx` pelas Server Actions
-  `pagarFatura`/`registrarAcerto`; botão "Ativar notificações" (o
-  `sw.js` já tem o handler).
-- **Telas de metas/orçamento/patrimônio/simulador** (Dash + Fachada, ainda
-  não planejadas) — back-end pronto (`v_orcamento_progresso`,
-  `v_patrimonio_mensal`, `simulador.ts`).
+- **Vibração/renotify no push** (`public/sw.js`) — pedido no briefing da
+  Rodada 8, ainda não construído (o commit `3eb189b` é anterior a esse
+  briefing).
+- **Teste real do push com dois dispositivos** — back+front completos,
+  falta só validar na prática (Heitor ativa, Carol lança algo, Heitor
+  recebe).
 - **P-007/P-008/P-009** (achados Sentinela R4, severidade MÉDIA/BAIXA): tipo
   de conta mutável fora da Action, índice único com brechas de normalização
   (P-008 já corrigido na migration 00011, confirmar status em
   `PENDENCIAS.md`), arredondamento de ponto flutuante em valores
   monetários. Ver `docs/auditoria/sentinela-r4.md`.
+- **P-010/P-011** (achados Dash, entrega de orçamento/patrimônio): P-010
+  FECHADO por `7b57e75`. P-011 (paleta categórica reprova no validador do
+  dataviz) ainda aberto — Vitrine precisa re-fazer o passo da paleta.
 - **SMTP (Resend)** — e-mail de confirmação/recuperação ainda no provedor
   padrão do Supabase; decisão do Heitor, não técnica.
 - **Rotação da chave de serviço e senha do banco** — apareceram em chat
@@ -226,15 +242,34 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
 
 ## 5. Última auto-análise
 
-Commit do backend da Rodada 3 (categorias/formas/contas) e front da Rodada 4
-(Antigravity ligou tudo nas Server Actions reais) — ambos verificados
-independentemente (`tsc`/`vitest`/`next build` limpos). Dois ciclos de
-limpeza de banco nesta sessão, sem perda de dado real nos dois (família e os
-2 membros reais confirmados intactos antes e depois de cada um). Dois
-achados de segurança corrigidos no mesmo ciclo em que apareceram: hardcoded
-fallback de `join_code` em 3 scripts de teste, e hardcoded fallback do
-**e-mail real da Carol** em `semear.mjs` — os dois removidos, env var agora
-obrigatória sem fallback.
+Rodadas 6-8 (push real, orçamento/patrimônio/simulador, recuperação de
+senha, UX de velocidade) todas verificadas independentemente
+(`tsc`/`vitest`/`next build` limpos em cada uma, código revisado linha a
+linha nos pontos sensíveis — mapeamento de `pagarFatura`/`registrarAcerto`,
+regra de Modo Privacidade em `ValorMonetario`). Investigação de performance
+feita com medição real (não suposição) antes de aprovar qualquer mudança
+de back-end: concluiu que o servidor já estava bem otimizado (queries em
+paralelo, push via `after()`), então nenhum prompt de back-end foi
+repassado — só UX, que é o que realmente resolve a percepção de lentidão.
+
+**Achado de segurança real nesta leva:** a Rodada 7 do Antigravity
+(recuperação de senha, `1d6317c`) introduziu Host Header Injection —
+`urlDoSite()` passou a ler `Origin`/`Host`/`X-Forwarded-Host` da própria
+requisição (controláveis pelo atacante) para montar o link de reset de
+senha, antes do fallback seguro. Corrigido no mesmo ciclo (`0c39e05`):
+volta a usar só `NEXT_PUBLIC_SITE_URL`/`VERCEL_URL` (esta última definida
+pela Vercel, não pelo cliente) — nunca cabeçalho de requisição.
+`NEXT_PUBLIC_SITE_URL` configurada na Vercel pelo Heitor, redeploy
+confirmado.
+
+Dois ciclos de limpeza de banco nesta sessão (famílias de teste e, a
+pedido do Heitor, todos os lançamentos da família real para recomeçar do
+zero), sem perda de dado estrutural nos dois (família, membros, contas,
+categorias sempre confirmados intactos). Outros achados de segurança
+corrigidos no mesmo ciclo em que apareceram: hardcoded fallback de
+`join_code` em 3 scripts de teste, e hardcoded fallback do **e-mail real
+da Carol** em `semear.mjs` — os dois removidos, env var agora obrigatória
+sem fallback.
 
 A auditoria Sentinela R4 rodou parcialmente (confirmou isolamento
 multi-tenant, validação Zod e exclusão-em-uso como seguros; achou 3 itens
