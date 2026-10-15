@@ -224,6 +224,18 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
 - **P-011 fechado**: paleta categórica de gráficos re-trabalhada,
   `validate_palette.js` passa em claro e escuro (antes reprovava 8/8
   slots no escuro, incluindo a série 1 que se assumia correta).
+- **M-1 corrigido**: `/nova-senha` não instala mais sessão a partir de
+  `#access_token` da URL (sequestro de conta/fixação de sessão). Causa
+  raiz real: só o fluxo PKCE `?code=` prende o token ao navegador que
+  pediu a recuperação; hash fragment nunca prende. Formulário só libera
+  com o evento `PASSWORD_RECOVERY` do próprio client Supabase, nunca por
+  dado lido da URL. Provado vermelho→verde contra produção.
+- **M-2 corrigido**: acerto de contas agora é imutável a nível de banco
+  (migration 00015, triggers `BEFORE INSERT/UPDATE` em `transactions`) —
+  fecha o gap onde a trava só existia na Server Action, contornável por
+  escrita direta via REST. `DELETE` continua permitido (fluxo "exclua e
+  registre de novo"). Fechou de brinde o achado B-1 (vazamento de
+  existência de id entre famílias).
 - Refinamento visual mobile (Antigravity, `e84843d`/`a8a2d00`/`61cfb3e`):
   swipe-to-delete nos cards, cards edge-to-edge, bordas coloridas
   semânticas por tipo de lançamento (receita/despesa/investimento/vale),
@@ -262,12 +274,11 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
   Configuration, "Site URL" aponta para um domínio de preview da Vercel
   em vez de `https://financascasais.vercel.app`. Corrigir e adicionar
   `https://financascasais.vercel.app/nova-senha` às Redirect URLs.
-- **M-1/M-2/M-3 do Sentinela R5** (MÉDIO, ver `docs/auditoria/r5-sentinela.md`):
-  `/nova-senha` aceita token de outra conta sem validar que é do próprio
-  visitante (Fachada); acerto de contas pode ser forjado/desfeito
-  gravando direto na tabela, trava só existe na Action (Estrutura);
-  campos de seleção do diálogo de editar sem nome acessível (Fachada,
-  WCAG 1.3.1/4.1.2).
+- **M-3 do Sentinela R5** (único achado MÉDIO ainda aberto): campos de
+  seleção do diálogo de editar lançamento sem nome acessível e tipo
+  escolhido não anunciado (WCAG 1.3.1/4.1.2) — Fachada.
+  M-1 (sequestro de sessão via `/nova-senha`) e M-2 (acerto de contas
+  forjável por escrita direta) CORRIGIDOS — ver Funcionando.
 - **Teste real do push com dois dispositivos, pós-correção de
   diagnóstico** — Heitor precisa desativar/reativar notificações em
   Ajustes > Perfil para recriar a inscrição que nunca foi salva; depois
