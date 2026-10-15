@@ -50,6 +50,23 @@ function getIconeETipo(tipo: string | undefined) {
       return { Icone: ArrowUpRight, classe: 'bg-muted text-muted-foreground border-border' }
   }
 }
+function getBordaTipo(tipo: string | undefined, ehBeneficio: boolean) {
+  if (ehBeneficio) {
+    return 'border-l-[4px] border-l-purple-500 dark:border-l-purple-400'
+  }
+  switch (tipo) {
+    case 'receita':
+      return 'border-l-[4px] border-l-emerald-500 dark:border-l-emerald-400'
+    case 'despesa':
+      return 'border-l-[4px] border-l-rose-500 dark:border-l-rose-400'
+    case 'investimento':
+      return 'border-l-[4px] border-l-sky-500 dark:border-l-sky-400'
+    case 'transferencia':
+      return 'border-l-[4px] border-l-indigo-500 dark:border-l-indigo-400'
+    default:
+      return 'border-l-[4px] border-l-transparent'
+  }
+}
 
 export interface TabelaTransacoesDesktopProps {
   transacoes: Transacao[]
@@ -129,6 +146,7 @@ export function TabelaTransacoesDesktop({
                 aria-current={destacado ? 'true' : undefined}
                 className={cn(
                   'transition-colors group hover:bg-muted/40',
+                  getBordaTipo(tipo, Boolean(t.is_benefit)),
                   destacado && 'bg-primary/10',
                   estaSelecionado && 'bg-primary/5',
                 )}
@@ -161,6 +179,11 @@ export function TabelaTransacoesDesktop({
                     >
                       {t.description}
                     </span>
+                    {t.is_benefit && (
+                      <span className="inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold border border-purple-500/20 shrink-0">
+                        Vale
+                      </span>
+                    )}
                     <BadgeTipo tipo={t.type} pago={t.is_paid} className="text-[10px] shrink-0" />
                   </div>
                 </td>
