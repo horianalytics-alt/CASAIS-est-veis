@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 import {
   ArrowDownLeft,
   ArrowUpDown,
@@ -9,10 +10,18 @@ import {
   Search,
   Tag,
   X,
+  Trash2,
+  SlidersHorizontal,
+  Check,
+  AlertCircle,
 } from 'lucide-react'
 import { ItemTransacao } from './item-transacao'
 import { TabelaTransacoesDesktop } from './tabela-transacoes-desktop'
+import { DialogoExcluirLancamento } from './dialogo-excluir-lancamento'
+import { DialogoEditarLancamento } from './dialogo-editar-lancamento'
+import { DialogoEditarEmMassa } from './dialogo-editar-em-massa'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -20,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { excluirLancamento } from '@/actions/lancamento'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/types/database'
 
@@ -35,6 +45,8 @@ export interface ListaTransacoesInterativaProps {
   membros: MembroResumo[]
   mapaContas: Record<string, string>
   mapaCategorias: Record<string, string>
+  listaContas?: Array<{ id: string; name: string }>
+  listaCategorias?: Array<{ id: string; name: string }>
   idDestacado?: string | null
 }
 
@@ -45,13 +57,51 @@ export function ListaTransacoesInterativa({
   membros,
   mapaContas,
   mapaCategorias,
+  listaContas,
+  listaCategorias,
   idDestacado,
 }: ListaTransacoesInterativaProps) {
+  const router = useRouter()
+
+  // Filtros
   const [filtroMembro, setFiltroMembro] = React.useState<string>('todos')
   const [filtroTipo, setFiltroTipo] = React.useState<string>('todos')
   const [filtroCategoria, setFiltroCategoria] = React.useState<string>('todas')
   const [busca, setBusca] = React.useState<string>('')
   const [ordenacao, setOrdenacao] = React.useState<TipoOrdenacao>('data_desc')
+
+  // Seleção múltipla
+  const [selecionados, setSelecionados] = React.useState<Set<string>>(new Set())
+
+  // Diálogos de Exclusão
+  const [transacaoParaExcluir, setTransacaoParaExcluir] = React.useState<Transacao | null>(null)
+  const [modalExcluirMassaAberto, setModalExcluirMassaAberto] = React.useState(false)
+  const [pendenteExclusao, setPendenteExclusao] = React.useState(false)
+
+  // Diálogos de Edição
+  const [transacaoParaEditar, setTransacaoParaEditar] = React.useState<Transacao | null>(null)
+  const [modalEditarMassaAberto, setModalEditarMassaAberto] = React.useState(false)
+
+  // Feedback Toast temporário
+  const [mensagemFeedback, setMensagemFeedback] = React.useState<string | null>(null)
+
+  const dispararFeedback = React.useCallback((msg: string) => {
+    setMensagemFeedback(msg)
+    setTimeout(() => {
+      setMensagemFeedback((atual) => (atual === msg ? null : atual))
+    }, 4000)
+  }, [])
+
+  // Deriva listas de contas e categorias
+  const contasDisponiveis = React.useMemo(() => {
+    if (listaContas && listaContas.length > 0) return listaContas
+    return Object.entries(mapaContas).map(([id, name]) => ({ id, name }))
+  }, [listaContas, mapaContas])
+
+  const categoriasDisponiveis = React.useMemo(() => {
+    if (listaCategorias && listaCategorias.length > 0) return listaCategorias
+    return Object.entries(mapaCategorias).map(([id, name]) => ({ id, name }))
+  }, [listaCategorias, mapaCategorias])
 
   // Mapa de id do membro para display_name
   const mapaMembros = React.useMemo(() => {
@@ -155,8 +205,86 @@ export function ListaTransacoesInterativa({
     })
   }, [transacoes, filtroMembro, filtroTipo, filtroCategoria, busca, ordenacao])
 
+  // Lógica de Seleção Múltipla
+  const alternarSelecao = React.useCallback((id: string) => {
+    setSelecionados((antigos) => {
+      const novos = new Set(antigos)
+      if (novos.has(id)) {
+        novos.delete(id)
+      } else {
+        novos.add(id)
+      }
+      return novos
+    })
+  }, [])
+
+  const todosFiltradosSelecionados =
+    transacoesFiltradas.length > 0 &&
+    transacoesFiltradas.every((t) => selecionados.has(t.id))
+
+  const alternarTodos = React.useCallback(() => {
+    if (todosFiltradosSelecionados) {
+      setSelecionados(new Set())
+    } else {
+      setSelecionados(new Set(transacoesFiltradas.map((t) => t.id)))
+    }
+  }, [todosFiltradosSelecionados, transacoesFiltradas])
+
+  const desmarcarTodos = React.useCallback(() => {
+    setSelecionados(new Set())
+  }, [])
+
+  // Ações de Exclusão
+  const confirmarExclusaoIndividual = async (escopo: 'single' | 'series') => {
+    if (!transacaoParaExcluir) return
+    setPendenteExclusao(true)
+
+    const res = await excluirLancamento(transacaoParaExcluir.id, escopo)
+    setPendenteExclusao(false)
+
+    if (res.ok) {
+      dispararFeedback(
+        escopo === 'series'
+          ? 'Série de lançamentos excluída com sucesso.'
+          : 'Lançamento excluído com sucesso.',
+      )
+      setSelecionados((antigos) => {
+        const novos = new Set(antigos)
+        novos.delete(transacaoParaExcluir.id)
+        return novos
+      })
+      setTransacaoParaExcluir(null)
+      router.refresh()
+    } else {
+      dispararFeedback(res.erro || 'Erro ao excluir lançamento.')
+    }
+  }
+
+  const confirmarExclusaoEmMassa = async () => {
+    if (selecionados.size === 0) return
+    setPendenteExclusao(true)
+
+    const ids = Array.from(selecionados)
+    let excluidosContador = 0
+
+    // Executa exclusão individual de cada selecionado via Server Action
+    await Promise.all(
+      ids.map(async (id) => {
+        const res = await excluirLancamento(id, 'single')
+        if (res.ok) excluidosContador++
+      }),
+    )
+
+    setPendenteExclusao(false)
+    setModalExcluirMassaAberto(false)
+    setSelecionados(new Set())
+
+    dispararFeedback(`${excluidosContador} lançamentos excluídos com sucesso.`)
+    router.refresh()
+  }
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 relative">
       {/* 1. Barra de Filtros Rápidos (Pills) e Contador */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/60">
         <div className="flex flex-wrap items-center gap-2">
@@ -342,6 +470,10 @@ export function ListaTransacoesInterativa({
                 nomeCategoria={t.category_id ? mapaCategorias[t.category_id] : null}
                 nomeMembro={mapaMembros.get(t.paid_by_member_id)}
                 destacado={t.id === idDestacado}
+                selecionado={selecionados.has(t.id)}
+                aoAlternarSelecao={alternarSelecao}
+                aoEditar={(item) => setTransacaoParaEditar(item)}
+                aoExcluir={(item) => setTransacaoParaExcluir(item)}
               />
             ))}
           </ul>
@@ -354,9 +486,140 @@ export function ListaTransacoesInterativa({
               nomeCategoria={(id) => (id ? mapaCategorias[id] : null)}
               nomeMembro={(id) => mapaMembros.get(id)}
               idDestacado={idDestacado}
+              selecionados={selecionados}
+              aoAlternarSelecao={alternarSelecao}
+              aoAlternarTodos={alternarTodos}
+              todosSelecionados={todosFiltradosSelecionados}
+              aoEditar={(item) => setTransacaoParaEditar(item)}
+              aoExcluir={(item) => setTransacaoParaExcluir(item)}
             />
           </div>
         </>
+      )}
+
+      {/* 4. Barra Flutuante de Ações em Massa (Aparece quando >= 1 item selecionado) */}
+      {selecionados.size > 0 && (
+        <div className="fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 sm:gap-3 bg-card/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-border shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="flex items-center gap-1.5 pr-2 border-r border-border/80">
+            <span className="flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-bold">
+              {selecionados.size}
+            </span>
+            <span className="text-xs font-semibold text-foreground hidden sm:inline">
+              {selecionados.size === 1 ? 'selecionado' : 'selecionados'}
+            </span>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setModalEditarMassaAberto(true)}
+            className="h-8 gap-1.5 text-xs rounded-xl"
+          >
+            <SlidersHorizontal className="size-3.5" />
+            <span>Editar lote</span>
+          </Button>
+
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => setModalExcluirMassaAberto(true)}
+            className="h-8 gap-1.5 text-xs rounded-xl"
+          >
+            <Trash2 className="size-3.5" />
+            <span>Excluir</span>
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={desmarcarTodos}
+            className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-xl"
+            title="Desmarcar todos"
+            aria-label="Desmarcar todos"
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* 5. Modal de Exclusão Individual */}
+      <DialogoExcluirLancamento
+        aberto={Boolean(transacaoParaExcluir)}
+        onOpenChange={(aberto) => {
+          if (!aberto) setTransacaoParaExcluir(null)
+        }}
+        transacao={transacaoParaExcluir}
+        nomeConta={transacaoParaExcluir ? mapaContas[transacaoParaExcluir.account_id] : null}
+        nomeCategoria={
+          transacaoParaExcluir?.category_id
+            ? mapaCategorias[transacaoParaExcluir.category_id]
+            : null
+        }
+        aoConfirmar={confirmarExclusaoIndividual}
+        pendente={pendenteExclusao}
+      />
+
+      {/* 6. Modal de Exclusão em Massa */}
+      <DialogoExcluirLancamento
+        aberto={modalExcluirMassaAberto}
+        onOpenChange={setModalExcluirMassaAberto}
+        quantidadeEmMassa={selecionados.size}
+        aoConfirmar={confirmarExclusaoEmMassa}
+        pendente={pendenteExclusao}
+      />
+
+      {/* 7. Modal de Edição Individual */}
+      <DialogoEditarLancamento
+        aberto={Boolean(transacaoParaEditar)}
+        onOpenChange={(aberto) => {
+          if (!aberto) setTransacaoParaEditar(null)
+        }}
+        transacao={transacaoParaEditar}
+        contas={contasDisponiveis}
+        categorias={categoriasDisponiveis}
+        membros={membros}
+        onSalvo={() => {
+          dispararFeedback('Lançamento atualizado com sucesso.')
+        }}
+      />
+
+      {/* 8. Modal de Edição em Massa */}
+      <DialogoEditarEmMassa
+        aberto={modalEditarMassaAberto}
+        onOpenChange={setModalEditarMassaAberto}
+        idsSelecionados={Array.from(selecionados)}
+        contas={contasDisponiveis}
+        categorias={categoriasDisponiveis}
+        membros={membros}
+        onSalvo={() => {
+          dispararFeedback('Lançamentos atualizados em lote com sucesso.')
+          setSelecionados(new Set())
+        }}
+      />
+
+      {/* 9. Feedback Toast Inline */}
+      {mensagemFeedback && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-20 right-4 z-50 flex items-center gap-2.5 rounded-xl border border-border/80 bg-card px-4 py-3 shadow-lg text-xs font-medium text-foreground animate-in fade-in slide-in-from-bottom-3 duration-200"
+        >
+          <div className="flex size-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <Check className="size-3.5" />
+          </div>
+          <span>{mensagemFeedback}</span>
+          <button
+            type="button"
+            onClick={() => setMensagemFeedback(null)}
+            className="ml-2 text-muted-foreground hover:text-foreground"
+            aria-label="Fechar aviso"
+          >
+            <X className="size-3" />
+          </button>
+        </div>
       )}
     </div>
   )
