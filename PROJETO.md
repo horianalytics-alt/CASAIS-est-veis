@@ -1,9 +1,9 @@
 # PROJETO.md — Finanças a Dois
 
 > Retrato ÚNICO do estado atual. Sempre sobrescrito, nunca acumulado.
-> Última atualização: 2026-10-15, por Maestro, após seleção múltipla/editar/
-> excluir lançamentos (front completo, back em finalização) e refinamento
-> mobile (swipe-to-delete, long-press, bordas semânticas).
+> Última atualização: 2026-10-15, por Maestro, após auditoria Sentinela R5
+> (REPROVADO → achados ALTO corrigidos), correção de contraste de texto e
+> edição/exclusão de lançamentos completos de ponta a ponta.
 > Histórico de entregas: `ENTREGA.md` (quando existir). Plano vivo: `PLANO.md`
 > (revisão 2 em `C:\Users\Heitor PC\.claude\plans\harmonic-jingling-eclipse.md`).
 
@@ -202,8 +202,28 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
   `atualizarLancamento`/`atualizarLancamentosEmMassa` publicadas
   (`9252760`) — autorização dupla (filtro explícito + RLS) provada com
   teste mutante em 4 variantes (vazamento real só com as duas camadas
-  caindo juntas). Front ainda usa `.update()` direto do navegador como
-  placeholder — briefing para trocar enviado ao Antigravity.
+  caindo juntas). Front conectado (Antigravity, `2996ffa`/`fa94fd1`/
+  `4c3fd04`) — placeholder removido.
+- **Bug CRÍTICO corrigido: excluir "apenas esta parcela" na 1ª parcela de
+  uma série apagava a série inteira** (migration 00014, `1fba0b4`,
+  achado A-1 do Sentinela R5). Causa: `ON DELETE CASCADE` na FK de
+  `recurrence_parent_id` — removida; a coluna virou chave de série, não
+  FK, provado por teste vermelho→verde que a exclusão por série nunca
+  dependeu do CASCADE. Fechou de brinde o achado B-1 (vazamento de
+  existência de id entre famílias via 23503).
+- **Auditoria Sentinela R5** (`docs/auditoria/r5-sentinela.md`):
+  veredicto REPROVADO → A-1 corrigido (acima); A-2 (link de recuperação
+  de senha em produção apontando para domínio errado) é ação do Heitor
+  no painel do Supabase (Site URL). Isolamento multi-tenant, Host Header
+  Injection (correção anterior) e `service_role` em `servico.ts` todos
+  CONFIRMADOS seguros. Achados MÉDIO/BAIXO registrados em `PENDENCIAS.md`.
+- **Contraste de texto corrigido**: 34 falhas (cores semânticas
+  receita/despesa/investimento/pendente/negativo/benefício no tema
+  claro, abaixo de 4.5:1) → 0 falhas, confirmado com
+  `docs/design/scripts/contraste.js`.
+- **P-011 fechado**: paleta categórica de gráficos re-trabalhada,
+  `validate_palette.js` passa em claro e escuro (antes reprovava 8/8
+  slots no escuro, incluindo a série 1 que se assumia correta).
 - Refinamento visual mobile (Antigravity, `e84843d`/`a8a2d00`/`61cfb3e`):
   swipe-to-delete nos cards, cards edge-to-edge, bordas coloridas
   semânticas por tipo de lançamento (receita/despesa/investimento/vale),
@@ -237,15 +257,17 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
 
 ### Pendente
 
-- **Front de editar lançamento** — trocar `.update()` direto do navegador
-  em `dialogo-editar-lancamento.tsx`/`dialogo-editar-em-massa.tsx` pelas
-  Server Actions reais (briefing publicado).
-- **4 perguntas de regra de negócio** (Estrutura, plano seção 9): recusar
-  editar acerto de contas (já recusa)? lote com transferência+categoria
-  recusa o lote inteiro (já recusa)? desmarcar "pago" de fatura já quitada
-  deveria ser permitido? vale migration para `update_transactions` RPC
-  deixar o lote atômico? Ver `docs/planos/estrutura-editar-lancamento.md`
-  seção 9.
+- **A-2 do Sentinela R5 (AÇÃO DO HEITOR, bloqueante para recuperação de
+  senha funcionar):** no painel do Supabase → Authentication → URL
+  Configuration, "Site URL" aponta para um domínio de preview da Vercel
+  em vez de `https://financascasais.vercel.app`. Corrigir e adicionar
+  `https://financascasais.vercel.app/nova-senha` às Redirect URLs.
+- **M-1/M-2/M-3 do Sentinela R5** (MÉDIO, ver `docs/auditoria/r5-sentinela.md`):
+  `/nova-senha` aceita token de outra conta sem validar que é do próprio
+  visitante (Fachada); acerto de contas pode ser forjado/desfeito
+  gravando direto na tabela, trava só existe na Action (Estrutura);
+  campos de seleção do diálogo de editar sem nome acessível (Fachada,
+  WCAG 1.3.1/4.1.2).
 - **Teste real do push com dois dispositivos, pós-correção de
   diagnóstico** — Heitor precisa desativar/reativar notificações em
   Ajustes > Perfil para recriar a inscrição que nunca foi salva; depois
@@ -255,9 +277,6 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
   (P-008 já corrigido na migration 00011, confirmar status em
   `PENDENCIAS.md`), arredondamento de ponto flutuante em valores
   monetários. Ver `docs/auditoria/sentinela-r4.md`.
-- **P-010/P-011** (achados Dash, entrega de orçamento/patrimônio): P-010
-  FECHADO por `7b57e75`. P-011 (paleta categórica reprova no validador do
-  dataviz) ainda aberto — Vitrine precisa re-fazer o passo da paleta.
 - **SMTP (Resend)** — e-mail de confirmação/recuperação ainda no provedor
   padrão do Supabase; decisão do Heitor, não técnica.
 - **Rotação da chave de serviço e senha do banco** — apareceram em chat
