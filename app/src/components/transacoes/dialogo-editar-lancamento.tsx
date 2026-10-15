@@ -259,6 +259,7 @@ export function DialogoEditarLancamento({
               <Input
                 id="edit-valor"
                 type="text"
+                inputMode="decimal"
                 value={valorTexto}
                 onChange={(e) => setValorTexto(e.target.value)}
                 placeholder="0,00"
