@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { SlidersHorizontal, Check, Loader2, AlertCircle } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { atualizarLancamentosEmMassa } from '@/actions/editar-lancamento'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -23,9 +23,7 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { todayISO } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import type { Database } from '@/types/database'
 
 export interface ItemSelectOpcao {
   id: string
@@ -44,7 +42,8 @@ export interface DialogoEditarEmMassaProps {
   contas: ItemSelectOpcao[]
   categorias: ItemSelectOpcao[]
   membros: MembroOpcao[]
-  onSalvo?: () => void
+  temTransferenciaNaSelecao?: boolean
+  onSalvo?: (atualizados: number, total: number) => void
 }
 
 export function DialogoEditarEmMassa({
@@ -54,6 +53,7 @@ export function DialogoEditarEmMassa({
   contas,
   categorias,
   membros,
+  temTransferenciaNaSelecao = false,
   onSalvo,
 }: DialogoEditarEmMassaProps) {
   const router = useRouter()
@@ -102,51 +102,58 @@ export function DialogoEditarEmMassa({
       return
     }
 
-    const updates: Database['public']['Tables']['transactions']['Update'] = {}
-
-    if (mudarCategoria) {
-      updates.category_id = categoriaId === '__nenhuma__' ? null : categoriaId || null
+    if (mudarCategoria && temTransferenciaNaSelecao) {
+      setErro('Transferências não têm categoria. Tire as transferências da seleção.')
+      return
     }
 
-    if (mudarConta) {
-      if (!contaId) {
-        setErro('Selecione uma conta para aplicar.')
-        return
-      }
-      updates.account_id = contaId
+    if (mudarConta && !contaId) {
+      setErro('Selecione uma conta para aplicar.')
+      return
     }
 
-    if (mudarMembro) {
-      if (!membroId) {
-        setErro('Selecione quem realizou o pagamento.')
-        return
-      }
-      updates.paid_by_member_id = membroId
-    }
-
-    if (mudarStatus) {
-      updates.is_paid = statusPago === 'pago'
-      updates.paid_date = statusPago === 'pago' ? todayISO() : null
+    if (mudarMembro && !membroId) {
+      setErro('Selecione quem realizou o pagamento.')
+      return
     }
 
     setPendente(true)
 
     try {
-      const supabase = createClient()
-      const { error: erroUpdate } = await supabase
-        .from('transactions')
-        .update(updates)
-        .in('id', idsSelecionados)
+      const CHUNK_SIZE = 50
+      let totalAtualizados = 0
 
-      if (erroUpdate) {
-        setErro(erroUpdate.message || 'Erro ao aplicar alterações em lote.')
-        setPendente(false)
-        return
+      for (let i = 0; i < idsSelecionados.length; i += CHUNK_SIZE) {
+        const loteIds = idsSelecionados.slice(i, i + CHUNK_SIZE)
+        const input: Parameters<typeof atualizarLancamentosEmMassa>[0] = { ids: loteIds }
+
+        if (mudarCategoria) {
+          input.categoriaId = categoriaId === '__nenhuma__' ? null : (categoriaId || null)
+        }
+        if (mudarConta) {
+          input.contaId = contaId
+        }
+        if (mudarMembro) {
+          input.pagoPorId = membroId
+        }
+        if (mudarStatus) {
+          input.estaPago = statusPago === 'pago'
+        }
+
+        const resposta = await atualizarLancamentosEmMassa(input)
+
+        if (!resposta.ok) {
+          setErro(resposta.erro)
+          setPendente(false)
+          return
+        }
+
+        totalAtualizados += resposta.dados.atualizados
       }
 
       setPendente(false)
       onOpenChange(false)
-      onSalvo?.()
+      onSalvo?.(totalAtualizados, idsSelecionados.length)
       router.refresh()
     } catch (err: unknown) {
       setErro(err instanceof Error ? err.message : 'Erro ao processar alterações.')
@@ -185,21 +192,36 @@ export function DialogoEditarEmMassa({
           <div
             className={cn(
               'rounded-xl border p-3 flex flex-col gap-2.5 transition-colors',
-              mudarCategoria ? 'border-primary/50 bg-primary/5' : 'border-border/70 bg-muted/20',
+              temTransferenciaNaSelecao && 'opacity-60 bg-muted/10',
+              !temTransferenciaNaSelecao && mudarCategoria && 'border-primary/50 bg-primary/5',
+              !temTransferenciaNaSelecao && !mudarCategoria && 'border-border/70 bg-muted/20',
             )}
           >
             <div className="flex items-center gap-2">
               <Checkbox
                 id="check-mudar-cat"
-                checked={mudarCategoria}
+                checked={!temTransferenciaNaSelecao && mudarCategoria}
+                disabled={temTransferenciaNaSelecao}
                 onCheckedChange={(checked) => setMudarCategoria(Boolean(checked))}
               />
-              <Label htmlFor="check-mudar-cat" className="text-xs font-semibold cursor-pointer">
+              <Label
+                htmlFor="check-mudar-cat"
+                className={cn(
+                  'text-xs font-semibold',
+                  temTransferenciaNaSelecao ? 'cursor-not-allowed text-muted-foreground' : 'cursor-pointer',
+                )}
+              >
                 Alterar Categoria
               </Label>
             </div>
 
-            {mudarCategoria && (
+            {temTransferenciaNaSelecao && (
+              <p className="text-[11px] text-muted-foreground pl-6">
+                A seleção inclui transferências. Transferências não possuem categoria.
+              </p>
+            )}
+
+            {!temTransferenciaNaSelecao && mudarCategoria && (
               <div className="pl-6 pt-1">
                 <Select
                   value={categoriaId || '__nenhuma__'}
