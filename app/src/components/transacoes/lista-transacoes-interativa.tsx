@@ -471,7 +471,11 @@ export function ListaTransacoesInterativa({
                 nomeMembro={mapaMembros.get(t.paid_by_member_id)}
                 destacado={t.id === idDestacado}
                 selecionado={selecionados.has(t.id)}
+                modoSelecao={selecionados.size > 0}
                 aoAlternarSelecao={alternarSelecao}
+                aoIniciarSelecao={(id) => {
+                  setSelecionados(new Set([id]))
+                }}
                 aoEditar={(item) => setTransacaoParaEditar(item)}
                 aoExcluir={(item) => setTransacaoParaExcluir(item)}
               />

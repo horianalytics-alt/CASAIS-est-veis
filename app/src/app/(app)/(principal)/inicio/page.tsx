@@ -230,12 +230,12 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
 
       {/* 3. Lançamentos com Barra de Filtros Interativos (Membros & Tipo) */}
       <Card id="lista-lancamentos" className="w-full min-w-0 scroll-mt-4 shadow-xs border-border/80">
-        <CardHeader className="px-4 sm:px-6 py-4 border-b border-border/60">
+        <CardHeader className="px-3.5 sm:px-6 py-3.5 sm:py-4 border-b border-border/60">
           <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             {INICIO.tituloLancamentos}
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-4 sm:p-6">
+        <CardContent className="p-3 sm:p-6">
           {(lancamentos.data ?? []).length === 0 ? (
             <EstadoVazio
               titulo={INICIO.semLancamentosNoMes}
