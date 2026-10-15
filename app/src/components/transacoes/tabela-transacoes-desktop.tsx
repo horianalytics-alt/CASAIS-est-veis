@@ -9,13 +9,15 @@ import {
   User,
   Tag,
   CreditCard,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { BadgeTipo } from '@/components/financeiro/badge-tipo'
 import {
   ValorMonetario,
   type TipoDeValor,
 } from '@/components/financeiro/valor-monetario'
-import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { INICIO } from '@/features/transacoes/copy'
 import { isoToBR } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -56,6 +58,12 @@ export interface TabelaTransacoesDesktopProps {
   nomeMembro?: (id: string) => string | undefined
   /** Lançamento que acabou de ser salvo: linha com fundo de destaque. */
   idDestacado?: string | null
+  selecionados?: Set<string>
+  aoAlternarSelecao?: (id: string) => void
+  aoAlternarTodos?: () => void
+  todosSelecionados?: boolean
+  aoEditar?: (transacao: Transacao) => void
+  aoExcluir?: (transacao: Transacao) => void
 }
 
 export function TabelaTransacoesDesktop({
@@ -64,21 +72,44 @@ export function TabelaTransacoesDesktop({
   nomeConta,
   nomeMembro,
   idDestacado = null,
+  selecionados,
+  aoAlternarSelecao,
+  aoAlternarTodos,
+  todosSelecionados = false,
+  aoEditar,
+  aoExcluir,
 }: TabelaTransacoesDesktopProps) {
+  const temSelecao = Boolean(aoAlternarSelecao)
+  const temAcoes = Boolean(aoEditar || aoExcluir)
+
   return (
     <div className="hidden lg:block w-full overflow-x-auto">
       <table className="w-full table-fixed text-left border-collapse text-sm">
         <thead>
           <tr className="border-b border-border/80 text-muted-foreground text-xs uppercase tracking-wider">
+            {temSelecao && (
+              <th className="py-3 px-3 w-[40px] text-center">
+                <Checkbox
+                  checked={todosSelecionados}
+                  onCheckedChange={aoAlternarTodos}
+                  aria-label="Selecionar todos os lançamentos visíveis"
+                />
+              </th>
+            )}
             <th className="py-3 px-3 font-semibold whitespace-nowrap w-[95px]">Data</th>
             <th className="py-3 px-3 font-semibold">Descrição</th>
             <th className="py-3 px-3 font-semibold whitespace-nowrap w-[130px]">Categoria</th>
-            <th className="py-3 px-3 font-semibold whitespace-nowrap w-[140px]">Conta</th>
+            <th className="py-3 px-3 font-semibold whitespace-nowrap w-[135px]">Conta</th>
             <th className="py-3 px-3 font-semibold whitespace-nowrap w-[110px]">Quem pagou</th>
-            <th className="py-3 px-3 font-semibold text-right whitespace-nowrap w-[130px]">Valor</th>
-            <th className="py-3 px-3 font-semibold text-center whitespace-nowrap w-[110px]">
+            <th className="py-3 px-3 font-semibold text-right whitespace-nowrap w-[125px]">Valor</th>
+            <th className="py-3 px-3 font-semibold text-center whitespace-nowrap w-[105px]">
               Status
             </th>
+            {temAcoes && (
+              <th className="py-3 px-3 font-semibold text-center whitespace-nowrap w-[80px]">
+                Ações
+              </th>
+            )}
           </tr>
         </thead>
         <tbody className="divide-y divide-border/60">
@@ -90,6 +121,7 @@ export function TabelaTransacoesDesktop({
             const membro = nomeMembro ? nomeMembro(t.paid_by_member_id) : null
             const mostraStatus = tipo === 'receita' || tipo === 'despesa'
             const destacado = t.id === idDestacado
+            const estaSelecionado = Boolean(selecionados?.has(t.id))
 
             return (
               <tr
@@ -98,8 +130,20 @@ export function TabelaTransacoesDesktop({
                 className={cn(
                   'transition-colors group hover:bg-muted/40',
                   destacado && 'bg-primary/10',
+                  estaSelecionado && 'bg-primary/5',
                 )}
               >
+                {/* Checkbox de Seleção */}
+                {temSelecao && (
+                  <td className="py-3 px-3 text-center">
+                    <Checkbox
+                      checked={estaSelecionado}
+                      onCheckedChange={() => aoAlternarSelecao?.(t.id)}
+                      aria-label={`Selecionar ${t.description}`}
+                    />
+                  </td>
+                )}
+
                 {/* Data */}
                 <td className="py-3 px-3 whitespace-nowrap text-muted-foreground font-mono text-xs num-tabular">
                   {isoToBR(t.date)}
@@ -135,7 +179,7 @@ export function TabelaTransacoesDesktop({
 
                 {/* Conta */}
                 <td className="py-3 px-3 text-foreground text-xs whitespace-nowrap">
-                  <span className="inline-flex items-center gap-1 max-w-[130px] truncate font-medium" title={conta ?? undefined}>
+                  <span className="inline-flex items-center gap-1 max-w-[125px] truncate font-medium" title={conta ?? undefined}>
                     <CreditCard className="size-3 text-muted-foreground shrink-0" aria-hidden="true" />
                     <span className="truncate">{conta ?? '—'}</span>
                   </span>
@@ -185,6 +229,36 @@ export function TabelaTransacoesDesktop({
                     </span>
                   ) : null}
                 </td>
+
+                {/* Ações (Editar & Excluir) */}
+                {temAcoes && (
+                  <td className="py-3 px-3 text-center whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1">
+                      {aoEditar && (
+                        <button
+                          type="button"
+                          onClick={() => aoEditar(t)}
+                          className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                          title="Editar lançamento"
+                          aria-label={`Editar ${t.description}`}
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                      )}
+                      {aoExcluir && (
+                        <button
+                          type="button"
+                          onClick={() => aoExcluir(t)}
+                          className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          title="Excluir lançamento"
+                          aria-label={`Excluir ${t.description}`}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
               </tr>
             )
           })}
