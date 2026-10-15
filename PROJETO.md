@@ -198,10 +198,12 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
   mobile, clique na linha no desktop, botão "Selecionar" explícito),
   barra flutuante de ações em lote, modais de editar (individual e em
   massa) e excluir (com opção "só este" ou "toda a série" para parcelas).
-  Exclusão já usa a Server Action real (`excluirLancamento`); edição
-  ainda usa `.update()` direto do navegador como placeholder — Server
-  Actions `atualizarLancamento`/`atualizarLancamentosEmMassa` em
-  finalização pelo Estrutura (ver Pendente).
+  Exclusão já usa a Server Action real (`excluirLancamento`).
+  `atualizarLancamento`/`atualizarLancamentosEmMassa` publicadas
+  (`9252760`) — autorização dupla (filtro explícito + RLS) provada com
+  teste mutante em 4 variantes (vazamento real só com as duas camadas
+  caindo juntas). Front ainda usa `.update()` direto do navegador como
+  placeholder — briefing para trocar enviado ao Antigravity.
 - Refinamento visual mobile (Antigravity, `e84843d`/`a8a2d00`/`61cfb3e`):
   swipe-to-delete nos cards, cards edge-to-edge, bordas coloridas
   semânticas por tipo de lançamento (receita/despesa/investimento/vale),
@@ -235,11 +237,15 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
 
 ### Pendente
 
-- **`atualizarLancamento`/`atualizarLancamentosEmMassa`** (Estrutura, em
-  finalização) — fecha o placeholder temporário do Antigravity
-  (`.update()` direto do navegador nos modais de editar). Briefing para o
-  Antigravity trocar as chamadas ainda não escrito — aguardando o
-  Estrutura entregar.
+- **Front de editar lançamento** — trocar `.update()` direto do navegador
+  em `dialogo-editar-lancamento.tsx`/`dialogo-editar-em-massa.tsx` pelas
+  Server Actions reais (briefing publicado).
+- **4 perguntas de regra de negócio** (Estrutura, plano seção 9): recusar
+  editar acerto de contas (já recusa)? lote com transferência+categoria
+  recusa o lote inteiro (já recusa)? desmarcar "pago" de fatura já quitada
+  deveria ser permitido? vale migration para `update_transactions` RPC
+  deixar o lote atômico? Ver `docs/planos/estrutura-editar-lancamento.md`
+  seção 9.
 - **Teste real do push com dois dispositivos, pós-correção de
   diagnóstico** — Heitor precisa desativar/reativar notificações em
   Ajustes > Perfil para recriar a inscrição que nunca foi salva; depois
