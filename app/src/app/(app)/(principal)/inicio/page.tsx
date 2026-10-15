@@ -248,6 +248,8 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
                 membros={membros}
                 mapaContas={mapaContas}
                 mapaCategorias={mapaCategorias}
+                listaContas={listaDeContas.map((c) => ({ id: c.account_id ?? '', name: c.name ?? '' }))}
+                listaCategorias={(categorias.data ?? []).map((c) => ({ id: c.id, name: c.name }))}
                 idDestacado={idNovo}
               />
               <PaginacaoLancamentos
