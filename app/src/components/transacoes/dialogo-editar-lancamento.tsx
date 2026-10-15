@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { Pencil, Check, Loader2, AlertCircle } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { atualizarLancamento } from '@/actions/editar-lancamento'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { CampoErro } from '@/components/ui/campo-erro'
 import { parseBRLInput, todayISO } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/types/database'
@@ -62,6 +63,7 @@ export function DialogoEditarLancamento({
   const router = useRouter()
   const [pendente, setPendente] = React.useState(false)
   const [erro, setErro] = React.useState<string | null>(null)
+  const [camposComErro, setCamposComErro] = React.useState<Record<string, string[]>>({})
 
   // Estados do formulário
   const [tipo, setTipo] = React.useState<'despesa' | 'receita' | 'transferencia'>('despesa')
@@ -69,6 +71,7 @@ export function DialogoEditarLancamento({
   const [valorTexto, setValorTexto] = React.useState('')
   const [data, setData] = React.useState(todayISO())
   const [contaId, setContaId] = React.useState('')
+  const [contaDestinoId, setContaDestinoId] = React.useState('')
   const [categoriaId, setCategoriaId] = React.useState<string>('')
   const [membroId, setMembroId] = React.useState('')
   const [estaPago, setEstaPago] = React.useState(false)
@@ -78,7 +81,8 @@ export function DialogoEditarLancamento({
   // Preenche dados ao abrir com a transação
   React.useEffect(() => {
     if (transacao && aberto) {
-      setTipo((transacao.type as 'despesa' | 'receita' | 'transferencia') ?? 'despesa')
+      const tipoAtual = (transacao.type as 'despesa' | 'receita' | 'transferencia') ?? 'despesa'
+      setTipo(tipoAtual)
       setDescricao(transacao.description || '')
       setValorTexto(
         transacao.amount
@@ -86,21 +90,45 @@ export function DialogoEditarLancamento({
           : '',
       )
       setData(transacao.date || todayISO())
-      setContaId(transacao.account_id || contas[0]?.id || '')
+      const contaOrigem = transacao.account_id || contas[0]?.id || ''
+      setContaId(contaOrigem)
+      setContaDestinoId(
+        transacao.to_account_id ||
+          contas.find((c) => c.id !== contaOrigem)?.id ||
+          '',
+      )
       setCategoriaId(transacao.category_id || '')
       setMembroId(transacao.paid_by_member_id || membros[0]?.id || '')
       setEstaPago(Boolean(transacao.is_paid))
       setDataPagamento(transacao.paid_date || transacao.date || todayISO())
       setObservacao(transacao.notes || '')
       setErro(null)
+      setCamposComErro({})
     }
   }, [transacao, aberto, contas, membros])
+
+  const handleMudarTipo = (novoTipo: 'despesa' | 'receita' | 'transferencia') => {
+    setTipo(novoTipo)
+    if (novoTipo === 'transferencia' && (!contaDestinoId || contaDestinoId === contaId)) {
+      const outra = contas.find((c) => c.id !== contaId)?.id || ''
+      setContaDestinoId(outra)
+    }
+  }
+
+  const handleMudarContaOrigem = (novaConta: string) => {
+    setContaId(novaConta)
+    if (tipo === 'transferencia' && contaDestinoId === novaConta) {
+      const outra = contas.find((c) => c.id !== novaConta)?.id || ''
+      setContaDestinoId(outra)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!transacao) return
 
     setErro(null)
+    setCamposComErro({})
 
     const descLimpa = descricao.trim()
     if (!descLimpa) {
@@ -114,9 +142,25 @@ export function DialogoEditarLancamento({
       return
     }
 
+    if (Math.abs(valorNumero * 100 - Math.round(valorNumero * 100)) >= 1e-6) {
+      setErro('Use no máximo 2 casas decimais no valor.')
+      return
+    }
+
     if (!contaId) {
       setErro('Selecione uma conta.')
       return
+    }
+
+    if (tipo === 'transferencia') {
+      if (!contaDestinoId) {
+        setErro('Selecione a conta de destino.')
+        return
+      }
+      if (contaDestinoId === contaId) {
+        setErro('Escolha uma conta de destino diferente da conta de origem.')
+        return
+      }
     }
 
     if (!membroId) {
@@ -132,25 +176,25 @@ export function DialogoEditarLancamento({
     setPendente(true)
 
     try {
-      const supabase = createClient()
-      const { error: erroUpdate } = await supabase
-        .from('transactions')
-        .update({
-          type: tipo,
-          description: descLimpa,
-          amount: Math.round(valorNumero * 100) / 100,
-          date: data,
-          account_id: contaId,
-          category_id: tipo === 'transferencia' ? null : categoriaId || null,
-          paid_by_member_id: membroId,
-          is_paid: estaPago,
-          paid_date: estaPago ? dataPagamento : null,
-          notes: observacao.trim() || null,
-        })
-        .eq('id', transacao.id)
+      const resposta = await atualizarLancamento({
+        id: transacao.id,
+        tipo,
+        descricao: descLimpa,
+        valor: Math.round(valorNumero * 100) / 100,
+        data,
+        contaId,
+        contaDestinoId: tipo === 'transferencia' ? contaDestinoId : undefined,
+        categoriaId: tipo === 'transferencia' ? undefined : (categoriaId || null),
+        pagoPorId: membroId,
+        estaPago,
+        dataDoPagamento: estaPago ? dataPagamento : null,
+        observacao: observacao.trim() || null,
+      })
 
-      if (erroUpdate) {
-        setErro(erroUpdate.message || 'Erro ao atualizar lançamento.')
+      if (!resposta.ok) {
+        const msgErro = resposta.camposComErro?.formulario?.[0] || resposta.erro
+        setErro(msgErro)
+        setCamposComErro(resposta.camposComErro ?? {})
         setPendente(false)
         return
       }
@@ -196,7 +240,7 @@ export function DialogoEditarLancamento({
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
-                onClick={() => setTipo('despesa')}
+                onClick={() => handleMudarTipo('despesa')}
                 className={cn(
                   'py-2 px-3 rounded-lg border font-semibold text-center transition-all',
                   tipo === 'despesa'
@@ -208,7 +252,7 @@ export function DialogoEditarLancamento({
               </button>
               <button
                 type="button"
-                onClick={() => setTipo('receita')}
+                onClick={() => handleMudarTipo('receita')}
                 className={cn(
                   'py-2 px-3 rounded-lg border font-semibold text-center transition-all',
                   tipo === 'receita'
@@ -220,7 +264,7 @@ export function DialogoEditarLancamento({
               </button>
               <button
                 type="button"
-                onClick={() => setTipo('transferencia')}
+                onClick={() => handleMudarTipo('transferencia')}
                 className={cn(
                   'py-2 px-3 rounded-lg border font-semibold text-center transition-all',
                   tipo === 'transferencia'
@@ -231,6 +275,7 @@ export function DialogoEditarLancamento({
                 Transferência
               </button>
             </div>
+            {camposComErro.tipo && <CampoErro id="erro-tipo" mensagens={camposComErro.tipo} />}
           </div>
 
           {/* 2. Descrição */}
@@ -246,8 +291,13 @@ export function DialogoEditarLancamento({
               placeholder="Ex: Mercado Semanal"
               maxLength={120}
               required
+              aria-invalid={camposComErro.descricao ? true : undefined}
+              aria-describedby={camposComErro.descricao ? 'erro-descricao' : undefined}
               className="h-9 text-xs"
             />
+            {camposComErro.descricao && (
+              <CampoErro id="erro-descricao" mensagens={camposComErro.descricao} />
+            )}
           </div>
 
           {/* 3. Valor e Data */}
@@ -264,8 +314,11 @@ export function DialogoEditarLancamento({
                 onChange={(e) => setValorTexto(e.target.value)}
                 placeholder="0,00"
                 required
+                aria-invalid={camposComErro.valor ? true : undefined}
+                aria-describedby={camposComErro.valor ? 'erro-valor' : undefined}
                 className="h-9 text-xs font-mono num-tabular"
               />
+              {camposComErro.valor && <CampoErro id="erro-valor" mensagens={camposComErro.valor} />}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="edit-data" className="text-xs font-medium">
@@ -277,17 +330,25 @@ export function DialogoEditarLancamento({
                 value={data}
                 onChange={(e) => setData(e.target.value)}
                 required
+                aria-invalid={camposComErro.data ? true : undefined}
+                aria-describedby={camposComErro.data ? 'erro-data' : undefined}
                 className="h-9 text-xs"
               />
+              {camposComErro.data && <CampoErro id="erro-data" mensagens={camposComErro.data} />}
             </div>
           </div>
 
-          {/* 4. Conta e Categoria */}
+          {/* 4. Conta de Origem e Categoria / Conta de Destino */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-medium">Conta</Label>
-              <Select value={contaId} onValueChange={setContaId}>
-                <SelectTrigger className="h-9 text-xs">
+              <Label className="text-xs font-medium">
+                {tipo === 'transferencia' ? 'Conta de origem' : 'Conta'}
+              </Label>
+              <Select value={contaId} onValueChange={handleMudarContaOrigem}>
+                <SelectTrigger
+                  className="h-9 text-xs"
+                  aria-invalid={camposComErro.contaId ? true : undefined}
+                >
                   <SelectValue placeholder="Selecione a conta" />
                 </SelectTrigger>
                 <SelectContent>
@@ -298,16 +359,44 @@ export function DialogoEditarLancamento({
                   ))}
                 </SelectContent>
               </Select>
+              {camposComErro.contaId && (
+                <CampoErro id="erro-conta" mensagens={camposComErro.contaId} />
+              )}
             </div>
 
-            {tipo !== 'transferencia' && (
+            {tipo === 'transferencia' ? (
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-medium">Conta de destino</Label>
+                <Select value={contaDestinoId} onValueChange={setContaDestinoId}>
+                  <SelectTrigger
+                    className="h-9 text-xs"
+                    aria-invalid={camposComErro.contaDestinoId ? true : undefined}
+                  >
+                    <SelectValue placeholder="Selecione o destino" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {contas.map((c) => (
+                      <SelectItem key={c.id} value={c.id} disabled={c.id === contaId}>
+                        {c.name} {c.id === contaId ? '(origem)' : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {camposComErro.contaDestinoId && (
+                  <CampoErro id="erro-conta-destino" mensagens={camposComErro.contaDestinoId} />
+                )}
+              </div>
+            ) : (
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs font-medium">Categoria</Label>
                 <Select
                   value={categoriaId || '__nenhuma__'}
                   onValueChange={(val) => setCategoriaId(val === '__nenhuma__' ? '' : val)}
                 >
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger
+                    className="h-9 text-xs"
+                    aria-invalid={camposComErro.categoriaId ? true : undefined}
+                  >
                     <SelectValue placeholder="Sem categoria" />
                   </SelectTrigger>
                   <SelectContent>
@@ -319,6 +408,9 @@ export function DialogoEditarLancamento({
                     ))}
                   </SelectContent>
                 </Select>
+                {camposComErro.categoriaId && (
+                  <CampoErro id="erro-categoria" mensagens={camposComErro.categoriaId} />
+                )}
               </div>
             )}
           </div>
@@ -328,7 +420,10 @@ export function DialogoEditarLancamento({
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs font-medium">Quem realizou o pagamento</Label>
               <Select value={membroId} onValueChange={setMembroId}>
-                <SelectTrigger className="h-9 text-xs">
+                <SelectTrigger
+                  className="h-9 text-xs"
+                  aria-invalid={camposComErro.pagoPorId ? true : undefined}
+                >
                   <SelectValue placeholder="Selecione o membro" />
                 </SelectTrigger>
                 <SelectContent>
@@ -339,6 +434,9 @@ export function DialogoEditarLancamento({
                   ))}
                 </SelectContent>
               </Select>
+              {camposComErro.pagoPorId && (
+                <CampoErro id="erro-membro" mensagens={camposComErro.pagoPorId} />
+              )}
             </div>
           )}
 
@@ -365,8 +463,18 @@ export function DialogoEditarLancamento({
                   type="date"
                   value={dataPagamento}
                   onChange={(e) => setDataPagamento(e.target.value)}
+                  aria-invalid={camposComErro.dataDoPagamento ? true : undefined}
+                  aria-describedby={
+                    camposComErro.dataDoPagamento ? 'erro-data-pagamento' : undefined
+                  }
                   className="h-8 text-xs max-w-[200px]"
                 />
+                {camposComErro.dataDoPagamento && (
+                  <CampoErro
+                    id="erro-data-pagamento"
+                    mensagens={camposComErro.dataDoPagamento}
+                  />
+                )}
               </div>
             )}
           </div>
@@ -383,8 +491,13 @@ export function DialogoEditarLancamento({
               onChange={(e) => setObservacao(e.target.value)}
               placeholder="Notas adicionais..."
               maxLength={500}
+              aria-invalid={camposComErro.observacao ? true : undefined}
+              aria-describedby={camposComErro.observacao ? 'erro-obs' : undefined}
               className="h-9 text-xs"
             />
+            {camposComErro.observacao && (
+              <CampoErro id="erro-obs" mensagens={camposComErro.observacao} />
+            )}
           </div>
 
           <DialogFooter className="mt-2 gap-2 sm:gap-0">
@@ -397,7 +510,13 @@ export function DialogoEditarLancamento({
             >
               Cancelar
             </Button>
-            <Button type="submit" variant="default" size="toque" disabled={pendente} className="gap-2">
+            <Button
+              type="submit"
+              variant="default"
+              size="toque"
+              disabled={pendente}
+              className="gap-2"
+            >
               {pendente ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
