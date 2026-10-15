@@ -42,17 +42,20 @@ export function ResumoAcerto({
       {/* Bloco Herói: Quem deve para quem */}
       <section
         aria-labelledby="titulo-resultado-acerto"
-        className="bg-card border-border/80 flex flex-col gap-4 rounded-2xl border p-6 shadow-sm"
+        className="bg-card border-border/80 flex flex-col gap-4 rounded-2xl border p-4 sm:p-6 shadow-sm overflow-hidden"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="flex items-center gap-2">
-            <Scale className="text-muted-foreground size-5" aria-hidden="true" />
+            <Scale className="text-muted-foreground size-4 sm:size-5 shrink-0" aria-hidden="true" />
             <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
               Balanço do casal
             </span>
           </div>
 
-          <Badge variant="outline" className="text-xs">
+          <Badge
+            variant="outline"
+            className="h-auto w-fit max-w-full whitespace-normal py-1 px-2.5 text-[11px] sm:text-xs font-normal leading-tight text-muted-foreground"
+          >
             {ehProporcional ? ACERTO.regraProporcional : ACERTO.regraIgual}
           </Badge>
         </div>
