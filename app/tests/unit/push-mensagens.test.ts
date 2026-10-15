@@ -46,8 +46,20 @@ describe('mensagemDoEvento — texto da notificação, nunca com valor', () => {
     expect(mensagemDoEvento('acerto', '   ').corpo).toBe('Alguém da sua casa registrou um acerto de contas')
   })
 
+  it('edição de um lançamento diz "editou", não "registrou"', () => {
+    expect(mensagemDoEvento('edicao', 'Carol')).toEqual({
+      titulo: 'Finanças a Dois',
+      corpo: 'Carol editou um lançamento',
+      url: '/inicio',
+    })
+  })
+
+  it('edição em lote diz a quantidade', () => {
+    expect(mensagemDoEvento('edicao', 'Heitor', 4).corpo).toBe('Heitor editou 4 lançamentos')
+  })
+
   it('nenhum texto de nenhum evento tem R$ ou número de valor', () => {
-    for (const evento of ['lancamento', 'fatura', 'acerto'] as const) {
+    for (const evento of ['lancamento', 'fatura', 'acerto', 'edicao'] as const) {
       const { titulo, corpo } = mensagemDoEvento(evento, 'Carol')
       expect(`${titulo} ${corpo}`).not.toMatch(/R\$|\d/)
     }

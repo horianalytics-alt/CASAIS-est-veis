@@ -8,7 +8,7 @@
  * O formato `{ titulo, corpo, url }` é o contrato do handler de push em
  * public/sw.js — mudar um nome aqui exige mudar lá.
  */
-export type EventoPush = 'lancamento' | 'fatura' | 'acerto'
+export type EventoPush = 'lancamento' | 'fatura' | 'acerto' | 'edicao'
 
 export type MensagemPush = { titulo: string; corpo: string; url: string }
 
@@ -38,6 +38,17 @@ export function mensagemDoEvento(evento: EventoPush, nome: string, quantidade = 
           quantidade > 1
             ? `${quem} registrou ${quantidade} lançamentos`
             : `${quem} registrou um lançamento`,
+        url: '/inicio',
+      }
+    case 'edicao':
+      // Editar muda o acerto do mês (valor, conta, quem pagou): o parceiro
+      // precisa saber, sem o valor na tela bloqueada.
+      return {
+        titulo: TITULO,
+        corpo:
+          quantidade > 1
+            ? `${quem} editou ${quantidade} lançamentos`
+            : `${quem} editou um lançamento`,
         url: '/inicio',
       }
     case 'fatura':
