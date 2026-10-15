@@ -98,7 +98,10 @@ export function montarEnvio(inscricao: InscricaoDeDestino, mensagem: MensagemPus
     opcoes: {
       vapidDetails: { subject: vapid.subject, publicKey: vapid.publicKey, privateKey: vapid.privateKey },
       TTL: TTL_SEGUNDOS,
-      urgency: 'normal' as const,
+      // 'high': com o Android em Doze (tela apagada, app fechado), o FCM só
+      // entrega na hora mensagem de alta prioridade; 'normal' pode esperar a
+      // próxima janela de manutenção do sistema.
+      urgency: 'high' as const,
       timeout: TIMEOUT_MS,
     },
   }
@@ -107,6 +110,32 @@ export function montarEnvio(inscricao: InscricaoDeDestino, mensagem: MensagemPus
 function statusDoErro(motivo: unknown): number | null {
   const status = (motivo as { statusCode?: unknown } | null)?.statusCode
   return typeof status === 'number' ? status : null
+}
+
+/**
+ * Corpo da resposta do serviço de push (WebPushError.body). É onde o FCM
+ * explica o motivo de um 403 — p.ex. par VAPID que não fecha. Cortado e em
+ * uma linha; não contém o endpoint nem as chaves do aparelho.
+ */
+function corpoDoErro(motivo: unknown): string {
+  const corpo = (motivo as { body?: unknown } | null)?.body
+  if (typeof corpo !== 'string' || corpo.trim() === '') return ''
+  return Array.from(corpo.replace(/\s+/g, ' ').trim()).slice(0, 200).join('')
+}
+
+/**
+ * Uma linha por envio, SEMPRE. Sem ela, "ninguém inscrito" e "push nunca
+ * tentado" eram indistinguíveis nos logs da Vercel (bug de 2026-10-14).
+ * Só contagens: nada de endpoint, chave ou id.
+ */
+function registrarResumo(evento: EventoPush, r: RelatorioDeEnvio): void {
+  if (r.destinos === 0) {
+    console.warn(`[push] ${evento}: nenhum aparelho inscrito nos outros membros da família — nada enviado`)
+    return
+  }
+  console.info(
+    `[push] ${evento}: destinos=${r.destinos} enviados=${r.enviados} apagados=${r.apagados} pulados=${r.pulados} falhas=${r.falhas}`,
+  )
 }
 
 export async function enviarNotificacao(
@@ -149,11 +178,16 @@ export async function enviarNotificacao(
         return
       }
       falhas++
-      console.error(`[push] envio recusado (status ${status ?? 'sem status'}) para a inscrição ${aceitas[k].ids[0].slice(0, 8)}`)
+      const corpo = corpoDoErro(resultado.reason)
+      console.error(
+        `[push] envio recusado (status ${status ?? 'sem status'}) para a inscrição ${aceitas[k].ids[0].slice(0, 8)}${corpo ? `: ${corpo}` : ''}`,
+      )
     })
 
     const apagados = mortas.length > 0 ? await apagarInscricoes(autor.familyId, mortas) : 0
-    return { destinos: todas.length, enviados, apagados, pulados: todas.length - aceitas.length, falhas }
+    const relatorio = { destinos: todas.length, enviados, apagados, pulados: todas.length - aceitas.length, falhas }
+    registrarResumo(evento, relatorio)
+    return relatorio
   } catch (e) {
     console.error('[push] falha no envio:', e instanceof Error ? e.message : 'erro desconhecido')
     return { ...vazio, motivo: 'erro' }

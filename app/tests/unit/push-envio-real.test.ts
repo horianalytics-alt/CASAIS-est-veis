@@ -52,7 +52,10 @@ describe('envio real com web-push (requisição montada, sem rede)', () => {
     })
   })
 
-  it('cabeçalhos: VAPID com a chave pública, aes128gcm, TTL de 24h, urgência normal', () => {
+  // Urgência 'high': o FCM só entrega na hora com o Android em Doze (tela
+  // apagada, app fechado) se a mensagem for de alta prioridade; 'normal' pode
+  // ficar retida até a próxima janela de manutenção do sistema.
+  it('cabeçalhos: VAPID com a chave pública, aes128gcm, TTL de 24h, urgência alta', () => {
     const { inscricao } = aparelhoDeTeste()
     const { assinatura, corpo, opcoes } = montarEnvio(inscricao, mensagem, vapid)
     const req = webpush.generateRequestDetails(assinatura, corpo, opcoes)
@@ -61,7 +64,7 @@ describe('envio real com web-push (requisição montada, sem rede)', () => {
     expect(req.endpoint).toBe(inscricao.endpoint)
     expect(req.headers['Content-Encoding']).toBe('aes128gcm')
     expect(String(req.headers.TTL)).toBe('86400')
-    expect(req.headers.Urgency).toBe('normal')
+    expect(req.headers.Urgency).toBe('high')
     expect(req.headers.Authorization).toMatch(new RegExp(`^vapid t=[\\w-]+\\.[\\w-]+\\.[\\w-]+, k=${vapid.publicKey}$`))
   })
 
