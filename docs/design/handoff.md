@@ -14,9 +14,9 @@ Estas regras nasceram de números medidos, não de gosto. Se um componente quebr
 
 | # | Regra | Por que, com número |
 |---|---|---|
-| **C-1** | **`--primary` nunca codifica valor financeiro. Semântica financeira nunca pinta chrome.** `--primary` serve só a: botão de ação principal, estado ativo de navegação, link, anel de foco. Valor, badge de tipo e seta de direção usam exclusivamente `--receita` / `--despesa` / `--investimento` / `--transferencia` / `--pendente` / `--negativo` / `--beneficio`. | Com quatro paletas livres e sete semânticas fixas, alguma paleta sempre cai no matiz de alguma semântica (Terra escuro `#F09070` vs despesa `#FF8A7A`: razão de luminância 1.03:1). Não se resolve mexendo em hex; resolve-se separando os usos. |
-| **C-2** | **Todo valor monetário exibe sinal `+` ou `−` explícito**, antes do `R$`, sem exceção. | Em protanopia, receita vs despesa tem ΔE 12.6 (claro) e 11.6 (escuro): as duas cores colapsam. Em deuteranopia, 32.3 (claro) e 17.8 (escuro) pelo método Machado. O sinal sobrevive a qualquer daltonismo e a print em preto e branco. |
-| **C-3** | **Saldo de conta negativo usa parênteses contábeis `(R$ 1.234,56)` + ícone de alerta**, além da cor. | Despesa vs saldo negativo: ΔE 13.0 (claro) e 14.1 (escuro) já em visão normal. A cor não distingue "esta linha é despesa" de "esta conta está no vermelho". |
+| **C-1** | **`--primary` nunca codifica valor financeiro. Semântica financeira nunca pinta chrome.** `--primary` serve só a: botão de ação principal, estado ativo de navegação, link, anel de foco. Valor, badge de tipo e seta de direção usam exclusivamente `--receita` / `--despesa` / `--investimento` / `--transferencia` / `--pendente` / `--negativo` / `--beneficio`. | Com quatro paletas livres e sete semânticas fixas, alguma paleta sempre cai no matiz de alguma semântica (remedido 2026-10-15: Terra escuro `#F09070` vs despesa `#FB7185`: 1.14:1; Terra claro `#9E3F23` vs despesa `#A70225`: 1.19:1 e vs pendente `#854A00`: 1.07:1). Não se resolve mexendo em hex; resolve-se separando os usos. |
+| **C-2** | **Todo valor monetário exibe sinal `+` ou `−` explícito**, antes do `R$`, sem exceção. | Receita vs despesa, OKLab ΔE×100 sob simulação Machado 2009 (`deltaE` do `dataviz/validate_palette.js`), remedido 2026-10-15: deuteranopia **6.4 (claro) e 3.9 (escuro)**, protanopia 11.6 e 10.9. Em deuteranopia as duas cores colapsam. O sinal sobrevive a qualquer daltonismo e a print em preto e branco. |
+| **C-3** | **Saldo de conta negativo usa parênteses contábeis `(R$ 1.234,56)` + ícone de alerta**, além da cor. | Desde `bee799a`, `--negativo` tem o **mesmo hex** de `--despesa` nos dois modos: ΔE 0.0. A cor não distingue nada; parênteses + ícone são a ÚNICA diferença entre "esta linha é despesa" e "esta conta está no vermelho". |
 
 Investimento e transferência não têm sinal `+`/`−` porque não mudam patrimônio como receita/despesa. Para eles o reforço é o ícone + a palavra do tipo (tabela da seção 4).
 
@@ -76,7 +76,7 @@ Todo contraste vem do script `docs/design/scripts/contraste.js` rodado contra o 
 | `--border` | `#DDE2E1` | `#2A3238` | **só** régua decorativa entre linhas do extrato | 1.23:1, **isenta** (ver nota) | 1.42:1, **isenta** |
 | `--border-forte` | `#7D878C` | `#6E7A81` | **toda** borda de componente interativo | 3.45:1 background · 3.67:1 card | 4.20:1 · 3.89:1 |
 | `--input` | `#7D878C` | `#6E7A81` | borda de campo (= `--border-forte`) | 3.45:1 | 4.20:1 |
-| `--destructive` | `#BE352C` | `#FF8A7A` | ação destrutiva e texto de erro (= `--despesa`) | 5.28:1 sobre background | 8.08:1 |
+| `--destructive` | `#BE352C` | `#FF8A7A` | ação destrutiva e texto de erro (mesma família de `--despesa`, hex diferente) | 5.28:1 sobre background | 8.08:1 |
 | `--destructive-foreground` | `#FFFFFF` | `#101417` | texto sobre destructive | 5.62:1 | 8.08:1 |
 
 > **Nota sobre `--border` a 1.23:1 / 1.42:1.** Reprova o 3:1 e é declarada isenta, não aprovada: WCAG 1.4.11 cobre "partes gráficas necessárias para identificar um componente", e esta é só a régua entre linhas, redundante com o espaçamento. Por isso o sistema tem dois tokens de borda. **Regra C-4:** se a borda é a única coisa que mostra onde um campo começa, é `--border-forte`, nunca `--border`. Atenção: o shadcn aplica `border-border` a tudo por padrão (`* { border-border }` em `@layer base`). Todo `Input`, `Select`, `Checkbox`, `Textarea` e cartão clicável precisa de `border-input` (ou `border-border-forte`) explícito. Verifique cada componente após `shadcn add`.
@@ -112,17 +112,34 @@ Pior caso de foco do sistema: **6.19:1** (Terra claro, ring sobre background), b
 
 ### 2.3 Semântica financeira (idêntica em todas as paletas)
 
-Medida sobre background, card e, no pior caso das quatro paletas, sobre `--accent` (linha de lista em hover). Todos os valores abaixo passam 4.5:1.
+> **Revisão 2026-10-15 (auditoria de contraste).** O commit `bee799a` trocou toda a semântica, nos dois modos, por hex mais vivos sem remedir; no claro, 34 de 180 pares reprovaram (pior: `--pendente` `#D97706` sobre accent Ameixa, 2.58:1). As 6 cores claras abaixo foram escurecidas mantendo a matiz OKLCH (receita h 161.5, despesa/negativo h 21.5, pendente h 61.6, benefício h 222.1; investimento girou de h 242 para h 252 para se afastar de benefício: ΔE OKLab×100 5.6 antes → 7.7 agora). O escuro é o de `bee799a`, mantido. `--transferencia` não foi tocada. Antes → depois, claro: receita `#0D8C5F` → `#036543`; despesa `#D93845` → `#A70225`; investimento `#0284C7` → `#0359A1`; pendente `#D97706` → `#854A00`; negativo `#D93845` → `#A70225`; benefício `#0891B2` → `#066077`.
+
+Medida como TEXTO sobre background, card e, no pior caso das quatro paletas, sobre `--accent` (linha de lista em hover). Saída íntegra: `docs/design/evidencias/contraste.out` (`FALHAS: 0 | total: 180`). Nenhum override por `[data-paleta]` foi necessário: o pior accent (Ameixa `#F0E4EE`) já passa com um valor único.
 
 | Token | Significado | Claro | Escuro | Claro: bg · card · accent (mín.) | Escuro: bg · card · accent (mín.) |
 |---|---|---|---|---|---|
-| `--receita` | entrada de dinheiro | `#0F7650` | `#3FC68B` | 5.29 · 5.63 · 4.57 | 8.52 · 7.90 · 6.57 |
-| `--despesa` | saída de dinheiro | `#BE352C` | `#FF8A7A` | 5.28 · 5.62 · 4.56 | 8.08 · 7.49 · 6.23 |
-| `--investimento` | aplicado (não é gasto) | `#1F5FA8` | `#74AEF0` | 6.05 · 6.44 · 5.23 | 7.98 · 7.40 · 6.16 |
-| `--transferencia` | move entre contas | `#6A5AB3` | `#A79BF0` | 5.29 · 5.64 · 4.57 | 7.57 · 7.02 · 5.84 |
-| `--pendente` | lançado, ainda não pago | `#8A5A00` | `#E0A93F` | 5.57 · 5.93 · 4.81 | 8.74 · 8.11 · 6.74 |
-| `--negativo` | saldo de conta abaixo de zero | `#9A2B22` | `#FF6F61` | 7.19 · 7.66 · 6.21 | 6.79 · 6.29 · 5.23 |
-| `--beneficio` | vale/benefício | `#0A6B6B` | `#3FC2C2` | 5.93 · 6.31 · 5.12 | 8.56 · 7.93 · 6.60 |
+| `--receita` | entrada de dinheiro | `#036543` | `#10B981` | 6.69 · 7.13 · 5.78 | 7.30 · 6.77 · 5.63 |
+| `--despesa` | saída de dinheiro | `#A70225` | `#FB7185` | 7.36 · 7.84 · 6.36 | 6.88 · 6.38 · 5.30 |
+| `--investimento` | aplicado (não é gasto) | `#0359A1` | `#38BDF8` | 6.69 · 7.12 · 5.78 | 8.64 · 8.01 · 6.66 |
+| `--transferencia` | move entre contas | `#7C3AED` | `#A78BFA` | 5.35 · 5.70 · 4.62 | 6.80 · 6.31 · 5.25 |
+| `--pendente` | lançado, ainda não pago | `#854A00` | `#FBBF24` | 6.63 · 7.05 · 5.72 | 11.09 · 10.28 · 8.55 |
+| `--negativo` | saldo de conta abaixo de zero (= despesa) | `#A70225` | `#FB7185` | 7.36 · 7.84 · 6.36 | 6.88 · 6.38 · 5.30 |
+| `--beneficio` | vale/benefício | `#066077` | `#22D3EE` | 6.69 · 7.13 · 5.78 | 10.24 · 9.50 · 7.90 |
+
+**Texto sobre o próprio tint** (`bg-X/10` ou `bg-X/15` com `text-X`, padrão de chip/badge/filtro usado em `resumo-do-mes`, `secao-faturas`, `lista-transacoes-interativa`, `item-transacao` e outros). O `contraste.js` não mede este par; ele foi medido à parte (`docs/design/evidencias/semantica-tint.out`, composição alfa do tint sobre a superfície, @10 e @15), e confirmado no navegador (seção 8.1). Pior caso por grupo de superfície:
+
+| Token | Claro: background/card/muted | Claro: accent (4 paletas) | Escuro: background/card/muted | Escuro: accent (4 paletas) |
+|---|---|---|---|---|
+| `--receita` | 4.96 (muted@15) | 4.63 (Ameixa@15) | 4.84 (muted@15) | **4.36** (Cedro@15) |
+| `--despesa` / `--negativo` | 5.16 | 4.84 | 4.61 | **4.28** |
+| `--investimento` | 4.93 | 4.61 | 5.48 | 5.01 |
+| `--transferencia` | **4.02** (muted@15) | **3.78** (Ameixa@15) | 4.51 | **4.13** |
+| `--pendente` | 4.92 | 4.62 | 6.73 | 6.11 |
+| `--beneficio` | 4.95 | 4.63 | 6.32 | 5.69 |
+
+Em negrito, abaixo de 4.5:1. **Regra C-5:** chip com tint (`bg-X/10`, `bg-X/15`) e texto `text-X` **não vai sobre `--accent`** (nem dentro de linha com `hover:bg-accent`). Escopo do que medi: nenhum dos 11 arquivos de `app/src/components` que usam tint contém `bg-accent` (grep de 2026-10-15); um componente pai em outro arquivo pintando `accent` por fora não foi rastreado. Nos casos lidos, os tints ficam sobre card, background, popover ou `muted/50`. `--transferencia` claro só passa no tint a @10 sobre card/background (uso atual em `dialogo-editar-lancamento`); a @15 ou sobre muted reprova. Ver pendência P-012 (seção 11).
+
+Outros pares que dependem destes tokens, medidos 2026-10-15 (claro): `text-white` sobre `bg-despesa` sólido 7.84:1 (era 4.56), sobre `bg-receita` sólido 7.13:1 (era 4.26, **reprovava**); mapa de calor (`mapa-de-calor-dias.tsx`): `text-white` sobre `bg-[var(--despesa)]/70` 4.62:1 sobre card e 4.78:1 no navegador sobre background (era 2.96, **reprovava**), `text-foreground` sobre `/45` 6.95:1 e sobre `/20` 12.04:1.
 
 "Pago" não tem token: pago é o estado normal e usa `--receita`/`--despesa` em peso cheio. `--pendente` é o desvio que chama atenção.
 
@@ -427,7 +444,22 @@ Como os assets ainda não têm a página que os consome (a Fachada ainda não es
 
 Cópias originais (diretório do Playwright), caso a cópia do projeto seja removida: `C:\Users\Heitor PC\OneDrive\Documentos\Segundo cérebro live\.playwright-mcp\` com os mesmos nomes de arquivo.
 
-**NÃO VERIFICADO**, com o motivo real:
+### 8.1 Revisão 2026-10-15: semântica clara
+
+Dev server: `cd app && npx next dev -p 3107` (subido por mim só para esta verificação, a partir de `C:\dev\financas-a-dois\app`). A porta 3000 desta máquina estava ocupada por um `next start` de **outra cópia** do projeto (pasta antiga no OneDrive) e servia os hex antigos; não foi usada nem derrubada.
+
+`/inicio` exige sessão e eu não tenho credencial; a verificação foi feita sobre `/login` (mesmo `globals.css` compilado), injetando uma amostra com as **classes reais** dos componentes (`text-receita`, `bg-despesa/15 text-despesa border-despesa/30`, `bg-[var(--despesa)]/70 text-white`, `bg-receita text-white`...) sobre card, background, `muted/50` e `accent`, mais uma coluna "antes:" com os hex antigos para comparar a identidade. Artefato da amostra: o chip "Investimento" aparece sem tint porque `bg-investimento/15` não existe no código e o Tailwind não gera a classe; o par foi medido por script.
+
+| Verificação | Resultado | Evidência (caminho absoluto) |
+|---|---|---|
+| `getComputedStyle` dos 6 tokens no `<html>`, 4 paletas claras | `--receita=#036543 --despesa=#a70225 --investimento=#0359a1 --pendente=#854a00 --negativo=#a70225 --beneficio=#066077` em Cedro, Ardósia, Terra e Ameixa; `--accent` muda por paleta (`#e4ede9`, `#e4ebf3`, `#f5e6e0`, `#f0e4ee`) | saída do `browser_evaluate` |
+| contraste renderizado (cor computada pelo navegador, fundo composto pela pilha de ancestrais com alfa) | 54 elementos por paleta × 4 paletas = 216 medidas, **0 abaixo de 4.5:1**; pior: `text-white` sobre `bg-[var(--despesa)]/70` = 4.78:1 | saída do `browser_evaluate` |
+| escuro inalterado | `.dark` computa `--receita=#10b981 --despesa=#fb7185 --investimento=#38bdf8 --pendente=#fbbf24 --negativo=#fb7185 --beneficio=#22d3ee` | saída do `browser_evaluate` |
+| identidade de cor | verde segue verde, vermelho segue vermelho (carmim), azul segue azul, benefício segue petróleo; pendente virou âmbar-ocre escuro (âmbar a 4.5:1 sobre fundo claro é necessariamente escuro). Nenhuma lê como preto | `C:\dev\financas-a-dois\docs\design\evidencias\semantica-claro-cedro.png`, `...\semantica-claro-ardosia.png`, `...\semantica-claro-terra.png`, `...\semantica-claro-ameixa.png` |
+
+**NÃO VERIFICADO** nesta revisão: `/inicio` autenticada real (sem credencial); `browser_console_messages` (não rodei).
+
+**NÃO VERIFICADO** (entrega original), com o motivo real:
 - `browser_console_messages` sem erro: a ferramenta não estava disponível na minha sessão; a Fachada e o Dash têm essa exigência na entrega deles. Não afirmo console limpo.
 - Os assets **dentro do `<head>` da Fachada** (favicon na aba, `og:image` resolvido, manifest instalável): dependem de `metadata` e da rota de manifest que ainda não existem.
 - Leitor de tela real (VoiceOver/NVDA) e teclado: não há telas para percorrer.
@@ -440,7 +472,7 @@ A skill foi invocada com a rota (tokens e assets) e os números já medidos. Apl
 
 | Critério WCAG | Resultado sobre os artefatos do Vitrine |
 |---|---|
-| 1.4.3 contraste de texto | passa: menor razão de texto **4.56:1** (`--despesa` claro sobre `--accent` Ameixa); o chassi vai de 5.13:1 a 17.84:1 |
+| 1.4.3 contraste de texto | passa: menor razão de texto **4.56:1** (`--despesa` claro sobre `--accent` Ameixa); o chassi vai de 5.13:1 a 17.84:1. **Revisão 2026-10-15:** os hex de `bee799a` reprovavam 34 pares; com a semântica nova, menor razão de texto sólido **4.62:1** (`--transferencia` claro sobre accent Ameixa, intocada) e, entre as 6 revistas, **5.72:1** (`--pendente` sobre accent Ameixa); sobre o próprio tint, ver 2.3 e C-5 |
 | 1.4.11 contraste não textual | passa: `--border-forte` **3.45:1** (pior), foco **6.19:1** (pior), séries sobre o card **3.80:1** (pior claro, ocre) / **3.10:1** (pior escuro, castanho); exceção: castanho escuro sobre `--muted` 2.83:1, só com rótulo (§5); `--border` decorativa isenta e declarada |
 | 1.4.1 uso de cor | **tratado por regra** (C-2, C-3, sinal, ícone + palavra); depende de a Fachada cumprir |
 | 1.1.1 conteúdo não textual | OG precisa de `alt` em `metadata.openGraph.images`; marca no cabeçalho tem rótulo (seção 4.4) |
@@ -473,6 +505,13 @@ Cada linha no formato exigido.
 - `Desvio: afirmação do plano "disabled não remove contraste abaixo de 4.5:1" corrigida na seção 9, achado 1 — medido 3.34:1 (claro).`
 - `Desvio: escrevi app/src/app/favicon.ico (substituindo o do create-next-app), caminho que não estava na lista de arquivos permitidos da delegação — o plano aprovado (seção 9.1 e 10 do plano-tokens.md) já o listava como meu, e é a convenção do App Router; sinalizo para o Maestro confirmar. Nenhum outro arquivo fora da fronteira foi tocado (layout.tsx: só imports de fonte, variáveis e className; lang="en", title e description ficaram intactos).`
 
+Revisão 2026-10-15 (auditoria de contraste, fora do plano original):
+
+- `Desvio: --receita/--despesa/--investimento/--pendente/--negativo/--beneficio claros trocados (antes → depois na seção 2.3) — os hex de bee799a reprovavam 34 de 180 pares (pior 2.58:1). Alvo: >= 4.6:1 como texto sobre background, card, muted, accent das 4 paletas E sobre o próprio tint @10/@15 dessas superfícies. Remedido: FALHAS: 0 | total: 180; tint, pior 4.61:1.`
+- `Desvio: --investimento claro girou a matiz OKLCH de 242 para 252 — escurecido na matiz original, ficava a ΔE 4.3 de --beneficio (já eram próximos: 5.6 antes). Em 252 fica a 7.7.`
+- `Desvio: comentário de --destructive no globals.css dizia "= --despesa" e o handoff idem; não eram o mesmo hex desde bee799a e continuam não sendo. Corrigido o texto, não o valor (--destructive passa: 5.28:1).`
+- `Desvio: gravei evidências em docs/design/evidencias/ (contraste.out regravado, semantica-tint.out e os 4 PNGs semantica-claro-*.png) — fora dos dois arquivos autorizados pela delegação, mas é onde o handoff aponta a evidência.`
+
 Além dos tokens listados na seção 2: `--sidebar-*` são aliases (`var()`) de `--card`, `--foreground`, `--primary`, `--accent` e `--border`, então herdam os contrastes já medidos para esses pares; `--chart-1..5` e `--serie-outros` estão medidos na seção 5.
 
 ---
@@ -489,6 +528,10 @@ Além dos tokens listados na seção 2: `--sidebar-*` são aliases (`var()`) de 
 | P-6 | Console limpo e ligação dos assets no `<head>` real | Fachada (prova dela) / Sentinela | seção 8, NÃO VERIFICADO |
 | P-7 | `--primary` de botão desabilitado e demais estados isentos | Fachada | nunca como único portador de informação |
 | P-8 | Hook `security-guidance` não confirmado ativo nesta sessão | Maestro | a varredura de SVG foi rodada à mão no fim do ciclo; único SVG é gerado por mim |
+| P-012 | `--transferencia` claro `#7C3AED` reprova sobre o próprio tint a @15 ou sobre muted/accent (mín. 3.78:1) | Maestro decide; Vitrine executa | não estava no escopo desta revisão; hoje só é usado a @10 sobre card/popover, onde passa. Correção candidata medida: `#6D21DA` (mesma matiz, pior caso 4.66:1 incluindo tint sobre accent) |
+| P-013 | No escuro, `text-X` sobre `bg-X/15` em cima de `--accent` reprova para receita (4.36), despesa/negativo (4.28) e transferência (4.13) | Fachada (cumprir C-5) | combinação não existe no código atual; regra C-5 a proíbe. Escuro foi mantido por instrução |
+| P-014 | `--negativo` tem o mesmo hex de `--despesa` desde `bee799a` (ΔE 0) | Maestro decide | C-3 (parênteses + ícone) é a única distinção. Se quiser a cor de volta como reforço, é token novo a medir |
+| P-015 | `contraste.js` não mede texto sobre o próprio tint (`bg-X/10`, `/15`) nem o mapa de calor | Vitrine (precisa de autorização para tocar `docs/design/scripts/`) | foi assim que os 34 + os pares de tint passaram despercebidos; hoje medidos à parte em `semantica-tint.out` |
 
 **Sem fonte externa de pesquisa:** não houve Radar. A direção é derivada do briefing e da engenharia reversa da v1 (`docs/engenharia-reversa-v1.md`).
 
@@ -502,6 +545,8 @@ node ../docs/design/scripts/contraste.js src/app/globals.css          # 180 pare
 node ../docs/design/scripts/series-de.js src/styles/chart-palette.ts src/app/globals.css   # séries, ΔE, consistência TS x CSS
 node ../docs/design/scripts/gen-assets.js                              # regenera ícones e favicon.ico (cwd = app)
 ```
+
+**Lacuna conhecida (P-015):** `docs/design/evidencias/semantica-tint.out` (texto sobre o próprio tint, mapa de calor, ΔE entre semânticas) foi gerado por um script de sessão que **não está versionado** no repositório, porque a delegação de 2026-10-15 não autorizava escrever em `docs/design/scripts/`. Até que P-015 seja feita, essa medição não é reproduzível só com o repositório; o método está descrito na seção 2.3 (composição alfa sRGB do tint `X` a 10% e 15% sobre cada superfície, razão WCAG do texto `X` contra o resultado).
 
 Se mudar qualquer hex, rode os dois primeiros antes de entregar. O terceiro depende de `sharp` (já em `app/node_modules`) e sobrescreve os PNGs e o `favicon.ico`; o `og.png` é capturado no navegador, não regenerado pelo script.
 

@@ -1,0 +1,43 @@
+receita       #036543 L0.448 C0.098 h161.5  pares:23 falhas:0  pior 4.63:1 receita/receita@15%+accent-ameixa
+despesa       #A70225 L0.461 C0.185 h21.5  pares:23 falhas:0  pior 4.84:1 despesa/despesa@15%+accent-ameixa
+investimento  #0359A1 L0.461 C0.136 h252.0  pares:23 falhas:0  pior 4.61:1 investimento/investimento@15%+accent-ameixa
+pendente      #854A00 L0.470 C0.109 h61.6  pares:23 falhas:0  pior 4.62:1 pendente/pendente@15%+accent-ameixa
+negativo      #A70225 L0.461 C0.185 h21.5  pares:23 falhas:0  pior 4.84:1 negativo/negativo@15%+accent-ameixa
+beneficio     #066077 L0.454 C0.082 h222.1  pares:23 falhas:0  pior 4.63:1 beneficio/beneficio@15%+accent-ameixa
+
+-- mapa de calor (despesa), claro
+ foreground/despesa@20%+card: 12.04  foreground/despesa@45%+card: 6.95  white/despesa@70%+card: 4.62  white/despesa solido: 7.84
+ foreground/despesa@20%+background: 11.42  foreground/despesa@45%+background: 6.63  white/despesa@70%+background: 4.74  white/despesa solido: 7.84
+ ANTES (#D93845): fg@20 card 13.33  fg@45 card 9.01  white@70 card 2.96  white solido 4.56
+
+-- separacao OKLab dE*100 entre semanticas claras (inclui transferencia #7C3AED)
+  receita~despesa: 26.7
+  receita~investimento: 16.9
+  receita~pendente: 16.0
+  receita~beneficio: 9.2
+  receita~transferencia: 33.3
+  despesa~investimento: 29.1
+  despesa~pendente: 12.4
+  despesa~beneficio: 26.3
+  despesa~transferencia: 31.5
+  investimento~pendente: 24.4
+  investimento~beneficio: 7.7
+  investimento~transferencia: 18.7
+  pendente~beneficio: 18.9
+  pendente~transferencia: 33.3
+  beneficio~transferencia: 24.9
+  pendente~terra primary: 6.2
+  despesa~terra primary: 7.3
+  pendente~destructive: 12.3
+  despesa~destructive: 7.9
+
+-- ESCURO (nao alterado): texto sobre tint proprio @10/@15 sobre superficies escuras
+  receita pior 4.36 receita@15%+accent-cedro
+  despesa pior 4.28 despesa@15%+accent-cedro
+  investimento pior 5.01 investimento@15%+accent-cedro
+  pendente pior 6.11 pendente@15%+accent-cedro
+  negativo pior 4.28 negativo@15%+accent-cedro
+  beneficio pior 5.69 beneficio@15%+accent-cedro
+  transferencia pior 4.13 transferencia@15%+accent-cedro
+
+FALHAS claro (novo): 0  | FALHAS escuro tint: 6

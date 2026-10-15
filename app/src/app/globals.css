@@ -36,7 +36,7 @@
   --border: #DDE2E1;          /* SÓ régua decorativa (1.23:1, isenta) */
   --border-forte: #7D878C;    /* TODA borda de componente interativo */
   --input: #7D878C;           /* = --border-forte */
-  --destructive: #BE352C;     /* = --despesa */
+  --destructive: #BE352C;     /* mesma família de --despesa (não o mesmo hex) */
   --destructive-foreground: #FFFFFF;
 
   /* paleta Cedro (default) */
@@ -45,14 +45,17 @@
   --ring: #14594A;
   --accent: #E4EDE9;
 
-  /* semântica financeira — viva, contrastante e acolhedora */
-  --receita: #0D8C5F;
-  --despesa: #D93845;
-  --investimento: #0284C7;
+  /* semântica financeira. Claro: escurecidas mantendo a matiz OKLCH para
+     passar >= 4.5:1 como TEXTO sobre background, card, muted, accent das 4
+     paletas e sobre o próprio tint (bg-X/10, bg-X/15). Pior caso 4.61:1.
+     Medido em 2026-10-15 — tabela em docs/design/handoff.md 2.3. */
+  --receita: #036543;
+  --despesa: #A70225;
+  --investimento: #0359A1;
   --transferencia: #7C3AED;
-  --pendente: #D97706;
-  --negativo: #D93845;
-  --beneficio: #0891B2;
+  --pendente: #854A00;
+  --negativo: #A70225;
+  --beneficio: #066077;
 
   /* séries de gráfico: as 5 primeiras de chart-palette.ts (shadcn chart).
      Gate: dataviz validate_palette.js, ALL CHECKS PASS (2026-10-15, P-011). */
