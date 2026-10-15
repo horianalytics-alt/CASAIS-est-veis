@@ -153,6 +153,7 @@ export function SecaoFaturas({ faturas, contasOrigem }: SecaoFaturasProps) {
                     valor={fatura.total_amount ?? 0}
                     tipo="despesa"
                     tamanho="linha"
+                    animar
                   />
                   {aberta && (
                     <div className="flex items-center gap-1 text-xs">
@@ -164,6 +165,7 @@ export function SecaoFaturas({ faturas, contasOrigem }: SecaoFaturasProps) {
                         tipo="despesa"
                         pago={false}
                         tamanho="linha"
+                        animar
                       />
                     </div>
                   )}
