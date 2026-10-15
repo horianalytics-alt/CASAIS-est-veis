@@ -229,16 +229,29 @@ async function run() {
       !!forja && antesC === depoisC, forja ? `${forja.code}: ${forja.message}` : 'ACEITOU!')
 
     // B tenta apontar o destinatário de um acerto para um membro de OUTRA casa.
+    // Desde a 00015 a 1ª barreira para a sessão do usuário é o trigger
+    // tx_acerto_so_por_settle_up (42501): acerto não se edita por REST.
     const { data: upd, error: updErr } = await b.cli.from('transactions')
       .update({ settlement_to_member_id: c.memberId }).eq('id', acertoParcialId).select('id')
-    check('S6 destinatário de acerto não aponta para membro de outra família (FK composta)',
-      !!updErr || (upd ?? []).length === 0, updErr ? `${updErr.code}: ${updErr.message}` : 'GRAVOU!')
+    check('S6 sessão de B não reaponta o destinatário de um acerto (trigger 00015)',
+      updErr?.code === '42501' && (upd ?? []).length === 0, updErr ? `${updErr.code}: ${updErr.message}` : 'GRAVOU!')
+
+    // As constraints continuam sendo a 2ª camada. Para exercitá-las sem o
+    // trigger na frente, a sonda vai como service_role (que o trigger libera).
+    const { error: fkErr } = await admin.from('transactions')
+      .update({ settlement_to_member_id: c.memberId }).eq('id', acertoParcialId).select('id')
+    check('S6 destinatário de acerto não aponta para membro de outra família (FK composta, via service_role)',
+      fkErr?.code === '23503', fkErr ? `${fkErr.code}: ${fkErr.message}` : 'GRAVOU!')
 
     // E não dá para marcar uma DESPESA como acerto.
-    const { data: desp } = await a.cli.from('transactions').select('id').eq('type', 'despesa').limit(1).single()
-    const { error: chkErr } = await a.cli.from('transactions')
+    const { data: desp } = await a.cli.from('transactions').select('id').eq('type', 'despesa').order('id').limit(1).single()
+    const { error: trgErr } = await a.cli.from('transactions')
       .update({ settlement_to_member_id: b.memberId }).eq('id', desp.id).select('id')
-    check('S6 CHECK impede destinatário de acerto em despesa', !!chkErr && chkErr.code === '23514',
+    check('S6 sessão de A não marca despesa como acerto (trigger 00015)', trgErr?.code === '42501',
+      trgErr ? `${trgErr.code}: ${trgErr.message}` : 'GRAVOU!')
+    const { error: chkErr } = await admin.from('transactions')
+      .update({ settlement_to_member_id: b.memberId }).eq('id', desp.id).select('id')
+    check('S6 CHECK impede destinatário de acerto em despesa (via service_role)', chkErr?.code === '23514',
       chkErr ? `${chkErr.code}: ${chkErr.message}` : 'GRAVOU!')
   }
 
