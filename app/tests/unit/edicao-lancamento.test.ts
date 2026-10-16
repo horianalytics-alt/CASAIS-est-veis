@@ -239,6 +239,108 @@ describe('montarPatchIndividual', () => {
   })
 })
 
+// ------------------------------------------------- benefício (VR/VA) e fútil
+// Mesmos 3 campos de salvarLancamento. CHECK tx_rotulo_exige_futil (00001):
+// futile_label IS NULL OR is_futile = true.
+describe('esquemaAtualizarLancamento — benefício e fútil', () => {
+  const SEM_FUTIL = 'Marque como gasto fútil para preencher este campo.'
+
+  it('os 3 campos chegam ao valor parseado (hoje o Zod os descartava)', () => {
+    const r = esquemaAtualizarLancamento.parse({ ...base, ehBeneficio: true, ehFutil: true, rotuloDoFutil: '  Doce  ' })
+    expect([r.ehBeneficio, r.ehFutil, r.rotuloDoFutil]).toEqual([true, true, 'Doce'])
+  })
+
+  it('omitidos continuam undefined (= manter o que está no banco)', () => {
+    const r = esquemaAtualizarLancamento.parse(base)
+    expect([r.ehBeneficio, r.ehFutil, r.rotuloDoFutil]).toEqual([undefined, undefined, undefined])
+  })
+
+  it('rótulo só com espaços vira null (= apagar o rótulo)', () => {
+    expect(esquemaAtualizarLancamento.parse({ ...base, ehFutil: true, rotuloDoFutil: '   ' }).rotuloDoFutil).toBeNull()
+  })
+
+  it('rótulo preenchido com ehFutil=false é recusado no campo rotuloDoFutil', () => {
+    expect(errosDe({ ...base, ehFutil: false, rotuloDoFutil: 'Doce' }, 'rotuloDoFutil')).toEqual([SEM_FUTIL])
+  })
+
+  it('rótulo preenchido com ehFutil omitido é recusado no campo rotuloDoFutil', () => {
+    expect(errosDe({ ...base, rotuloDoFutil: 'Doce' }, 'rotuloDoFutil')).toEqual([SEM_FUTIL])
+  })
+
+  it('rótulo com 61 caracteres é recusado com uma mensagem só', () => {
+    expect(errosDe({ ...base, ehFutil: true, rotuloDoFutil: 'x'.repeat(61) }, 'rotuloDoFutil'))
+      .toEqual(['Use no máximo 60 caracteres.'])
+  })
+
+  it('rótulo com 60 caracteres é aceito', () => {
+    expect(esquemaAtualizarLancamento.parse({ ...base, ehFutil: true, rotuloDoFutil: 'x'.repeat(60) }).rotuloDoFutil)
+      .toHaveLength(60)
+  })
+
+  it('ehBeneficio, ehFutil e rotuloDoFutil com tipo errado: mensagem em português no próprio campo', () => {
+    expect(errosDe({ ...base, ehBeneficio: 'sim' }, 'ehBeneficio')).toEqual(['Informe se foi pago com benefício.'])
+    expect(errosDe({ ...base, ehFutil: 1 }, 'ehFutil')).toEqual(['Informe se é um gasto fútil.'])
+    expect(errosDe({ ...base, ehFutil: true, rotuloDoFutil: 5 }, 'rotuloDoFutil')).toEqual(['Texto inválido.'])
+  })
+})
+
+describe('montarPatchIndividual — benefício e fútil', () => {
+  const com = (extra: Record<string, unknown>) => esquemaAtualizarLancamento.parse({ ...base, ...extra })
+  const patchDe = (extra: Record<string, unknown>) => {
+    const r = montarPatchIndividual(linhaDespesa, com(extra), { closing_day: null })
+    if (!r.ok) throw new Error(r.erro)
+    return r.patch
+  }
+  const tresCampos = (p: Record<string, unknown>) =>
+    Object.fromEntries(['is_benefit', 'is_futile', 'futile_label'].filter((k) => k in p).map((k) => [k, p[k]]))
+
+  it('despesa marcada: os 3 vão para o patch', () => {
+    expect(tresCampos(patchDe({ ehBeneficio: true, ehFutil: true, rotuloDoFutil: 'Doce' })))
+      .toEqual({ is_benefit: true, is_futile: true, futile_label: 'Doce' })
+  })
+
+  it('omitidos: nenhum dos 3 entra no patch (a linha mantém o que tem)', () => {
+    expect(tresCampos(patchDe({}))).toEqual({})
+  })
+
+  it('ehFutil=false sempre zera o rótulo (CHECK tx_rotulo_exige_futil)', () => {
+    expect(tresCampos(patchDe({ ehFutil: false }))).toEqual({ is_futile: false, futile_label: null })
+  })
+
+  it('ehFutil=true sem rotuloDoFutil: mantém o rótulo que a linha já tem', () => {
+    expect(tresCampos(patchDe({ ehFutil: true }))).toEqual({ is_futile: true })
+  })
+
+  it('rotuloDoFutil null com ehFutil omitido: apaga só o rótulo', () => {
+    expect(tresCampos(patchDe({ rotuloDoFutil: null }))).toEqual({ futile_label: null })
+  })
+
+  for (const tipo of ['receita', 'transferencia'] as const) {
+    it(`tipo final ${tipo}: força os 3 a falso/null, mesmo pedidos como verdadeiros`, () => {
+      const r = montarPatchIndividual(
+        linhaDespesa,
+        com({ tipo, contaDestinoId: CONTA2, ehBeneficio: true, ehFutil: true, rotuloDoFutil: 'Doce' }),
+        { closing_day: null },
+      )
+      expect(r.ok && tresCampos(r.patch)).toEqual({ is_benefit: false, is_futile: false, futile_label: null })
+    })
+
+    it(`tipo final ${tipo} com os 3 omitidos: também força (não há benefício/fútil fora de despesa)`, () => {
+      const r = montarPatchIndividual(linhaDespesa, com({ tipo, contaDestinoId: CONTA2 }), { closing_day: null })
+      expect(r.ok && tresCampos(r.patch)).toEqual({ is_benefit: false, is_futile: false, futile_label: null })
+    })
+  }
+})
+
+describe('edição em massa não mexe em benefício/fútil', () => {
+  it('o esquema do lote descarta os 3 campos e o plano não os grava', () => {
+    const e = esquemaAtualizarEmMassa.parse({ ids: [ID], estaPago: true, ehBeneficio: true, ehFutil: true, rotuloDoFutil: 'x' })
+    expect(Object.keys(e).sort()).toEqual(['estaPago', 'ids'])
+    const r = planejarEdicaoEmMassa([linhaDespesa], e, null, '2026-10-16')
+    expect(r).toEqual({ ok: true, grupos: [{ ids: [ID], patch: { is_paid: true, paid_date: '2026-10-16' } }] })
+  })
+})
+
 describe('planejarEdicaoEmMassa', () => {
   const HOJE = '2026-10-14'
   const l = (id: string, extra: Partial<LinhaEditavel> = {}): LinhaEditavel => ({ ...linhaDespesa, id, ...extra })

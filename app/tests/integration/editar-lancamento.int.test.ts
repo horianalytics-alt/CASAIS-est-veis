@@ -260,6 +260,80 @@ describe.skipIf(!temAmbiente)('editar lançamento contra o banco real', () => {
     expect(await atualizarLancamentosEmMassa({ ids: [id], estaPago: true })).toEqual({ ok: false, erro: SESSAO })
   })
 
+  // ------------------------------------------- benefício (VR/VA) e fútil
+  const SEM_FUTIL = 'Marque como gasto fútil para preencher este campo.'
+  const tresCampos = (l: Linha) => ({ is_benefit: l.is_benefit, is_futile: l.is_futile, futile_label: l.futile_label })
+
+  it('marcar benefício e fútil (com rótulo) numa despesa persiste — relido do banco', async () => {
+    const id = await lancar(A)
+    expect(tresCampos(await linha(id))).toEqual({ is_benefit: false, is_futile: false, futile_label: null })
+    como(A.m1)
+    const r = await atualizarLancamento(edicao(id, { ehBeneficio: true, ehFutil: true, rotuloDoFutil: '  Doce  ' }))
+    expect(r).toEqual({ ok: true, dados: undefined })
+    expect(tresCampos(await linha(id))).toEqual({ is_benefit: true, is_futile: true, futile_label: 'Doce' })
+  })
+
+  it('desmarcar benefício e fútil persiste e apaga o rótulo', async () => {
+    const id = await lancar(A, { is_benefit: true, is_futile: true, futile_label: 'Doce' })
+    expect(tresCampos(await linha(id))).toEqual({ is_benefit: true, is_futile: true, futile_label: 'Doce' })
+    como(A.m1)
+    expect((await atualizarLancamento(edicao(id, { ehBeneficio: false, ehFutil: false }))).ok).toBe(true)
+    expect(tresCampos(await linha(id))).toEqual({ is_benefit: false, is_futile: false, futile_label: null })
+  })
+
+  it('os 3 omitidos: a edição mantém benefício, fútil e rótulo da linha', async () => {
+    const id = await lancar(A, { is_benefit: true, is_futile: true, futile_label: 'Doce' })
+    como(A.m1)
+    expect((await atualizarLancamento(edicao(id, { descricao: 'só o nome' }))).ok).toBe(true)
+    expect(await linha(id)).toMatchObject({ description: 'só o nome', is_benefit: true, is_futile: true, futile_label: 'Doce' })
+  })
+
+  it('despesa que vira receita perde benefício e fútil, mesmo pedidos como verdadeiros', async () => {
+    const id = await lancar(A, { is_benefit: true, is_futile: true, futile_label: 'Doce' })
+    como(A.m1)
+    const r = await atualizarLancamento(edicao(id, {
+      tipo: 'receita', categoriaId: null, ehBeneficio: true, ehFutil: true, rotuloDoFutil: 'Doce',
+    }))
+    expect(r).toEqual({ ok: true, dados: undefined })
+    expect(await linha(id)).toMatchObject({ type: 'receita', is_benefit: false, is_futile: false, futile_label: null })
+  })
+
+  it('rótulo sem fútil é recusado no campo rotuloDoFutil, sem gravar e sem push', async () => {
+    const id = await lancar(A)
+    const antes = await linha(id)
+    como(A.m1)
+    const r = await atualizarLancamento(edicao(id, { ehFutil: false, rotuloDoFutil: 'Doce' }))
+    expect(r).toEqual({ ok: false, erro: 'Confira os campos destacados.', camposComErro: { rotuloDoFutil: [SEM_FUTIL] } })
+    expect(await linha(id)).toEqual(antes)
+    expect(estado.agendados).toHaveLength(0)
+  })
+
+  it('rótulo com 61 caracteres e ehBeneficio não booleano: erro no campo, sem gravar', async () => {
+    const id = await lancar(A)
+    const antes = await linha(id)
+    como(A.m1)
+    const longo = await atualizarLancamento(edicao(id, { ehFutil: true, rotuloDoFutil: 'x'.repeat(61) }))
+    const tipoErrado = await atualizarLancamento(edicao(id, { ehBeneficio: 'sim' }))
+    expect(longo).toEqual({
+      ok: false, erro: 'Confira os campos destacados.', camposComErro: { rotuloDoFutil: ['Use no máximo 60 caracteres.'] },
+    })
+    expect(tipoErrado).toEqual({
+      ok: false, erro: 'Confira os campos destacados.', camposComErro: { ehBeneficio: ['Informe se foi pago com benefício.'] },
+    })
+    expect(await linha(id)).toEqual(antes)
+  })
+
+  it('edição em massa não mexe em benefício/fútil, mesmo se o cliente mandar os campos', async () => {
+    const ids = [await lancar(A, { is_benefit: true, is_futile: true, futile_label: 'Doce' }), await lancar(A)]
+    como(A.m1)
+    const lote = { ids, estaPago: true, ehBeneficio: false, ehFutil: true, rotuloDoFutil: 'x' } as unknown as Parameters<
+      typeof atualizarLancamentosEmMassa
+    >[0]
+    expect(await atualizarLancamentosEmMassa(lote)).toEqual({ ok: true, dados: { atualizados: 2 } })
+    expect(await linha(ids[0])).toMatchObject({ is_paid: true, is_benefit: true, is_futile: true, futile_label: 'Doce' })
+    expect(await linha(ids[1])).toMatchObject({ is_paid: true, is_benefit: false, is_futile: false, futile_label: null })
+  })
+
   // ------------------------------------------------ isolamento: individual
   it('B não edita lançamento de A: "não encontrado" e a linha de A fica igual', async () => {
     const id = await lancar(A)

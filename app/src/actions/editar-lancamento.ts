@@ -74,6 +74,10 @@ const recusa = (mensagem: string, campo: string) => falha(mensagem, { [campo]: [
  * Atualiza UM lançamento. Só as colunas da assinatura mudam (mais as que um
  * CHECK obriga a acompanhar: destino e rateio de transferência; fatura quando
  * a conta ou a data mudam). Uma parcela de série é editada sozinha.
+ *
+ * ehBeneficio / ehFutil / rotuloDoFutil: omitidos = mantém o que a linha tem;
+ * tipo final diferente de despesa zera os 3; rótulo exige ehFutil=true no
+ * mesmo pedido (erro em camposComErro.rotuloDoFutil).
  */
 export async function atualizarLancamento(input: EntradaAtualizarLancamento): Promise<ResultadoAction<void>> {
   const analise = esquemaAtualizarLancamento.safeParse(input)

@@ -23,6 +23,7 @@ export const MENSAGENS_EDICAO = {
   TRANSFERENCIA_SEM_CATEGORIA: 'Transferências não têm categoria. Tire as transferências da seleção.',
   NENHUM_CAMPO: 'Escolha pelo menos um campo para alterar.',
   PARCIAL: 'Parte dos lançamentos foi atualizada e parte não. Tente de novo.',
+  ROTULO_SEM_FUTIL: 'Marque como gasto fútil para preencher este campo.',
 } as const
 
 const M = MENSAGENS_EDICAO
@@ -96,6 +97,29 @@ export const esquemaAtualizarLancamento = z
       .max(500, 'Observação longa demais.')
       .nullish()
       .transform((o) => (o ? o : null)),
+    /*
+     * Benefício (VR/VA) e gasto fútil — os mesmos 3 campos de salvarLancamento.
+     * undefined = manter o que a linha tem (o diálogo de editar anterior a este
+     * campo não os manda, e um default false apagaria a marcação em toda
+     * edição). Só valem em despesa: ver montarPatchIndividual.
+     */
+    ehBeneficio: z.boolean({ invalid_type_error: 'Informe se foi pago com benefício.' }).optional(),
+    ehFutil: z.boolean({ invalid_type_error: 'Informe se é um gasto fútil.' }).optional(),
+    /** undefined = manter; null ou só espaços = apagar o rótulo. */
+    rotuloDoFutil: z
+      .string({ invalid_type_error: 'Texto inválido.' })
+      .trim()
+      .max(60, 'Use no máximo 60 caracteres.')
+      .nullish()
+      .transform((r) => (r === undefined ? undefined : r ? r : null)),
+  })
+  // CHECK tx_rotulo_exige_futil (00001): futile_label IS NULL OR is_futile = true.
+  // Rótulo preenchido exige ehFutil=true no MESMO pedido — com ehFutil omitido o
+  // servidor não sabe se a linha é fútil sem ler o banco, e o erro amigável
+  // aqui evita o 23514 cru.
+  .refine((e) => e.rotuloDoFutil == null || e.ehFutil === true, {
+    message: M.ROTULO_SEM_FUTIL,
+    path: ['rotuloDoFutil'],
   })
   // CHECK tx_pago_tem_data — mesmas frases de salvarLancamento.
   .refine((e) => !e.estaPago || e.dataDoPagamento != null, {
@@ -162,8 +186,9 @@ export function faturaPara(
 
 /**
  * Patch da edição individual. Só as colunas da assinatura (mais as que um
- * CHECK obriga a acompanhar): rateio, forma de pagamento, fútil/benefício e
- * série ficam como estão.
+ * CHECK obriga a acompanhar): rateio, forma de pagamento e série ficam como
+ * estão. Benefício/fútil omitidos também ficam como estão — exceto quando o
+ * tipo final não é despesa: aí os 3 são zerados.
  */
 export function montarPatchIndividual(
   linha: LinhaEditavel,
@@ -200,6 +225,20 @@ export function montarPatchIndividual(
   if (ehTransferencia) {
     patch.owner_member_id = null
     patch.owner_share = null
+  }
+  // Benefício e fútil só existem em despesa (form-lancamento.tsx manda false
+  // nos dois fora de despesa). Fora dela, zerados mesmo se pedidos ou omitidos: uma
+  // despesa-benefício que vira receita não pode continuar contando como VR/VA.
+  if (e.tipo !== 'despesa') {
+    patch.is_benefit = false
+    patch.is_futile = false
+    patch.futile_label = null
+  } else {
+    if (e.ehBeneficio !== undefined) patch.is_benefit = e.ehBeneficio
+    if (e.ehFutil !== undefined) patch.is_futile = e.ehFutil
+    // CHECK tx_rotulo_exige_futil: desmarcar fútil sempre apaga o rótulo.
+    if (e.ehFutil === false) patch.futile_label = null
+    else if (e.rotuloDoFutil !== undefined) patch.futile_label = e.rotuloDoFutil
   }
   // Fatura só muda se a conta ou a data mudaram: senão, editar a descrição de
   // uma compra antiga a moveria de fatura depois de uma troca do dia de
