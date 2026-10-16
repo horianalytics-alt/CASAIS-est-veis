@@ -78,7 +78,7 @@ export function SaldoDasContas({ contas }: SaldoDasContasProps) {
                 <div
                   key={conta.account_id}
                   className={cn(
-                    'flex flex-col justify-between gap-3 p-3.5 rounded-xl border border-border/70 bg-card hover:border-border hover:shadow-2xs transition-all duration-500',
+                    'flex flex-col justify-between gap-3 p-3.5 rounded-xl border border-border/70 bg-card hover:border-border hover:shadow-2xs active:scale-[0.98] transition-all duration-500 cursor-default select-none',
                     inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
                   )}
                   style={{

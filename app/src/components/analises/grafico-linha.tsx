@@ -20,6 +20,8 @@
 import * as React from 'react'
 import { dominioBonito, formatarEixoBRL, indicesDeRotulo } from './escala-linear'
 import { ANALISES } from '@/features/analises/copy'
+import { useInView } from '@/hooks/use-in-view'
+import { cn } from '@/lib/utils'
 
 export interface PontoLinha {
   /** Chave estável (ex.: '2026-10' ou '12'). */
@@ -76,6 +78,7 @@ export function GraficoLinha({
   oculto,
   tabela,
 }: GraficoLinhaProps) {
+  const { ref: refInView, inView } = useInView<HTMLDivElement>({ threshold: 0.15, replayOnScroll: true })
   const [refCaixa, largura] = useLarguraDoElemento<HTMLDivElement>()
   const [ativo, setAtivo] = React.useState<number | null>(null)
   const idLeitura = React.useId()
@@ -159,7 +162,7 @@ export function GraficoLinha({
   const yRotuloFinal = ultimo ? (y(ultimo.valor) - 12 < 12 ? y(ultimo.valor) + 20 : y(ultimo.valor) - 12) : 0
 
   return (
-    <div className="flex flex-col gap-[var(--esp-3)]">
+    <div ref={refInView} className="flex flex-col gap-[var(--esp-3)]">
       <div
         ref={refCaixa}
         className="relative w-full rounded-[var(--raio-controle)] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -218,7 +221,16 @@ export function GraficoLinha({
               </text>
             ))}
 
-            {caminhoArea ? <path d={caminhoArea} fill={COR_SERIE} fillOpacity={0.1} /> : null}
+            {caminhoArea ? (
+              <path
+                d={caminhoArea}
+                fill={COR_SERIE}
+                fillOpacity={inView ? 0.1 : 0}
+                style={{
+                  transition: 'fill-opacity 850ms cubic-bezier(0.16, 1, 0.3, 1) 200ms',
+                }}
+              />
+            ) : null}
 
             <path
               d={caminho}
@@ -227,6 +239,12 @@ export function GraficoLinha({
               strokeWidth={2}
               strokeLinejoin="round"
               strokeLinecap="round"
+              pathLength={1}
+              strokeDasharray={1}
+              strokeDashoffset={inView ? 0 : 1}
+              style={{
+                transition: 'stroke-dashoffset 850ms cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
             />
 
             {/* Crosshair */}
@@ -244,7 +262,16 @@ export function GraficoLinha({
 
             {/* Ponto final (vazado se o mês está em andamento) + rótulo direto */}
             {ultimo ? (
-              <>
+              <g
+                className={cn(
+                  'transition-all duration-500',
+                  inView ? 'opacity-100 scale-100' : 'opacity-0 scale-75',
+                )}
+                style={{
+                  transformOrigin: `${x(n - 1)}px ${y(ultimo.valor)}px`,
+                  transitionDelay: '750ms',
+                }}
+              >
                 <circle
                   cx={x(n - 1)}
                   cy={y(ultimo.valor)}
@@ -263,7 +290,7 @@ export function GraficoLinha({
                     {formatarValor(ultimo.valor)}
                   </text>
                 ) : null}
-              </>
+              </g>
             ) : null}
 
             {/* Ponto ativo */}

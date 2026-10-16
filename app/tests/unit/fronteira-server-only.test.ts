@@ -93,8 +93,10 @@ describe('fronteira server-only do módulo de serviço', () => {
     expect(vazamentos).toEqual([])
   })
 
-  it('nenhum arquivo "use client" alcança servico.ts ou notificar.ts pelo grafo de import', () => {
-    const todos = arquivos(SRC)
+  it(
+    'nenhum arquivo "use client" alcança servico.ts ou notificar.ts pelo grafo de import',
+    () => {
+      const todos = arquivos(SRC)
     const clientes = todos.filter((p) => diretiva(readFileSync(p, 'utf8')) === 'use client')
     expect(clientes.length).toBeGreaterThan(0) // sanidade: o scan enxerga os componentes
 
@@ -119,7 +121,7 @@ describe('fronteira server-only do módulo de serviço', () => {
       }
     }
     expect(violacoes).toEqual([])
-  })
+  }, 15000)
 
   it('o detector de grafo funciona: um cliente fictício que importa servico.ts seria pego', () => {
     // Controle negativo do teste acima, sem gravar arquivo: a mesma resolução

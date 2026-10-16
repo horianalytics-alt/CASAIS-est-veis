@@ -86,7 +86,9 @@ export function ResumoAcerto({
               >
                 <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Valor do acerto</span>
                 <ValorMonetario valor={transferencia.amount} tipo="transferencia" tamanho="destaque" className="font-bold" />
-                <ArrowRight className="size-4 text-primary hidden sm:block" />
+                <div className="flex items-center gap-1 text-primary">
+                  <ArrowRight className="size-4 animate-pulse" />
+                </div>
               </div>
 
               <div className="flex items-center gap-3">
