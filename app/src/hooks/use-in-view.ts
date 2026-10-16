@@ -17,6 +17,15 @@ export interface UseInViewOptions {
  * Hook de alta performance que monitora se um elemento está visível no viewport do usuário.
  * Utiliza IntersectionObserver nativo sem dependências externas, respeitando `prefers-reduced-motion`.
  */
+function estaVisivelNoViewport(el: HTMLElement): boolean {
+  const rect = el.getBoundingClientRect()
+  if (rect.width === 0 && rect.height === 0) return false
+  const windowHeight = window.innerHeight || document.documentElement.clientHeight
+  const windowWidth = window.innerWidth || document.documentElement.clientWidth
+
+  return rect.top < windowHeight && rect.bottom > 0 && rect.left < windowWidth && rect.right > 0
+}
+
 export function useInView<T extends HTMLElement = HTMLDivElement>({
   threshold = 0.15,
   rootMargin = '0px 0px -40px 0px',
@@ -69,8 +78,50 @@ export function useInView<T extends HTMLElement = HTMLDivElement>({
 
     observer.observe(elemento)
 
+    // Re-checagem ativa de visibilidade quando o elemento ganha layout (ex: transição de display:none em abas)
+    const checarVisibilidade = () => {
+      if (!elemento) return
+      if (estaVisivelNoViewport(elemento)) {
+        setInView(true)
+        hasTriggeredRef.current = true
+        if (triggerOnce) {
+          observer.unobserve(elemento)
+        }
+      }
+    }
+
+    // 1. Checagem em rAF para elementos que já nascem visíveis no primeiro paint
+    const rafId = requestAnimationFrame(() => {
+      checarVisibilidade()
+    })
+
+    // 2. ResizeObserver: detecta quando o elemento ou pai sai de display:none (0x0) para display ativo (>0)
+    let resizeObserver: ResizeObserver | null = null
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        checarVisibilidade()
+      })
+      resizeObserver.observe(elemento)
+    }
+
+    // 3. MutationObserver no tabpanel ancestral mais próximo: reavalia quando a aba ativa muda
+    let mutationObserver: MutationObserver | null = null
+    const tabPanel = elemento.closest('[data-slot="tabs-content"], [role="tabpanel"]')
+    if (typeof MutationObserver !== 'undefined' && tabPanel) {
+      mutationObserver = new MutationObserver(() => {
+        checarVisibilidade()
+      })
+      mutationObserver.observe(tabPanel, {
+        attributes: true,
+        attributeFilter: ['data-state', 'hidden', 'style', 'class'],
+      })
+    }
+
     return () => {
+      cancelAnimationFrame(rafId)
       observer.disconnect()
+      resizeObserver?.disconnect()
+      mutationObserver?.disconnect()
     }
   }, [threshold, rootMargin, replayOnScroll, triggerOnce])
 
