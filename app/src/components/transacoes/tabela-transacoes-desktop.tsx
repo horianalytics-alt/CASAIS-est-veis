@@ -317,7 +317,7 @@ export function TabelaTransacoesDesktop({
   const temAcoes = Boolean(aoEditar || aoExcluir)
 
   return (
-    <div className="rounded-xl border border-border/80 bg-card overflow-hidden shadow-2xs">
+    <div className="hidden lg:block rounded-xl border border-border/80 bg-card overflow-hidden shadow-2xs">
       <table className="w-full text-left text-sm border-collapse">
         <thead>
           <tr className="border-b border-border/80 bg-muted/40 text-muted-foreground text-xs font-semibold">

@@ -538,7 +538,7 @@ export function ListaTransacoesInterativa({
           </ul>
 
           {/* Desktop (>= 1024px): Tabela rica de lançamentos */}
-          <div className="animate-in fade-in duration-200">
+          <div className="hidden lg:block animate-in fade-in duration-200">
             <TabelaTransacoesDesktop
               transacoes={transacoesFiltradas}
               nomeConta={(id) => mapaContas[id]}
