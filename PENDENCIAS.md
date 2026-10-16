@@ -102,6 +102,22 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
   do digitado por 1 centavo, em silêncio.
 - **Severidade:** BAIXA. Correção simples (arredondamento decimal-safe).
 
+### P-012 — Diálogo de editar lançamento não filtra categoria por tipo
+- **Origem:** Fachada, achado colateral na correção do bug de troca de
+  tipo, 2026-10-15.
+- **O quê:** `dialogo-editar-lancamento.tsx` lista TODAS as categorias da
+  família no seletor, sem filtrar pelo tipo do lançamento (a query de
+  `/inicio` busca só `id, name`, sem `type`). Uma categoria de despesa
+  pode ficar selecionada depois de trocar o tipo para receita, e a
+  action salva assim — ela só confere se a categoria existe na família,
+  não se o tipo bate.
+- **Severidade:** BAIXA/MÉDIA — dado fica logicamente inconsistente
+  (categoria de despesa numa receita), mas não é falha de segurança nem
+  perda de dado.
+- **Correção:** incluir `type` na query de `/inicio`, propagar pelas
+  props, filtrar no diálogo (mesmo padrão que `form-lancamento.tsx` já
+  usa para o formulário de criar).
+
 ### P-010 — Sem Server Action para criar/editar orçamento por categoria
 - **Origem:** Dash, entrega de `/analises` (orçamento/patrimônio/simulador),
   2026-10-14.
