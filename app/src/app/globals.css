@@ -328,6 +328,35 @@
     font-weight: 500;
     font-stretch: 85%;
   }
+
+  @keyframes micro-pulso {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.85;
+      transform: scale(1.03);
+    }
+  }
+
+  @keyframes respirar-brilho {
+    0%, 100% {
+      opacity: 0.92;
+    }
+    50% {
+      opacity: 1;
+      filter: brightness(1.1);
+    }
+  }
+
+  .animate-micro-pulso {
+    animation: micro-pulso 2.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-respirar-brilho {
+    animation: respirar-brilho 3.2s ease-in-out infinite;
+  }
 }
 
 /* A-3: movimento reduzido zera os três tokens */
