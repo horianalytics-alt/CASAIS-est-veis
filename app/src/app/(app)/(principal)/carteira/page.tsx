@@ -164,7 +164,7 @@ export default async function PaginaCarteira({ searchParams }: PaginaCarteiraPro
       </div>
 
       {/* Abas de Navegação: Contas & Cartões vs Investimentos */}
-      <Tabs defaultValue={abaAtiva} className="w-full flex flex-col gap-6">
+      <Tabs key={abaAtiva} defaultValue={abaAtiva} className="w-full flex flex-col gap-6">
         <TabsList className="grid w-full grid-cols-2 max-w-xs self-start rounded-xl p-1 bg-muted/60 border border-border/60">
           <TabsTrigger value="contas" className="rounded-lg text-xs font-semibold">
             Contas & Cartões
