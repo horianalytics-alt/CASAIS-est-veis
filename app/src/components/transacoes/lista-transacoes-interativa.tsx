@@ -15,6 +15,7 @@ import {
   Check,
   CheckSquare,
   AlertCircle,
+  Loader2,
 } from 'lucide-react'
 import { ItemTransacao } from './item-transacao'
 import { TabelaTransacoesDesktop } from './tabela-transacoes-desktop'
@@ -30,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { excluirLancamento } from '@/actions/lancamento'
+import { excluirLancamento, carregarMaisLancamentos } from '@/actions/lancamento'
 import { hapticFeedback } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/types/database'
@@ -50,6 +51,8 @@ export interface ListaTransacoesInterativaProps {
   listaContas?: Array<{ id: string; name: string }>
   listaCategorias?: Array<{ id: string; name: string }>
   idDestacado?: string | null
+  totalContagem?: number
+  mes?: string
 }
 
 type TipoOrdenacao = 'data_desc' | 'data_asc' | 'valor_desc' | 'valor_asc'
@@ -62,8 +65,92 @@ export function ListaTransacoesInterativa({
   listaContas,
   listaCategorias,
   idDestacado,
+  totalContagem,
+  mes,
 }: ListaTransacoesInterativaProps) {
   const router = useRouter()
+
+  // Scroll Infinito: estado interno acumulativo dos lançamentos
+  const [itens, setItens] = React.useState<Transacao[]>(transacoes)
+  const [temMais, setTemMais] = React.useState<boolean>(
+    Boolean(totalContagem !== undefined && transacoes.length < totalContagem),
+  )
+  const [carregandoMais, setCarregandoMais] = React.useState(false)
+  const mesAnteriorRef = React.useRef(mes)
+
+  // Sincroniza estado quando as props do servidor mudam (ex: troca de mês ou router.refresh)
+  React.useEffect(() => {
+    if (mesAnteriorRef.current !== mes) {
+      mesAnteriorRef.current = mes
+      setItens(transacoes)
+      setTemMais(Boolean(totalContagem !== undefined && transacoes.length < totalContagem))
+      return
+    }
+
+    setItens((anteriores) => {
+      if (anteriores.length <= transacoes.length) {
+        return transacoes
+      }
+      const idsDoServidor = new Set(transacoes.map((t) => t.id))
+      const cauda = anteriores.slice(transacoes.length).filter((t) => !idsDoServidor.has(t.id))
+      return [...transacoes, ...cauda]
+    })
+
+    if (totalContagem !== undefined) {
+      setTemMais(itens.length < totalContagem)
+    }
+  }, [transacoes, totalContagem, mes])
+
+  const carregarMais = React.useCallback(async () => {
+    if (carregandoMais || !temMais || !mes) return
+    setCarregandoMais(true)
+    try {
+      const res = await carregarMaisLancamentos({
+        mes,
+        offset: itens.length,
+        limite: 20,
+      })
+      if (res.ok) {
+        const novos = res.dados.transacoes
+        setItens((anteriores) => {
+          const ids = new Set(anteriores.map((t) => t.id))
+          const novosUnicos = novos.filter((t) => !ids.has(t.id))
+          return [...anteriores, ...novosUnicos]
+        })
+        setTemMais(res.dados.temMais)
+      } else {
+        setTemMais(false)
+      }
+    } catch {
+      setTemMais(false)
+    } finally {
+      setCarregandoMais(false)
+    }
+  }, [carregandoMais, temMais, mes, itens.length])
+
+  const sentinelaRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    const sentinela = sentinelaRef.current
+    if (!sentinela || !temMais) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [primeira] = entries
+        if (primeira?.isIntersecting) {
+          carregarMais()
+        }
+      },
+      {
+        root: null,
+        rootMargin: '250px',
+        threshold: 0.01,
+      },
+    )
+
+    observer.observe(sentinela)
+    return () => observer.disconnect()
+  }, [temMais, carregarMais])
 
   // Filtros
   const [filtroMembro, setFiltroMembro] = React.useState<string>('todos')
@@ -110,10 +197,10 @@ export function ListaTransacoesInterativa({
   // Identifica se há transferência entre os itens selecionados
   const temTransferenciaNaSelecao = React.useMemo(() => {
     return Array.from(selecionados).some((id) => {
-      const t = transacoes.find((tr) => tr.id === id)
+      const t = itens.find((tr) => tr.id === id)
       return t?.type === 'transferencia'
     })
-  }, [selecionados, transacoes])
+  }, [selecionados, itens])
 
   // Mapa de id do membro para display_name
   const mapaMembros = React.useMemo(() => {
@@ -124,7 +211,7 @@ export function ListaTransacoesInterativa({
   const categoriasPresentes = React.useMemo(() => {
     const ids = new Set<string>()
     let temSemCategoria = false
-    for (const t of transacoes) {
+    for (const t of itens) {
       if (t.category_id) {
         ids.add(t.category_id)
       } else {
@@ -140,7 +227,7 @@ export function ListaTransacoesInterativa({
       lista.push({ id: '__sem_categoria__', nome: 'Sem categoria' })
     }
     return lista
-  }, [transacoes, mapaCategorias])
+  }, [itens, mapaCategorias])
 
   // Checagem se algum filtro não-padrão está ativo
   const temFiltroAtivo =
@@ -165,7 +252,7 @@ export function ListaTransacoesInterativa({
     const valorBuscado = Number.parseFloat(termoNumero)
     const ehBuscaNumerica = !Number.isNaN(valorBuscado) && termoNumero.length > 0
 
-    const filtradas = transacoes.filter((t) => {
+    const filtradas = itens.filter((t) => {
       // 1. Membro
       if (filtroMembro !== 'todos' && t.paid_by_member_id !== filtroMembro) {
         return false
@@ -215,7 +302,7 @@ export function ListaTransacoesInterativa({
       // data_desc padrão
       return b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at)
     })
-  }, [transacoes, filtroMembro, filtroTipo, filtroCategoria, busca, ordenacao])
+  }, [itens, filtroMembro, filtroTipo, filtroCategoria, busca, ordenacao])
 
   // Lógica de Seleção Múltipla
   const alternarSelecao = React.useCallback((id: string) => {
@@ -263,6 +350,7 @@ export function ListaTransacoesInterativa({
           ? 'Série de lançamentos excluída com sucesso.'
           : 'Lançamento excluído com sucesso.',
       )
+      setItens((anteriores) => anteriores.filter((t) => t.id !== transacaoParaExcluir.id))
       setSelecionados((antigos) => {
         const novos = new Set(antigos)
         novos.delete(transacaoParaExcluir.id)
@@ -290,6 +378,8 @@ export function ListaTransacoesInterativa({
       }),
     )
 
+    const idSet = new Set(ids)
+    setItens((anteriores) => anteriores.filter((t) => !idSet.has(t.id)))
     setPendenteExclusao(false)
     setModalExcluirMassaAberto(false)
     setSelecionados(new Set())
@@ -390,8 +480,9 @@ export function ListaTransacoesInterativa({
             </button>
           )}
           <span className="text-muted-foreground text-xs font-medium">
-            {transacoesFiltradas.length}{' '}
-            {transacoesFiltradas.length === 1 ? 'lançamento' : 'lançamentos'}
+            {totalContagem && totalContagem > transacoesFiltradas.length && !temFiltroAtivo
+              ? `${transacoesFiltradas.length} de ${totalContagem} lançamentos`
+              : `${transacoesFiltradas.length} ${transacoesFiltradas.length === 1 ? 'lançamento' : 'lançamentos'}`}
           </span>
         </div>
       </div>
@@ -552,6 +643,38 @@ export function ListaTransacoesInterativa({
               aoEditar={(item) => setTransacaoParaEditar(item)}
               aoExcluir={(item) => setTransacaoParaExcluir(item)}
             />
+          </div>
+
+          {/* Sentinela de Scroll Infinito e Indicadores */}
+          <div className="w-full flex flex-col items-center justify-center">
+            {temMais && (
+              <div
+                ref={sentinelaRef}
+                className="h-10 w-full pointer-events-none opacity-0"
+                aria-hidden="true"
+              />
+            )}
+
+            {carregandoMais && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="flex items-center justify-center gap-2.5 py-4 text-muted-foreground animate-in fade-in duration-200"
+              >
+                <Loader2 className="size-4 animate-spin text-primary" aria-hidden="true" />
+                <span className="text-xs font-medium">Carregando mais lançamentos...</span>
+              </div>
+            )}
+
+            {!temMais && itens.length > 0 && totalContagem && totalContagem > 15 && (
+              <div className="flex items-center justify-center gap-2.5 py-5 text-muted-foreground/60 select-none">
+                <span className="h-px w-8 sm:w-12 bg-border/60" />
+                <span className="text-[11px] font-medium tracking-wide uppercase">
+                  Todos os {itens.length} lançamentos exibidos
+                </span>
+                <span className="h-px w-8 sm:w-12 bg-border/60" />
+              </div>
+            )}
           </div>
         </>
       )}

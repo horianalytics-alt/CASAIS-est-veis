@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { isValidISODate } from '@/lib/format'
+import { limitesDoMes } from '@/lib/hoje'
 import { agendarNotificacao, resolverAutorDoPush } from '@/lib/push/notificar'
 import {
   falha,
@@ -295,4 +296,63 @@ export async function excluirLancamento(
   revalidatePath('/lancar')
 
   return sucesso({ excluidos: data ?? 0 })
+}
+
+const esquemaCarregarMais = z.object({
+  mes: z.string().regex(/^\d{4}-\d{2}$/, 'Mês inválido.'),
+  offset: z.number().int().min(0),
+  limite: z.number().int().min(1).max(100).default(20),
+})
+
+/**
+ * Carrega a próxima fatia de lançamentos para scroll infinito na tela inicial.
+ */
+export async function carregarMaisLancamentos(entrada: {
+  mes: string
+  offset: number
+  limite?: number
+}): Promise<
+  ResultadoAction<{
+    transacoes: Lancamento[]
+    temMais: boolean
+    total: number
+  }>
+> {
+  const analise = esquemaCarregarMais.safeParse(entrada)
+  if (!analise.success) return falhaDeValidacao(analise.error)
+
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+    error: erroAuth,
+  } = await supabase.auth.getUser()
+
+  if (erroAuth || !user) {
+    return falha('Sua sessão expirou. Entre de novo.')
+  }
+
+  const { mes, offset, limite } = analise.data
+  const { inicio, fim } = limitesDoMes(mes)
+
+  const { data, error, count } = await supabase
+    .from('transactions')
+    .select('*', { count: 'exact' })
+    .gte('date', inicio)
+    .lte('date', fim)
+    .order('date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limite - 1)
+
+  if (error) return falha(traduzErroDoBanco(error))
+
+  const transacoes = data ?? []
+  const total = count ?? 0
+  const temMais = offset + transacoes.length < total
+
+  return sucesso({
+    transacoes,
+    temMais,
+    total,
+  })
 }

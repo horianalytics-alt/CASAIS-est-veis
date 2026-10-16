@@ -8,7 +8,6 @@ import { hojeEmSaoPaulo, ehMesValido, limitesDoMes, rotuloDoMes, somarMeses } fr
 import { ResumoDoMes } from '@/components/inicio/resumo-do-mes'
 import { SaldoDasContas } from '@/components/inicio/saldo-das-contas'
 import { ListaTransacoesInterativa } from '@/components/transacoes/lista-transacoes-interativa'
-import { PaginacaoLancamentos } from '@/components/transacoes/paginacao-lancamentos'
 import { OuvinteRealtime } from '@/components/inicio/ouvinte-realtime'
 import {
   AvisoLancamentoSalvo,
@@ -24,10 +23,10 @@ import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = { title: INICIO.titulo }
 
-const POR_PAGINA = 20
+const LIMITE_INICIAL = 20
 
 interface PropsDaPagina {
-  searchParams: Promise<{ mes?: string; pagina?: string; novo?: string; qtd?: string }>
+  searchParams: Promise<{ mes?: string; novo?: string; qtd?: string }>
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -37,7 +36,6 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
 
   const {
     mes: mesPedido,
-    pagina: paginaPedida,
     novo: novoPedido,
     qtd: qtdPedida,
   } = await searchParams
@@ -55,10 +53,6 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
   const mesAtual = hojeEmSaoPaulo().slice(0, 7)
   const mes = ehMesValido(mesPedido) ? mesPedido : mesAtual
   const { inicio, fim } = limitesDoMes(mes)
-
-  const paginaNumero = Number.parseInt(paginaPedida ?? '1', 10)
-  const pagina = Number.isFinite(paginaNumero) && paginaNumero > 0 ? paginaNumero : 1
-  const de = (pagina - 1) * POR_PAGINA
 
   const idNovo = novoPedido && UUID.test(novoPedido) ? novoPedido : null
   const qtdNumero = Number.parseInt(qtdPedida ?? '1', 10)
@@ -79,7 +73,7 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
       .lte('date', fim)
       .order('date', { ascending: false })
       .order('created_at', { ascending: false })
-      .range(de, de + POR_PAGINA - 1),
+      .range(0, LIMITE_INICIAL - 1),
     supabase.from('categories').select('id, name'),
     supabase.from('families').select('id').single(),
     supabase.from('family_members').select('id, display_name'),
@@ -127,15 +121,7 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
 
   const hrefDoMes = (m: string) => (m === mesAtual ? '/inicio' : `/inicio?mes=${m}`)
 
-  if (pagina > 1 && (lancamentos.error || (lancamentos.data ?? []).length === 0)) {
-    redirect(hrefDoMes(mes))
-  }
-
   const total = lancamentos.count ?? 0
-  const totalDePaginas = Math.max(1, Math.ceil(total / POR_PAGINA))
-
-  const hrefDaPagina = (p: number) =>
-    p === 1 ? hrefDoMes(mes) : `/inicio?mes=${mes}&pagina=${p}`
 
   const classeNavMes = buttonVariants({ variant: 'outline', size: 'icone-toque' })
 
@@ -244,22 +230,17 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
                 descricao={INICIO.semLancamentosNoMesDica}
               />
             ) : (
-              <>
-                <ListaTransacoesInterativa
-                  transacoes={lancamentos.data ?? []}
-                  membros={membros}
-                  mapaContas={mapaContas}
-                  mapaCategorias={mapaCategorias}
-                  listaContas={listaDeContas.map((c) => ({ id: c.account_id ?? '', name: c.name ?? '' }))}
-                  listaCategorias={(categorias.data ?? []).map((c) => ({ id: c.id, name: c.name }))}
-                  idDestacado={idNovo}
-                />
-                <PaginacaoLancamentos
-                  pagina={pagina}
-                  totalDePaginas={totalDePaginas}
-                  hrefDaPagina={hrefDaPagina}
-                />
-              </>
+              <ListaTransacoesInterativa
+                transacoes={lancamentos.data ?? []}
+                membros={membros}
+                mapaContas={mapaContas}
+                mapaCategorias={mapaCategorias}
+                listaContas={listaDeContas.map((c) => ({ id: c.account_id ?? '', name: c.name ?? '' }))}
+                listaCategorias={(categorias.data ?? []).map((c) => ({ id: c.id, name: c.name }))}
+                idDestacado={idNovo}
+                totalContagem={total}
+                mes={mes}
+              />
             )}
           </CardContent>
         </Card>
