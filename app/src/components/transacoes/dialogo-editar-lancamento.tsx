@@ -98,9 +98,20 @@ export function DialogoEditarLancamento({
   const [dataPagamento, setDataPagamento] = React.useState(todayISO())
   const [observacao, setObservacao] = React.useState('')
 
-  // Preenche dados ao abrir com a transação
+  // Listas mais recentes, lidas pelo preenchimento sem virar dependência dele.
+  // A página /inicio remonta `contas`/`membros` como arrays NOVOS a cada
+  // router.refresh() (o OuvinteRealtime chama um quando o parceiro lança algo).
+  // Se fossem dependência, um lançamento da outra pessoa com este diálogo aberto
+  // repreencheria tudo com os valores originais e apagaria a edição em curso.
+  const opcoesAtuais = React.useRef({ contas, membros })
+  React.useEffect(() => {
+    opcoesAtuais.current = { contas, membros }
+  }, [contas, membros])
+
+  // Preenche dados ao abrir com a transação (só na abertura ou troca de transação)
   React.useEffect(() => {
     if (transacao && aberto) {
+      const { contas, membros } = opcoesAtuais.current
       const tipoAtual = (transacao.type as TipoLancamento) ?? 'despesa'
       setTipo(tipoAtual)
       setDescricao(transacao.description || '')
@@ -125,7 +136,7 @@ export function DialogoEditarLancamento({
       setErro(null)
       setCamposComErro({})
     }
-  }, [transacao, aberto, contas, membros])
+  }, [transacao, aberto])
 
   const handleMudarTipo = (novoTipo: TipoLancamento) => {
     setTipo(novoTipo)
@@ -374,12 +385,26 @@ export function DialogoEditarLancamento({
               )}
             </div>
 
+            {/* As duas pontas do ternário têm a MESMA forma (div > Label + Select).
+                Sem `key`, o React reaproveita a mesma instância do Select do Radix:
+                o `value` troca de categoria para conta (ou o contrário) enquanto o
+                <select> nativo escondido ainda tem as opções da outra lista. O
+                Radix então grava o valor novo nesse <select>, que não acha a opção,
+                vira "" e dispara `change` → `onValueChange("")` → o campo é zerado.
+                Com `key` distinta cada ponta monta o próprio Select do zero. */}
             {tipo === 'transferencia' ? (
-              <div className="flex flex-col gap-1.5">
+              <div key="campo-conta-destino" className="flex flex-col gap-1.5">
                 <Label htmlFor="edit-conta-destino" className="text-xs font-medium">
                   Conta de destino
                 </Label>
-                <Select value={contaDestinoId} onValueChange={setContaDestinoId}>
+                {/* Contas têm id não vazio: "" aqui só pode ser o eco do <select>
+                    nativo descrito acima, nunca escolha do usuário. */}
+                <Select
+                  value={contaDestinoId}
+                  onValueChange={(val) => {
+                    if (val) setContaDestinoId(val)
+                  }}
+                >
                   <SelectTrigger
                     id="edit-conta-destino"
                     className="h-9 text-xs"
@@ -403,13 +428,19 @@ export function DialogoEditarLancamento({
                 )}
               </div>
             ) : (
-              <div className="flex flex-col gap-1.5">
+              <div key="campo-categoria" className="flex flex-col gap-1.5">
                 <Label htmlFor="edit-categoria" className="text-xs font-medium">
                   Categoria
                 </Label>
                 <Select
                   value={categoriaId || '__nenhuma__'}
-                  onValueChange={(val) => setCategoriaId(val === '__nenhuma__' ? '' : val)}
+                  // Nenhum item desta lista tem value "" ("Sem categoria" é
+                  // '__nenhuma__'): "" só chega pelo <select> nativo do Radix sem a
+                  // opção correspondente. Defesa extra além da `key` acima.
+                  onValueChange={(val) => {
+                    if (!val) return
+                    setCategoriaId(val === '__nenhuma__' ? '' : val)
+                  }}
                 >
                   <SelectTrigger
                     id="edit-categoria"

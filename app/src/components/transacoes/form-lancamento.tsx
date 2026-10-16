@@ -407,6 +407,11 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
                     {...register('tipo', {
                       onChange: (e) => {
                         const novoTipo = e.target.value
+                        // Transferência não tem categoria: o campo some e o envio a
+                        // ignora. Limpar aqui apagava a escolha de quem só passou por
+                        // Transferência e voltou. A incompatibilidade é julgada quando
+                        // o tipo de destino usa categoria (despesa ↔ receita).
+                        if (novoTipo === 'transferencia') return
                         const atual = categorias.find((c) => c.id === getValues('categoriaId'))
                         if (atual && atual.tipo !== novoTipo && atual.tipo !== 'todos') {
                           setValue('categoriaId', SEM_CATEGORIA)
@@ -529,8 +534,11 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
           ) : null}
 
           {/* Conta de Destino (somente para Transferência) */}
+          {/* `key` distinta em cada ponta: sem ela, se as duas ficarem com a mesma
+              forma, o React reaproveita o Select do Radix e o <select> nativo
+              escondido zera o campo ao trocar o tipo (ver dialogo-editar-lancamento). */}
           {tipo === 'transferencia' ? (
-            <div className="flex flex-col gap-[var(--esp-2)]">
+            <div key="campo-conta-destino" className="flex flex-col gap-[var(--esp-2)]">
               <Label htmlFor="contaDestinoId">
                 <span className="flex items-center gap-[var(--esp-1)]">
                   <ArrowRightLeft className="size-3.5" aria-hidden="true" />
@@ -564,7 +572,7 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
             </div>
           ) : (
             /* Categoria + filtro de grupo (oculto em transferências) */
-            <div className="flex flex-col gap-[var(--esp-2)]">
+            <div key="campo-categoria" className="flex flex-col gap-[var(--esp-2)]">
               {grupos.length > 0 && (
                 <div className="flex flex-col gap-[var(--esp-2)]">
                   <Label htmlFor="filtro-grupo">{LANCAR.filtroGrupoLabel}</Label>
