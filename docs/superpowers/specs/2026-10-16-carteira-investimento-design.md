@@ -35,6 +35,18 @@ para uma fase futura.
 4. **Rendimento é calculado mensalmente**, não diariamente — mesma técnica
    de juros compostos em centavos inteiros já usada em
    `src/lib/simulador.ts` (`simularValorFuturo`/`projetarValorFuturo`).
+4b. **Rendimento mensal nasce "estimado" e só vira saldo de verdade por
+    confirmação manual** (decisão tomada durante a FASE: PLANO do
+    Estrutura, 2026-10-16, revisando a recomendação original deste spec
+    de "nunca resgatável"). O Heitor rejeitou as duas pontas — nem
+    "resgatável automaticamente" (criaria dinheiro do nada a partir de
+    uma taxa sem validação externa) nem "só exibição, nunca grava" (ele
+    quer acompanhar o rendimento real mês a mês, não recalculado do
+    zero toda vez que abre a tela). O modelo final: todo mês a caixinha
+    mostra "Rendimento estimado: R$ X — Confirmar?"; só quando o usuário
+    confirma, aquele valor específico soma ao `balance_cents` da
+    caixinha e passa a contar no patrimônio e ser resgatável. Meses não
+    confirmados não expiram nem viram saldo sozinhos.
 5. **Regra de resgate por caixinha**: uma flag `resgate_imediato`
    (boolean). Quando `false`, a caixinha tem uma `data_vencimento`; antes
    dela, o saldo não pode ser resgatado. Quando `true`, resgate livre a
