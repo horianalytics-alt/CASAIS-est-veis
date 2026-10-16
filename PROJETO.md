@@ -1,9 +1,9 @@
 # PROJETO.md — Finanças a Dois
 
 > Retrato ÚNICO do estado atual. Sempre sobrescrito, nunca acumulado.
-> Última atualização: 2026-10-15, por Maestro, após auditoria Sentinela R5
-> (REPROVADO → achados ALTO corrigidos), correção de contraste de texto e
-> edição/exclusão de lançamentos completos de ponta a ponta.
+> Última atualização: 2026-10-16, por Maestro, após auditoria Sentinela R5
+> fechada por completo, scroll infinito na lista de lançamentos, e leva
+> grande de animações/haptics/micro-interações em todo o app.
 > Histórico de entregas: `ENTREGA.md` (quando existir). Plano vivo: `PLANO.md`
 > (revisão 2 em `C:\Users\Heitor PC\.claude\plans\harmonic-jingling-eclipse.md`).
 
@@ -236,10 +236,37 @@ Backend (migrations, `src/actions/`, `src/lib/` novo, `src/types/`, `tests/`)
   escrita direta via REST. `DELETE` continua permitido (fluxo "exclua e
   registre de novo"). Fechou de brinde o achado B-1 (vazamento de
   existência de id entre famílias).
+- **M-3 corrigido**: nomes acessíveis nos campos do diálogo de editar
+  lançamento (WCAG 1.3.1/4.1.2) — auditoria Sentinela R5 **fechada por
+  completo** (só A-2 resta, ação do Heitor no painel do Supabase).
+- **2 bugs reais corrigidos durante a correção do M-3**: trocar o tipo no
+  diálogo de editar (ex. despesa→transferência→despesa) zerava
+  silenciosamente categoria/conta-destino (causa: Select do Radix
+  reaproveitado sem `key` entre as duas pontas do ternário); e, mais
+  grave, a edição em curso era sobrescrita silenciosamente se o parceiro
+  lançasse algo via Realtime enquanto o diálogo estava aberto (efeito de
+  preenchimento dependia de arrays recriados a cada `router.refresh()`).
 - Refinamento visual mobile (Antigravity, `e84843d`/`a8a2d00`/`61cfb3e`):
   swipe-to-delete nos cards, cards edge-to-edge, bordas coloridas
   semânticas por tipo de lançamento (receita/despesa/investimento/vale),
   badge "Vale" com destaque, hover com checkbox em desktop/tablet.
+- **Scroll infinito na lista de lançamentos** (Antigravity, `0a1f1a0`):
+  substitui a paginação por página em `/inicio`. Server Action nova
+  `carregarMaisLancamentos` (validada: `offset >= 0`, `limite` 1-100,
+  lê com a sessão do usuário — RLS isola por família automaticamente,
+  sem precisar filtrar `family_id` manualmente). `IntersectionObserver`
+  com `rootMargin: 250px` carrega o próximo lote antes do fim da lista.
+- **Bug corrigido**: tabela desktop vazava visualmente abaixo dos cards
+  no mobile — faltava `hidden lg:block` no container (`2f0ab2d`).
+- **Leva grande de animações/micro-interações** (Antigravity,
+  `e8d6b08`..`43296f7`): entrada por scroll com replay (`useInView`/
+  `ScrollReveal`) em praticamente todo componente financeiro (KPIs,
+  gráficos, cards de conta, faturas, lista de lançamentos); micro-pulso
+  contínuo em badges de destaque; haptics calibrados por ação
+  (`src/lib/haptics.ts`); pull-to-refresh nativo; confete ao zerar o
+  saldo do acerto; cápsula na navegação inferior. Modo Privacidade
+  confirmado intacto em `ValorMonetario` (guarda `!deveAnimar || oculto`
+  preservada apesar da nova ativação por `inView`).
 - Banco de teste limpo (duas vezes nesta sessão): 125 famílias/86 usuários
   de teste acumulados removidos primeiro; depois a auditoria Sentinela R4
   criou mais 4 famílias de teste para os testes hostis e CAIU por rate limit
