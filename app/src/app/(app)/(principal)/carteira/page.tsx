@@ -2,14 +2,16 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { connection } from 'next/server'
 import Link from 'next/link'
-import { Plus, Archive, Wallet } from 'lucide-react'
+import { Plus, Archive, Wallet, PiggyBank } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { CartaoConta } from '@/components/carteira/cartao-conta'
 import { SecaoFaturas } from '@/components/carteira/secao-faturas'
+import { AreaInvestimentos } from '@/components/carteira/area-investimentos'
 import { ValorSaldo } from '@/components/financeiro/valor-saldo'
 import { ValorMonetario } from '@/components/financeiro/valor-monetario'
 import { Button } from '@/components/ui/button'
 import { EstadoVazio } from '@/components/ui/estado-vazio'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { CARTEIRA } from '@/features/carteira/copy'
 import { ScrollReveal } from '@/components/ui/scroll-reveal'
 import { getInvoicePeriod } from '@/lib/invoice'
@@ -33,6 +35,7 @@ export default async function PaginaCarteira({ searchParams }: PaginaCarteiraPro
 
   const params = await searchParams
   const mostrarArquivadas = params.arquivadas === '1'
+  const abaAtiva = params.aba === 'investimentos' ? 'investimentos' : 'contas'
 
   const supabase = await createClient()
 
@@ -160,100 +163,119 @@ export default async function PaginaCarteira({ searchParams }: PaginaCarteiraPro
         </div>
       </div>
 
-      {/* Resumo Patrimonial em Destaque */}
-      <ScrollReveal replayOnScroll>
-        <section
-          aria-label="Resumo patrimonial das contas"
-          className="bg-card border-border/80 flex flex-col gap-3 rounded-2xl border p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between"
-        >
-          <div className="flex flex-col">
-            <span className="text-muted-foreground text-xs font-medium">
-              {CARTEIRA.saldoTotal}
-            </span>
-            <div className="mt-1">
-              <ValorSaldo valor={totalSaldoAtivo} tamanho="heroi" />
-            </div>
-            <span className="text-muted-foreground text-xs">
-              {CARTEIRA.apoioSaldoTotal}
-            </span>
-          </div>
+      {/* Abas de Navegação: Contas & Cartões vs Investimentos */}
+      <Tabs defaultValue={abaAtiva} className="w-full flex flex-col gap-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-xs self-start rounded-xl p-1 bg-muted/60 border border-border/60">
+          <TabsTrigger value="contas" className="rounded-lg text-xs font-semibold">
+            Contas & Cartões
+          </TabsTrigger>
+          <TabsTrigger value="investimentos" className="rounded-lg text-xs font-semibold gap-1.5">
+            <PiggyBank className="size-3.5 text-sky-500" />
+            <span>Investimentos</span>
+          </TabsTrigger>
+        </TabsList>
 
-          {(totalPendenteInflow > 0 || totalPendenteOutflow > 0) && (
-            <div className="border-border/60 flex flex-col gap-1 border-t pt-3 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5">
-              <span className="text-muted-foreground text-xs font-medium">
-                {CARTEIRA.saldoPrevistoTotal}
-              </span>
-              <ValorSaldo valor={totalSaldoPrevisto} tamanho="destaque" />
-              <div className="text-muted-foreground flex items-center gap-2 text-xs">
-                {totalPendenteInflow > 0 && (
-                  <ValorMonetario valor={totalPendenteInflow} tipo="receita" pago={false} />
-                )}
-                {totalPendenteOutflow > 0 && (
-                  <ValorMonetario valor={totalPendenteOutflow} tipo="despesa" pago={false} />
-                )}
-              </div>
-            </div>
-          )}
-        </section>
-      </ScrollReveal>
-
-      {/* Grade de Cartões de Conta */}
-      <ScrollReveal replayOnScroll delay={50}>
-        <section aria-labelledby="titulo-contas" className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h2
-              id="titulo-contas"
-              className="text-foreground text-lg font-semibold"
+        <TabsContent value="contas" className="flex flex-col gap-6 outline-none m-0">
+          {/* Resumo Patrimonial em Destaque */}
+          <ScrollReveal replayOnScroll>
+            <section
+              aria-label="Resumo patrimonial das contas"
+              className="bg-card border-border/80 flex flex-col gap-3 rounded-2xl border p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between"
             >
-              {mostrarArquivadas ? CARTEIRA.contasArquivadas : CARTEIRA.contasAtivas}
-            </h2>
-            <span className="text-muted-foreground text-xs">
-              {(mostrarArquivadas ? contasArquivadas : contasAtivas).length} contas
-            </span>
-          </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-xs font-medium">
+                  {CARTEIRA.saldoTotal}
+                </span>
+                <div className="mt-1">
+                  <ValorSaldo valor={totalSaldoAtivo} tamanho="heroi" />
+                </div>
+                <span className="text-muted-foreground text-xs">
+                  {CARTEIRA.apoioSaldoTotal}
+                </span>
+              </div>
 
-          {(mostrarArquivadas ? contasArquivadas : contasAtivas).length === 0 ? (
-            <EstadoVazio
-              titulo={CARTEIRA.semContas}
-              descricao={CARTEIRA.semContasDica}
-              acao={
-                <Button asChild size="toque">
-                  <Link href="/lancar">
-                    <Wallet className="size-4" aria-hidden="true" />
-                    Lançar despesa ou receita
-                  </Link>
-                </Button>
-              }
-            />
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {(mostrarArquivadas ? contasArquivadas : contasAtivas).map((conta, idx) => (
-                <CartaoConta
-                  key={conta.account_id ?? conta.name}
-                  conta={conta}
-                  index={idx}
-                  faturaAtual={
-                    conta.account_id
-                      ? faturasCorrentesPorConta.get(conta.account_id)
-                      : null
+              {(totalPendenteInflow > 0 || totalPendenteOutflow > 0) && (
+                <div className="border-border/60 flex flex-col gap-1 border-t pt-3 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5">
+                  <span className="text-muted-foreground text-xs font-medium">
+                    {CARTEIRA.saldoPrevistoTotal}
+                  </span>
+                  <ValorSaldo valor={totalSaldoPrevisto} tamanho="destaque" />
+                  <div className="text-muted-foreground flex items-center gap-2 text-xs">
+                    {totalPendenteInflow > 0 && (
+                      <ValorMonetario valor={totalPendenteInflow} tipo="receita" pago={false} />
+                    )}
+                    {totalPendenteOutflow > 0 && (
+                      <ValorMonetario valor={totalPendenteOutflow} tipo="despesa" pago={false} />
+                    )}
+                  </div>
+                </div>
+              )}
+            </section>
+          </ScrollReveal>
+
+          {/* Grade de Cartões de Conta */}
+          <ScrollReveal replayOnScroll delay={50}>
+            <section aria-labelledby="titulo-contas" className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h2
+                  id="titulo-contas"
+                  className="text-foreground text-lg font-semibold"
+                >
+                  {mostrarArquivadas ? CARTEIRA.contasArquivadas : CARTEIRA.contasAtivas}
+                </h2>
+                <span className="text-muted-foreground text-xs">
+                  {(mostrarArquivadas ? contasArquivadas : contasAtivas).length} contas
+                </span>
+              </div>
+
+              {(mostrarArquivadas ? contasArquivadas : contasAtivas).length === 0 ? (
+                <EstadoVazio
+                  titulo={CARTEIRA.semContas}
+                  descricao={CARTEIRA.semContasDica}
+                  acao={
+                    <Button asChild size="toque">
+                      <Link href="/lancar">
+                        <Wallet className="size-4" aria-hidden="true" />
+                        Lançar despesa ou receita
+                      </Link>
+                    </Button>
                   }
-                  faturaAberta={
-                    conta.account_id
-                      ? faturasAbertasPorConta.get(conta.account_id)
-                      : null
-                  }
-                  contasOrigem={contasOrigem}
                 />
-              ))}
-            </div>
-          )}
-        </section>
-      </ScrollReveal>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {(mostrarArquivadas ? contasArquivadas : contasAtivas).map((conta, idx) => (
+                    <CartaoConta
+                      key={conta.account_id ?? conta.name}
+                      conta={conta}
+                      index={idx}
+                      faturaAtual={
+                        conta.account_id
+                          ? faturasCorrentesPorConta.get(conta.account_id)
+                          : null
+                      }
+                      faturaAberta={
+                        conta.account_id
+                          ? faturasAbertasPorConta.get(conta.account_id)
+                          : null
+                      }
+                      contasOrigem={contasOrigem}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          </ScrollReveal>
 
-      {/* Seção de Faturas de Cartão */}
-      <ScrollReveal replayOnScroll delay={100}>
-        <SecaoFaturas faturas={faturas} contasOrigem={contasOrigem} />
-      </ScrollReveal>
+          {/* Seção de Faturas de Cartão */}
+          <ScrollReveal replayOnScroll delay={100}>
+            <SecaoFaturas faturas={faturas} contasOrigem={contasOrigem} />
+          </ScrollReveal>
+        </TabsContent>
+
+        <TabsContent value="investimentos" className="flex flex-col gap-6 outline-none m-0">
+          <AreaInvestimentos contasOrigem={contasOrigem} />
+        </TabsContent>
+      </Tabs>
     </main>
   )
 }
