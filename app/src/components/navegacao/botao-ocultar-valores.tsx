@@ -3,15 +3,21 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
 import { Button } from '@/components/ui/button'
+import { hapticFeedback } from '@/lib/haptics'
 
 export function BotaoOcultarValores({ mostrarRotulo = false }: { mostrarRotulo?: boolean }) {
   const { oculto, alternar } = useOcultarValores()
+
+  const handleAlternar = () => {
+    hapticFeedback.light()
+    alternar()
+  }
 
   if (mostrarRotulo) {
     return (
       <button
         type="button"
-        onClick={alternar}
+        onClick={handleAlternar}
         aria-label={oculto ? 'Mostrar valores financeiros' : 'Ocultar valores financeiros'}
         title={oculto ? 'Mostrar valores' : 'Ocultar valores'}
         className="flex items-center justify-between w-full px-2.5 py-2 rounded-lg hover:bg-muted/60 transition-colors cursor-pointer group text-start"
@@ -35,7 +41,7 @@ export function BotaoOcultarValores({ mostrarRotulo = false }: { mostrarRotulo?:
       type="button"
       variant="ghost"
       size="icone-toque"
-      onClick={alternar}
+      onClick={handleAlternar}
       aria-label={oculto ? 'Mostrar valores financeiros' : 'Ocultar valores financeiros'}
       title={oculto ? 'Mostrar valores' : 'Ocultar valores'}
       className="text-muted-foreground hover:text-foreground"

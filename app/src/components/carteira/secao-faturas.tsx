@@ -119,7 +119,7 @@ export function SecaoFaturas({ faturas, contasOrigem }: SecaoFaturasProps) {
 
                   {/* Badge de Estado de Pagamento */}
                   {fatura.is_paid ? (
-                    <Badge variant="secondary" className="bg-receita/15 text-receita border-receita/30 text-xs">
+                    <Badge variant="secondary" className="bg-receita/15 text-receita border-receita/30 text-xs animate-carimbo">
                       <Check className="size-3" aria-hidden="true" />
                       {CARTEIRA.faturaPaga}
                     </Badge>

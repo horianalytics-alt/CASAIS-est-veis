@@ -7,6 +7,7 @@ import { BarraProgresso } from '@/components/navegacao/barra-progresso'
 import { BotaoOcultarValores } from '@/components/navegacao/botao-ocultar-valores'
 import { OcultarValoresProvider } from '@/components/providers/ocultar-valores-provider'
 import { Button } from '@/components/ui/button'
+import { PullToRefresh } from '@/components/ui/pull-to-refresh'
 import { APP } from '@/features/comum/copy'
 import { NAVEGACAO } from '@/features/transacoes/copy'
 
@@ -51,8 +52,8 @@ export default function LayoutPrincipal({ children }: LayoutProps<'/'>) {
           </div>
         </header>
 
-        {/* Conteúdo da Rota */}
-        <div className="flex flex-1 flex-col">{children}</div>
+        {/* Conteúdo da Rota com Pull to Refresh */}
+        <PullToRefresh className="flex flex-1 flex-col">{children}</PullToRefresh>
       </div>
 
       {/* Navegação Inferior Fixa para Mobile e Tablet (< 1024px) */}

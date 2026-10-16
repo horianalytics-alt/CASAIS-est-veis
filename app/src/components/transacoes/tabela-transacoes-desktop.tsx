@@ -1,3 +1,5 @@
+'use client'
+
 import * as React from 'react'
 import {
   ArrowDownLeft,
@@ -18,6 +20,8 @@ import {
   type TipoDeValor,
 } from '@/components/financeiro/valor-monetario'
 import { Checkbox } from '@/components/ui/checkbox'
+import { useInView } from '@/hooks/use-in-view'
+import { hapticFeedback } from '@/lib/haptics'
 import { INICIO } from '@/features/transacoes/copy'
 import { isoToBR } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -50,6 +54,7 @@ function getIconeETipo(tipo: string | undefined) {
       return { Icone: ArrowUpRight, classe: 'bg-muted text-muted-foreground border-border' }
   }
 }
+
 function getBordaTipo(tipo: string | undefined, ehBeneficio: boolean) {
   if (ehBeneficio) {
     return 'border-l-[4px] border-l-purple-500 dark:border-l-purple-400'
@@ -66,6 +71,218 @@ function getBordaTipo(tipo: string | undefined, ehBeneficio: boolean) {
     default:
       return 'border-l-[4px] border-l-transparent'
   }
+}
+
+interface LinhaTransacaoDesktopProps {
+  transacao: Transacao
+  indice: number
+  tipo: TipoDeValor | undefined
+  categoria: string | null | undefined
+  conta: string | undefined
+  membro: string | null | undefined
+  mostraStatus: boolean
+  destacado: boolean
+  estaSelecionado: boolean
+  temSelecao: boolean
+  temAcoes: boolean
+  aoAlternarSelecao?: (id: string) => void
+  aoEditar?: (transacao: Transacao) => void
+  aoExcluir?: (transacao: Transacao) => void
+}
+
+function LinhaTransacaoDesktop({
+  transacao: t,
+  indice,
+  tipo,
+  categoria,
+  conta,
+  membro,
+  mostraStatus,
+  destacado,
+  estaSelecionado,
+  temSelecao,
+  temAcoes,
+  aoAlternarSelecao,
+  aoEditar,
+  aoExcluir,
+}: LinhaTransacaoDesktopProps) {
+  const { ref, inView } = useInView<HTMLTableRowElement>({ threshold: 0.05, replayOnScroll: true })
+  const { Icone, classe } = getIconeETipo(tipo)
+
+  return (
+    <tr
+      ref={ref}
+      aria-current={destacado ? 'true' : undefined}
+      onClick={() => {
+        if (aoAlternarSelecao) {
+          hapticFeedback.selection()
+          aoAlternarSelecao(t.id)
+        }
+      }}
+      className={cn(
+        'transition-all duration-300 group hover:bg-muted/40 cursor-pointer select-none',
+        inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
+        getBordaTipo(tipo, Boolean(t.is_benefit)),
+        destacado && 'animate-flash-recente bg-primary/10',
+        estaSelecionado && 'bg-primary/5',
+      )}
+      style={{
+        transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        transitionDelay: `${Math.min((indice % 4) * 30, 90)}ms`,
+      }}
+    >
+      {/* Checkbox de Seleção */}
+      {temSelecao && (
+        <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+          <Checkbox
+            checked={estaSelecionado}
+            onCheckedChange={() => {
+              hapticFeedback.selection()
+              aoAlternarSelecao?.(t.id)
+            }}
+            aria-label={`Selecionar ${t.description}`}
+          />
+        </td>
+      )}
+
+      {/* Data */}
+      <td className="py-3 px-3 whitespace-nowrap text-muted-foreground font-mono text-xs num-tabular">
+        {isoToBR(t.date)}
+      </td>
+
+      {/* Descrição e Ícone */}
+      <td className="py-3 px-3 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className={cn('flex size-7 items-center justify-center rounded-lg border shrink-0', classe)}>
+            <Icone className="size-3.5" aria-hidden="true" />
+          </div>
+          <span
+            className="font-medium text-foreground truncate min-w-0 flex-1"
+            title={t.description}
+          >
+            {t.description}
+          </span>
+          {t.is_benefit && (
+            <span className="inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold border border-purple-500/20 shrink-0">
+              Vale
+            </span>
+          )}
+          <BadgeTipo tipo={t.type} pago={t.is_paid} className="text-[10px] shrink-0" />
+        </div>
+      </td>
+
+      {/* Categoria */}
+      <td className="py-3 px-3 text-muted-foreground text-xs whitespace-nowrap">
+        {categoria ? (
+          <span className="inline-flex items-center gap-1 bg-muted/60 px-2 py-0.5 rounded-md font-medium text-foreground text-xs max-w-[120px] truncate" title={categoria}>
+            <Tag className="size-3 text-muted-foreground shrink-0" aria-hidden="true" />
+            <span className="truncate">{categoria}</span>
+          </span>
+        ) : (
+          <span className="text-muted-foreground/60">—</span>
+        )}
+      </td>
+
+      {/* Conta */}
+      <td className="py-3 px-3 text-foreground text-xs whitespace-nowrap">
+        <span className="inline-flex items-center gap-1 max-w-[125px] truncate font-medium" title={conta ?? undefined}>
+          <CreditCard className="size-3 text-muted-foreground shrink-0" aria-hidden="true" />
+          <span className="truncate">{conta ?? '—'}</span>
+        </span>
+      </td>
+
+      {/* Quem pagou */}
+      <td className="py-3 px-3 text-xs whitespace-nowrap">
+        {membro ? (
+          <span
+            className={cn(
+              'inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md font-medium border',
+              membro.toLowerCase().includes('carol')
+                ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                : 'bg-primary/10 text-primary border-primary/20',
+            )}
+          >
+            <User className="size-3" aria-hidden="true" />
+            <span>{membro}</span>
+          </span>
+        ) : (
+          <span className="text-muted-foreground/60">—</span>
+        )}
+      </td>
+
+      {/* Valor */}
+      <td className="py-3 px-3 text-right whitespace-nowrap font-medium font-mono num-tabular">
+        {tipo ? (
+          <ValorMonetario
+            valor={t.amount}
+            tipo={tipo}
+            pago={t.is_paid}
+            className="font-semibold text-sm"
+          />
+        ) : null}
+      </td>
+
+      {/* Status */}
+      <td className="py-3 px-3 text-center whitespace-nowrap">
+        {mostraStatus ? (
+          <span
+            className={cn(
+              'inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full font-medium',
+              t.is_paid
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20',
+            )}
+          >
+            {t.is_paid ? (
+              <Check className="size-3" aria-hidden="true" />
+            ) : (
+              <Clock className="size-3" aria-hidden="true" />
+            )}
+            <span>{t.is_paid ? INICIO.pago : INICIO.pendente}</span>
+          </span>
+        ) : null}
+      </td>
+
+      {/* Ações (Editar & Excluir) */}
+      {temAcoes && (
+        <td
+          className="py-3 px-3 text-center whitespace-nowrap"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-center gap-1">
+            {aoEditar && (
+              <button
+                type="button"
+                onClick={() => {
+                  hapticFeedback.light()
+                  aoEditar(t)
+                }}
+                className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                title="Editar lançamento"
+                aria-label={`Editar ${t.description}`}
+              >
+                <Pencil className="size-3.5" />
+              </button>
+            )}
+            {aoExcluir && (
+              <button
+                type="button"
+                onClick={() => {
+                  hapticFeedback.warning()
+                  aoExcluir(t)
+                }}
+                className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                title="Excluir lançamento"
+                aria-label={`Excluir ${t.description}`}
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            )}
+          </div>
+        </td>
+      )}
+    </tr>
+  )
 }
 
 export interface TabelaTransacoesDesktopProps {
@@ -100,39 +317,35 @@ export function TabelaTransacoesDesktop({
   const temAcoes = Boolean(aoEditar || aoExcluir)
 
   return (
-    <div className="hidden lg:block w-full overflow-x-auto">
-      <table className="w-full table-fixed text-left border-collapse text-sm">
+    <div className="rounded-xl border border-border/80 bg-card overflow-hidden shadow-2xs">
+      <table className="w-full text-left text-sm border-collapse">
         <thead>
-          <tr className="border-b border-border/80 text-muted-foreground text-xs uppercase tracking-wider">
+          <tr className="border-b border-border/80 bg-muted/40 text-muted-foreground text-xs font-semibold">
             {temSelecao && (
-              <th className="py-3 px-3 w-[40px] text-center">
+              <th scope="col" className="w-10 py-3 px-3 text-center">
                 <Checkbox
                   checked={todosSelecionados}
-                  onCheckedChange={aoAlternarTodos}
-                  aria-label="Selecionar todos os lançamentos visíveis"
+                  onCheckedChange={() => {
+                    hapticFeedback.medium()
+                    aoAlternarTodos?.()
+                  }}
+                  aria-label="Selecionar todas as transações"
                 />
               </th>
             )}
-            <th className="py-3 px-3 font-semibold whitespace-nowrap w-[95px]">Data</th>
-            <th className="py-3 px-3 font-semibold">Descrição</th>
-            <th className="py-3 px-3 font-semibold whitespace-nowrap w-[130px]">Categoria</th>
-            <th className="py-3 px-3 font-semibold whitespace-nowrap w-[135px]">Conta</th>
-            <th className="py-3 px-3 font-semibold whitespace-nowrap w-[110px]">Quem pagou</th>
-            <th className="py-3 px-3 font-semibold text-right whitespace-nowrap w-[125px]">Valor</th>
-            <th className="py-3 px-3 font-semibold text-center whitespace-nowrap w-[105px]">
-              Status
-            </th>
-            {temAcoes && (
-              <th className="py-3 px-3 font-semibold text-center whitespace-nowrap w-[80px]">
-                Ações
-              </th>
-            )}
+            <th scope="col" className="py-3 px-3 w-28">Data</th>
+            <th scope="col" className="py-3 px-3 min-w-[200px]">Descrição</th>
+            <th scope="col" className="py-3 px-3 w-36">Categoria</th>
+            <th scope="col" className="py-3 px-3 w-36">Conta</th>
+            <th scope="col" className="py-3 px-3 w-28">Quem pagou</th>
+            <th scope="col" className="py-3 px-3 text-right w-32">Valor</th>
+            <th scope="col" className="py-3 px-3 text-center w-24">Status</th>
+            {temAcoes && <th scope="col" className="py-3 px-3 text-center w-20">Ações</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-border/60">
-          {transacoes.map((t) => {
+          {transacoes.map((t, idx) => {
             const tipo = tipoConhecido(t.type)
-            const { Icone, classe } = getIconeETipo(tipo)
             const categoria = t.category_id ? nomeCategoria(t.category_id) : null
             const conta = nomeConta(t.account_id)
             const membro = nomeMembro ? nomeMembro(t.paid_by_member_id) : null
@@ -141,152 +354,23 @@ export function TabelaTransacoesDesktop({
             const estaSelecionado = Boolean(selecionados?.has(t.id))
 
             return (
-              <tr
+              <LinhaTransacaoDesktop
                 key={t.id}
-                aria-current={destacado ? 'true' : undefined}
-                onClick={() => aoAlternarSelecao?.(t.id)}
-                className={cn(
-                  'transition-colors group hover:bg-muted/40 cursor-pointer select-none',
-                  getBordaTipo(tipo, Boolean(t.is_benefit)),
-                  destacado && 'bg-primary/10',
-                  estaSelecionado && 'bg-primary/5',
-                )}
-              >
-                {/* Checkbox de Seleção */}
-                {temSelecao && (
-                  <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      checked={estaSelecionado}
-                      onCheckedChange={() => aoAlternarSelecao?.(t.id)}
-                      aria-label={`Selecionar ${t.description}`}
-                    />
-                  </td>
-                )}
-
-                {/* Data */}
-                <td className="py-3 px-3 whitespace-nowrap text-muted-foreground font-mono text-xs num-tabular">
-                  {isoToBR(t.date)}
-                </td>
-
-                {/* Descrição e Ícone */}
-                <td className="py-3 px-3 min-w-0">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={cn('flex size-7 items-center justify-center rounded-lg border shrink-0', classe)}>
-                      <Icone className="size-3.5" aria-hidden="true" />
-                    </div>
-                    <span
-                      className="font-medium text-foreground truncate min-w-0 flex-1"
-                      title={t.description}
-                    >
-                      {t.description}
-                    </span>
-                    {t.is_benefit && (
-                      <span className="inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold border border-purple-500/20 shrink-0">
-                        Vale
-                      </span>
-                    )}
-                    <BadgeTipo tipo={t.type} pago={t.is_paid} className="text-[10px] shrink-0" />
-                  </div>
-                </td>
-
-                {/* Categoria */}
-                <td className="py-3 px-3 text-muted-foreground text-xs whitespace-nowrap">
-                  {categoria ? (
-                    <span className="inline-flex items-center gap-1 bg-muted/60 px-2 py-0.5 rounded-md font-medium text-foreground text-xs max-w-[120px] truncate" title={categoria}>
-                      <Tag className="size-3 text-muted-foreground shrink-0" aria-hidden="true" />
-                      <span className="truncate">{categoria}</span>
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground/60">—</span>
-                  )}
-                </td>
-
-                {/* Conta */}
-                <td className="py-3 px-3 text-foreground text-xs whitespace-nowrap">
-                  <span className="inline-flex items-center gap-1 max-w-[125px] truncate font-medium" title={conta ?? undefined}>
-                    <CreditCard className="size-3 text-muted-foreground shrink-0" aria-hidden="true" />
-                    <span className="truncate">{conta ?? '—'}</span>
-                  </span>
-                </td>
-
-                {/* Quem pagou */}
-                <td className="py-3 px-3 text-xs whitespace-nowrap">
-                  {membro ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium">
-                      <User className="size-3" aria-hidden="true" />
-                      <span>{membro}</span>
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground/60">—</span>
-                  )}
-                </td>
-
-                {/* Valor */}
-                <td className="py-3 px-3 text-right whitespace-nowrap font-medium font-mono num-tabular">
-                  {tipo ? (
-                    <ValorMonetario
-                      valor={t.amount}
-                      tipo={tipo}
-                      pago={t.is_paid}
-                      className="font-semibold text-sm"
-                    />
-                  ) : null}
-                </td>
-
-                {/* Status */}
-                <td className="py-3 px-3 text-center whitespace-nowrap">
-                  {mostraStatus ? (
-                    <span
-                      className={cn(
-                        'inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full font-medium',
-                        t.is_paid
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                          : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20',
-                      )}
-                    >
-                      {t.is_paid ? (
-                        <Check className="size-3" aria-hidden="true" />
-                      ) : (
-                        <Clock className="size-3" aria-hidden="true" />
-                      )}
-                      <span>{t.is_paid ? INICIO.pago : INICIO.pendente}</span>
-                    </span>
-                  ) : null}
-                </td>
-
-                {/* Ações (Editar & Excluir) */}
-                {temAcoes && (
-                  <td
-                    className="py-3 px-3 text-center whitespace-nowrap"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      {aoEditar && (
-                        <button
-                          type="button"
-                          onClick={() => aoEditar(t)}
-                          className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-                          title="Editar lançamento"
-                          aria-label={`Editar ${t.description}`}
-                        >
-                          <Pencil className="size-3.5" />
-                        </button>
-                      )}
-                      {aoExcluir && (
-                        <button
-                          type="button"
-                          onClick={() => aoExcluir(t)}
-                          className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                          title="Excluir lançamento"
-                          aria-label={`Excluir ${t.description}`}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                )}
-              </tr>
+                transacao={t}
+                indice={idx}
+                tipo={tipo}
+                categoria={categoria}
+                conta={conta}
+                membro={membro}
+                mostraStatus={mostraStatus}
+                destacado={destacado}
+                estaSelecionado={estaSelecionado}
+                temSelecao={temSelecao}
+                temAcoes={temAcoes}
+                aoAlternarSelecao={aoAlternarSelecao}
+                aoEditar={aoEditar}
+                aoExcluir={aoExcluir}
+              />
             )
           })}
         </tbody>

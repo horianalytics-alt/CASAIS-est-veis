@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { excluirLancamento } from '@/actions/lancamento'
+import { hapticFeedback } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/types/database'
 
@@ -218,6 +219,7 @@ export function ListaTransacoesInterativa({
 
   // Lógica de Seleção Múltipla
   const alternarSelecao = React.useCallback((id: string) => {
+    hapticFeedback.selection()
     setSelecionados((antigos) => {
       const novos = new Set(antigos)
       if (novos.has(id)) {
@@ -234,6 +236,7 @@ export function ListaTransacoesInterativa({
     transacoesFiltradas.every((t) => selecionados.has(t.id))
 
   const alternarTodos = React.useCallback(() => {
+    hapticFeedback.medium()
     if (todosFiltradosSelecionados) {
       setSelecionados(new Set())
     } else {
@@ -459,6 +462,7 @@ export function ListaTransacoesInterativa({
           variant={modoSelecaoAtivo ? 'default' : 'outline'}
           size="sm"
           onClick={() => {
+            hapticFeedback.light()
             if (modoSelecaoAtivo) {
               setModoSelecaoManual(false)
               setSelecionados(new Set())
@@ -508,12 +512,13 @@ export function ListaTransacoesInterativa({
         </div>
       ) : (
         <>
-          {/* Mobile / Tablet (< 1024px): Lista em cartões modernos */}
-          <ul className="flex flex-col gap-2.5 lg:hidden animate-in fade-in duration-200">
-            {transacoesFiltradas.map((t) => (
+          {/* Mobile / Tablet (< 1024px): Lista em cartões modernos com scroll reveal item a item */}
+          <ul className="flex flex-col gap-2.5 lg:hidden">
+            {transacoesFiltradas.map((t, idx) => (
               <ItemTransacao
                 key={t.id}
                 transacao={t}
+                indice={idx}
                 nomeConta={mapaContas[t.account_id]}
                 nomeCategoria={t.category_id ? mapaCategorias[t.category_id] : null}
                 nomeMembro={mapaMembros.get(t.paid_by_member_id)}
@@ -522,6 +527,7 @@ export function ListaTransacoesInterativa({
                 modoSelecao={modoSelecaoAtivo}
                 aoAlternarSelecao={alternarSelecao}
                 aoIniciarSelecao={(id) => {
+                  hapticFeedback.medium()
                   setSelecionados(new Set([id]))
                   setModoSelecaoManual(true)
                 }}
@@ -566,7 +572,10 @@ export function ListaTransacoesInterativa({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setModalEditarMassaAberto(true)}
+            onClick={() => {
+              hapticFeedback.light()
+              setModalEditarMassaAberto(true)
+            }}
             className="h-8 gap-1.5 text-xs rounded-xl"
           >
             <SlidersHorizontal className="size-3.5" />
@@ -577,7 +586,10 @@ export function ListaTransacoesInterativa({
             type="button"
             variant="destructive"
             size="sm"
-            onClick={() => setModalExcluirMassaAberto(true)}
+            onClick={() => {
+              hapticFeedback.warning()
+              setModalExcluirMassaAberto(true)
+            }}
             className="h-8 gap-1.5 text-xs rounded-xl"
           >
             <Trash2 className="size-3.5" />
@@ -588,7 +600,10 @@ export function ListaTransacoesInterativa({
             type="button"
             variant="ghost"
             size="icon-sm"
-            onClick={desmarcarTodos}
+            onClick={() => {
+              hapticFeedback.selection()
+              desmarcarTodos()
+            }}
             className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-xl"
             title="Desmarcar todos"
             aria-label="Desmarcar todos"

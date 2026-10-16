@@ -23,6 +23,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LANCAR } from '@/features/transacoes/copy'
 import { tocarSomErro, tocarSomSucesso } from '@/features/sons/sons'
+import { hapticFeedback } from '@/lib/haptics'
 import { getInvoicePeriod, invoicePeriodLabel } from '@/lib/invoice'
 import { cn } from '@/lib/utils'
 
@@ -259,6 +260,7 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
       setResultado(resposta)
       if (resposta.ok) {
         tocarSomSucesso()
+        hapticFeedback.success()
         setConcluido(true)
         deveReiniciar.current = true
         setTimeout(() => {
@@ -266,6 +268,7 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
         }, 120)
       } else {
         tocarSomErro()
+        hapticFeedback.warning()
       }
     })
   })
@@ -352,6 +355,7 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
       setResultado(resposta)
       if (resposta.ok) {
         tocarSomSucesso()
+        hapticFeedback.success()
         setConcluido(true)
         deveReiniciar.current = true
         const primeiraData = valores.itens[0]?.data || hoje
@@ -360,6 +364,7 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
         }, 120)
       } else {
         tocarSomErro()
+        hapticFeedback.warning()
       }
     })
   })

@@ -20,6 +20,8 @@ import {
   type TipoDeValor,
 } from '@/components/financeiro/valor-monetario'
 import { Checkbox } from '@/components/ui/checkbox'
+import { useInView } from '@/hooks/use-in-view'
+import { hapticFeedback } from '@/lib/haptics'
 import { INICIO } from '@/features/transacoes/copy'
 import { isoToBR } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -76,6 +78,8 @@ export interface ItemTransacaoProps {
   nomeCategoria?: string | null
   nomeConta?: string | null
   nomeMembro?: string | null
+  /** Posição na lista para stagger inicial suave */
+  indice?: number
   /** Acabou de ser salvo: fundo de destaque para a pessoa achar na lista. */
   destacado?: boolean
   selecionado?: boolean
@@ -89,16 +93,18 @@ export interface ItemTransacaoProps {
 /**
  * Item de Transação no Mobile e Tablet:
  * - Card esticado de ponta a ponta (full-width)
+ * - Scroll Reveal suave item a item conforme entra na tela
  * - Borda esquerda colorida semântica (Verde=Receita, Vermelho=Despesa, Azul=Investimento, Roxo=Vale)
  * - Checkbox oculto no estado normal: aparece apenas após clique longo ou no modo de seleção ativa
  * - Gesto nativo de Swipe to Delete para arrastar e revelar o botão de exclusão
- * - Ações táteis de edição e exclusão rápidas
+ * - Ações táteis de edição e exclusão rápidas com haptic feedback
  */
 export function ItemTransacao({
   transacao,
   nomeCategoria,
   nomeConta,
   nomeMembro,
+  indice,
   destacado = false,
   selecionado = false,
   modoSelecao = false,
@@ -107,6 +113,11 @@ export function ItemTransacao({
   aoEditar,
   aoExcluir,
 }: ItemTransacaoProps) {
+  const { ref: itemRef, inView } = useInView<HTMLLIElement>({
+    threshold: 0.08,
+    replayOnScroll: true,
+  })
+
   const tipo = tipoConhecido(transacao.type)
   const { Icone, classe } = getIconeETipo(tipo)
   const bordaClasse = getBordaTipo(tipo, Boolean(transacao.is_benefit))
@@ -143,13 +154,7 @@ export function ItemTransacao({
       arrastoXRef.current = 0
       swipeAbertoRef.current = false
       aoIniciarSelecao?.(transacao.id)
-      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
-        try {
-          navigator.vibrate?.(40)
-        } catch {
-          // ignore
-        }
-      }
+      hapticFeedback.medium()
     }, 450)
   }
 
@@ -203,6 +208,7 @@ export function ItemTransacao({
       setArrastoX(-76)
       swipeAbertoRef.current = true
       ignorarCliqueRef.current = true
+      hapticFeedback.light()
       setTimeout(() => {
         ignorarCliqueRef.current = false
       }, 350)
@@ -225,12 +231,23 @@ export function ItemTransacao({
       return
     }
     if (modoSelecao && aoAlternarSelecao) {
+      hapticFeedback.selection()
       aoAlternarSelecao(transacao.id)
     }
   }
 
   return (
-    <li className="relative w-full overflow-hidden rounded-xl">
+    <li
+      ref={itemRef}
+      className={cn(
+        'relative w-full overflow-hidden rounded-xl transition-all duration-400 ease-out',
+        inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3.5',
+      )}
+      style={{
+        transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        transitionDelay: indice !== undefined ? `${Math.min((indice % 4) * 35, 120)}ms` : '0ms',
+      }}
+    >
       {/* Ação oculta de exclusão revelada por Swipe */}
       <div
         className={cn(
@@ -244,6 +261,7 @@ export function ItemTransacao({
           onClick={() => {
             setArrastoX(0)
             swipeAbertoRef.current = false
+            hapticFeedback.warning()
             aoExcluir?.(transacao)
           }}
           className="size-full flex flex-col items-center justify-center gap-1 text-[11px] font-bold"
@@ -287,9 +305,9 @@ export function ItemTransacao({
         }}
         aria-current={destacado ? 'true' : undefined}
         className={cn(
-          'group flex flex-col gap-2.5 p-3.5 sm:p-4 rounded-xl border border-border/70 bg-card hover:border-border hover:shadow-2xs transition-colors relative z-10 select-none cursor-pointer touch-pan-y',
+          'group flex flex-col gap-2.5 p-3.5 sm:p-4 rounded-xl border border-border/70 bg-card hover:border-border hover:shadow-2xs transition-all relative z-10 select-none cursor-pointer touch-pan-y',
           bordaClasse,
-          destacado && 'ring-2 ring-primary/40',
+          destacado && 'animate-flash-recente ring-2 ring-primary/50',
           selecionado && 'border-primary/60 ring-2 ring-primary/30 shadow-xs',
         )}
       >
@@ -310,7 +328,10 @@ export function ItemTransacao({
               >
                 <Checkbox
                   checked={selecionado}
-                  onCheckedChange={() => aoAlternarSelecao(transacao.id)}
+                  onCheckedChange={() => {
+                    hapticFeedback.selection()
+                    aoAlternarSelecao(transacao.id)
+                  }}
                   aria-label={`Selecionar ${transacao.description}`}
                 />
               </div>
@@ -359,7 +380,10 @@ export function ItemTransacao({
                 {aoEditar && (
                   <button
                     type="button"
-                    onClick={() => aoEditar(transacao)}
+                    onClick={() => {
+                      hapticFeedback.light()
+                      aoEditar(transacao)
+                    }}
                     className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
                     title="Editar lançamento"
                     aria-label={`Editar ${transacao.description}`}
@@ -370,7 +394,10 @@ export function ItemTransacao({
                 {aoExcluir && (
                   <button
                     type="button"
-                    onClick={() => aoExcluir(transacao)}
+                    onClick={() => {
+                      hapticFeedback.warning()
+                      aoExcluir(transacao)
+                    }}
                     className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                     title="Excluir lançamento"
                     aria-label={`Excluir ${transacao.description}`}
@@ -403,7 +430,14 @@ export function ItemTransacao({
 
           {/* Membro que pagou */}
           {nomeMembro && (
-            <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium">
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md font-medium border',
+                nomeMembro.toLowerCase().includes('carol')
+                  ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                  : 'bg-primary/10 text-primary border-primary/20',
+              )}
+            >
               <User className="size-3" aria-hidden="true" />
               <span>{nomeMembro}</span>
             </span>

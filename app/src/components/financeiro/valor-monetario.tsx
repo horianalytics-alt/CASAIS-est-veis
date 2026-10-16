@@ -177,7 +177,8 @@ export function ValorMonetario({
       ref={deveAnimar ? ref : undefined}
       // .valor = mono + tabular-nums + alinhado à direita + sem quebra (T-1).
       className={cn(
-        'valor inline-flex items-center gap-[var(--esp-1)]',
+        'valor inline-flex items-center gap-[var(--esp-1)] transition-all duration-300 ease-out',
+        oculto && 'select-none',
         CLASSE_TAMANHO[tamanhoEfetivo],
         classeDeCor(tipo, pago, negativoContabil),
         className,
@@ -189,10 +190,17 @@ export function ValorMonetario({
         <TriangleAlert
           aria-label="Saldo negativo"
           role="img"
-          className="size-4 shrink-0"
+          className="size-4 shrink-0 transition-opacity duration-300"
         />
       ) : null}
-      {corpo}
+      <span
+        className={cn(
+          'transition-all duration-300 ease-out',
+          oculto ? 'opacity-80 tracking-wider' : 'opacity-100 tracking-normal',
+        )}
+      >
+        {corpo}
+      </span>
     </span>
   )
 }

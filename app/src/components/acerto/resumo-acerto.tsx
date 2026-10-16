@@ -16,6 +16,8 @@ import { ValorMonetario } from '@/components/financeiro/valor-monetario'
 import { Badge } from '@/components/ui/badge'
 import { ACERTO } from '@/features/acerto/copy'
 import { useInView } from '@/hooks/use-in-view'
+import { hapticFeedback } from '@/lib/haptics'
+import { ConfettiCelebracao } from '@/components/ui/confetti-celebracao'
 import { cn } from '@/lib/utils'
 import { DialogoAcertar } from './dialogo-acertar'
 
@@ -41,9 +43,17 @@ export function ResumoAcerto({
     : null
 
   const ehProporcional = regra === 'proportional'
+  const tudoZerado = !transferencia
+
+  React.useEffect(() => {
+    if (tudoZerado) {
+      hapticFeedback.success()
+    }
+  }, [tudoZerado])
 
   return (
     <div ref={ref} className="flex flex-col gap-6">
+      <ConfettiCelebracao ativo={tudoZerado} />
       {/* Bloco Herói: Quem deve para quem */}
       <section
         aria-labelledby="titulo-resultado-acerto"
