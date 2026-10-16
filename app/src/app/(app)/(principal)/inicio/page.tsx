@@ -19,6 +19,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EstadoVazio } from '@/components/ui/estado-vazio'
 import { INICIO, VAZIO_INICIAL } from '@/features/transacoes/copy'
+import { ScrollReveal } from '@/components/ui/scroll-reveal'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = { title: INICIO.titulo }
@@ -229,38 +230,40 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
       <SaldoDasContas contas={listaDeContas} />
 
       {/* 3. Lançamentos com Barra de Filtros Interativos (Membros & Tipo) */}
-      <Card id="lista-lancamentos" className="w-full min-w-0 scroll-mt-4 shadow-xs border-border/80">
-        <CardHeader className="px-3.5 sm:px-6 py-3.5 sm:py-4 border-b border-border/60">
-          <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            {INICIO.tituloLancamentos}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 sm:p-6">
-          {(lancamentos.data ?? []).length === 0 ? (
-            <EstadoVazio
-              titulo={INICIO.semLancamentosNoMes}
-              descricao={INICIO.semLancamentosNoMesDica}
-            />
-          ) : (
-            <>
-              <ListaTransacoesInterativa
-                transacoes={lancamentos.data ?? []}
-                membros={membros}
-                mapaContas={mapaContas}
-                mapaCategorias={mapaCategorias}
-                listaContas={listaDeContas.map((c) => ({ id: c.account_id ?? '', name: c.name ?? '' }))}
-                listaCategorias={(categorias.data ?? []).map((c) => ({ id: c.id, name: c.name }))}
-                idDestacado={idNovo}
+      <ScrollReveal replayOnScroll>
+        <Card id="lista-lancamentos" className="w-full min-w-0 scroll-mt-4 shadow-xs border-border/80">
+          <CardHeader className="px-3.5 sm:px-6 py-3.5 sm:py-4 border-b border-border/60">
+            <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              {INICIO.tituloLancamentos}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 sm:p-6">
+            {(lancamentos.data ?? []).length === 0 ? (
+              <EstadoVazio
+                titulo={INICIO.semLancamentosNoMes}
+                descricao={INICIO.semLancamentosNoMesDica}
               />
-              <PaginacaoLancamentos
-                pagina={pagina}
-                totalDePaginas={totalDePaginas}
-                hrefDaPagina={hrefDaPagina}
-              />
-            </>
-          )}
-        </CardContent>
-      </Card>
+            ) : (
+              <>
+                <ListaTransacoesInterativa
+                  transacoes={lancamentos.data ?? []}
+                  membros={membros}
+                  mapaContas={mapaContas}
+                  mapaCategorias={mapaCategorias}
+                  listaContas={listaDeContas.map((c) => ({ id: c.account_id ?? '', name: c.name ?? '' }))}
+                  listaCategorias={(categorias.data ?? []).map((c) => ({ id: c.id, name: c.name }))}
+                  idDestacado={idNovo}
+                />
+                <PaginacaoLancamentos
+                  pagina={pagina}
+                  totalDePaginas={totalDePaginas}
+                  hrefDaPagina={hrefDaPagina}
+                />
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </ScrollReveal>
 
       {/* Ouvinte em Tempo Real via Supabase Realtime */}
       {familyId && (

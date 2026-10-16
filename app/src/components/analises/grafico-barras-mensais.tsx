@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { formatBRL } from '@/lib/format'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ANALISES } from '@/features/analises/copy'
+import { useInView } from '@/hooks/use-in-view'
 
 export interface DadoMesResumo {
   mes: string
@@ -31,12 +31,10 @@ const MESES_ABREV: Record<string, string> = {
 }
 
 export function GraficoBarrasMensais({ historico }: GraficoBarrasMensaisProps) {
-  const [animado, setAnimado] = useState(false)
-
-  useEffect(() => {
-    const timer = setTimeout(() => setAnimado(true), 50)
-    return () => clearTimeout(timer)
-  }, [])
+  const { ref, inView } = useInView<HTMLDivElement>({
+    threshold: 0.15,
+    replayOnScroll: true,
+  })
 
   if (historico.length === 0) {
     return (
@@ -66,7 +64,7 @@ export function GraficoBarrasMensais({ historico }: GraficoBarrasMensaisProps) {
   const alturaGrafico = 140
 
   return (
-    <Card>
+    <Card ref={ref}>
       <CardHeader>
         <div className="flex flex-col gap-[var(--esp-2)] sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -90,7 +88,7 @@ export function GraficoBarrasMensais({ historico }: GraficoBarrasMensaisProps) {
       </CardHeader>
       <CardContent>
         <div className="flex items-end justify-between gap-[var(--esp-2)] pt-[var(--esp-4)]">
-          {dados.map((d) => {
+          {dados.map((d, idx) => {
             const numMes = d.mes.slice(5, 7)
             const rotulo = `${MESES_ABREV[numMes] ?? numMes}/${d.mes.slice(2, 4)}`
 
@@ -109,16 +107,24 @@ export function GraficoBarrasMensais({ historico }: GraficoBarrasMensaisProps) {
                 >
                   {/* Barra de Receita */}
                   <div
-                    className="w-1/2 rounded-t-sm bg-[var(--receita)] transition-all duration-700 ease-out hover:opacity-85"
-                    style={{ height: `${animado ? Math.max(alturaReceita, 4) : 0}px` }}
+                    className="w-1/2 rounded-t-sm bg-[var(--receita)] transition-[height] duration-600 hover:opacity-85"
+                    style={{
+                      height: `${inView ? Math.max(alturaReceita, 4) : 0}px`,
+                      transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                      transitionDelay: `${idx * 45}ms`,
+                    }}
                     title={`Receitas: + ${formatBRL(d.receitas)}`}
                     role="img"
                     aria-label={`${rotulo}: receita + ${formatBRL(d.receitas)}`}
                   />
                   {/* Barra de Despesa */}
                   <div
-                    className="w-1/2 rounded-t-sm bg-[var(--despesa)] transition-all duration-700 ease-out hover:opacity-85"
-                    style={{ height: `${animado ? Math.max(alturaDespesa, 4) : 0}px` }}
+                    className="w-1/2 rounded-t-sm bg-[var(--despesa)] transition-[height] duration-600 hover:opacity-85"
+                    style={{
+                      height: `${inView ? Math.max(alturaDespesa, 4) : 0}px`,
+                      transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                      transitionDelay: `${idx * 45 + 20}ms`,
+                    }}
                     title={`Despesas: − ${formatBRL(d.despesas)}`}
                     role="img"
                     aria-label={`${rotulo}: despesa − ${formatBRL(d.despesas)}`}

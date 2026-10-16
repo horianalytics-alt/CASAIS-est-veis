@@ -4,6 +4,8 @@ import { formatBRL } from '@/lib/format'
 import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ANALISES } from '@/features/analises/copy'
+import { useInView } from '@/hooks/use-in-view'
+import { cn } from '@/lib/utils'
 
 interface TransacaoSimples {
   date: string
@@ -17,6 +19,7 @@ interface MapaDeCalorDiasProps {
 }
 
 export function MapaDeCalorDias({ anoMes, transacoes }: MapaDeCalorDiasProps) {
+  const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.1, replayOnScroll: true })
   const { oculto } = useOcultarValores()
   const [ano, mes] = anoMes.split('-').map(Number)
   const totalDias = new Date(ano, mes, 0).getDate()
@@ -49,7 +52,7 @@ export function MapaDeCalorDias({ anoMes, transacoes }: MapaDeCalorDiasProps) {
   }
 
   return (
-    <Card>
+    <Card ref={ref}>
       <CardHeader>
         <CardTitle className="text-[length:var(--texto-subtitulo)] font-semibold">
           {ANALISES.calorTitulo}
@@ -62,11 +65,21 @@ export function MapaDeCalorDias({ anoMes, transacoes }: MapaDeCalorDiasProps) {
           {Array.from({ length: totalDias }, (_, i) => i + 1).map((dia) => {
             const gasto = gastosPorDia[dia] ?? 0
             const classeCor = getOpacidade(gasto)
+            const ehPico = gasto > 0 && gasto === maxGasto
 
             return (
               <div
                 key={dia}
-                className={`flex aspect-square flex-col items-center justify-center rounded-md p-1 transition-all text-[length:var(--texto-micro)] ${classeCor}`}
+                className={cn(
+                  'flex aspect-square flex-col items-center justify-center rounded-md p-1 transition-all text-[length:var(--texto-micro)] duration-400',
+                  classeCor,
+                  ehPico && inView && 'ring-1 ring-despesa/60 animate-micro-pulso',
+                  inView ? 'opacity-100 scale-100' : 'opacity-20 scale-90',
+                )}
+                style={{
+                  transitionDelay: `${(dia - 1) * 8}ms`,
+                  transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
                 title={`Dia ${dia}: ${gasto > 0 ? `− ${formatBRL(gasto, oculto)}` : 'Sem gastos'}`}
                 role="img"
                 aria-label={`Dia ${dia}: ${gasto > 0 ? `despesa − ${formatBRL(gasto)}` : 'sem gastos'}`}

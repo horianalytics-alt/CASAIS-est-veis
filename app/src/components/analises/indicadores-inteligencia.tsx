@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Sparkles, Utensils, Target } from 'lucide-react'
 import { ANALISES } from '@/features/analises/copy'
+import { useInView } from '@/hooks/use-in-view'
+import { cn } from '@/lib/utils'
 
 export interface MetaContaInfo {
   contaNome: string
@@ -28,18 +30,31 @@ export function IndicadoresInteligencia({
   metas,
 }: IndicadoresInteligenciaProps) {
   const { oculto } = useOcultarValores()
+  const { ref, inView } = useInView<HTMLDivElement>({
+    threshold: 0.15,
+    replayOnScroll: true,
+  })
 
   return (
-    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+    <div ref={ref} className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       {/* Eficiência de Benefícios */}
-      <Card>
+      <Card
+        className={cn(
+          'transition-all duration-500',
+          inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3',
+        )}
+        style={{
+          transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          transitionDelay: '0ms',
+        }}
+      >
         <CardHeader className="pb-[var(--esp-2)]">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold truncate">
               <Utensils className="size-4 text-[var(--beneficio)]" aria-hidden="true" />
               {ANALISES.beneficiosTitulo}
             </CardTitle>
-            <Badge variant="outline" className="shrink-0 border-border-input text-xs">
+            <Badge variant="outline" className="shrink-0 border-border-input text-xs animate-micro-pulso">
               VR / VA
             </Badge>
           </div>
@@ -60,7 +75,16 @@ export function IndicadoresInteligencia({
       </Card>
 
       {/* Gastos Fúteis / Supérfluos */}
-      <Card>
+      <Card
+        className={cn(
+          'transition-all duration-500',
+          inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3',
+        )}
+        style={{
+          transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          transitionDelay: '70ms',
+        }}
+      >
         <CardHeader className="pb-[var(--esp-2)]">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-[var(--esp-2)] text-[length:var(--texto-corpo)] font-semibold">
@@ -101,7 +125,16 @@ export function IndicadoresInteligencia({
       </Card>
 
       {/* Metas por Conta */}
-      <Card className="sm:col-span-2 lg:col-span-1">
+      <Card
+        className={cn(
+          'sm:col-span-2 lg:col-span-1 transition-all duration-500',
+          inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3',
+        )}
+        style={{
+          transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          transitionDelay: '140ms',
+        }}
+      >
         <CardHeader className="pb-[var(--esp-2)]">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-[var(--esp-2)] text-[length:var(--texto-corpo)] font-semibold">
@@ -129,8 +162,12 @@ export function IndicadoresInteligencia({
                   </div>
                   <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
                     <div
-                      className="bg-primary h-full transition-all duration-300"
-                      style={{ width: `${progresso}%` }}
+                      className="bg-primary h-full transition-[width] duration-600"
+                      style={{
+                        width: `${inView ? progresso : 0}%`,
+                        transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                        transitionDelay: `${idx * 40}ms`,
+                      }}
                     />
                   </div>
                   <div className="flex items-center justify-between font-mono text-[length:var(--texto-micro)] text-muted-foreground num-tabular">

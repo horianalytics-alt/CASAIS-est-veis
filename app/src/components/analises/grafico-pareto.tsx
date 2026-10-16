@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { formatBRL } from '@/lib/format'
 import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ANALISES } from '@/features/analises/copy'
+import { useInView } from '@/hooks/use-in-view'
+import { cn } from '@/lib/utils'
 import type { ItemCategoriaGasto } from './grafico-rosca-categorias'
 
 interface GraficoParetoProps {
@@ -14,12 +15,10 @@ interface GraficoParetoProps {
 
 export function GraficoPareto({ itens }: GraficoParetoProps) {
   const { oculto } = useOcultarValores()
-  const [animado, setAnimado] = useState(false)
-
-  useEffect(() => {
-    const timer = setTimeout(() => setAnimado(true), 50)
-    return () => clearTimeout(timer)
-  }, [])
+  const { ref, inView } = useInView<HTMLDivElement>({
+    threshold: 0.15,
+    replayOnScroll: true,
+  })
   const total = itens.reduce((acc, curr) => acc + curr.valor, 0)
 
   if (total <= 0 || itens.length === 0) {
@@ -46,7 +45,7 @@ export function GraficoPareto({ itens }: GraficoParetoProps) {
   const topCategorias80 = categoriasComAcumulado.filter((c) => c.pertenceAos80)
 
   return (
-    <Card>
+    <Card ref={ref}>
       <CardHeader>
         <div className="flex flex-col gap-[var(--esp-2)]">
           <div>
@@ -67,13 +66,23 @@ export function GraficoPareto({ itens }: GraficoParetoProps) {
         </p>
 
         <div className="flex flex-col gap-[var(--esp-3)]">
-          {categoriasComAcumulado.slice(0, 6).map((cat) => (
-            <div key={cat.id} className="flex flex-col gap-[var(--esp-1)]">
+          {categoriasComAcumulado.slice(0, 6).map((cat, idx) => (
+            <div
+              key={cat.id}
+              className={cn(
+                'flex flex-col gap-[var(--esp-1)] transition-all duration-500',
+                inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1',
+              )}
+              style={{
+                transitionDelay: `${idx * 40}ms`,
+                transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+            >
               <div className="flex items-center justify-between text-[length:var(--texto-apoio)]">
                 <span className="flex items-center gap-[var(--esp-2)] font-medium">
                   {cat.nome}
                   {cat.pertenceAos80 ? (
-                    <span className="size-1.5 rounded-full bg-[var(--despesa)]" aria-hidden="true" />
+                    <span className="size-1.5 rounded-full bg-[var(--despesa)] animate-micro-pulso" aria-hidden="true" />
                   ) : null}
                 </span>
                 <span className="font-mono num-tabular">
@@ -83,13 +92,15 @@ export function GraficoPareto({ itens }: GraficoParetoProps) {
                   </span>
                 </span>
               </div>
-              {/* Barra de progresso */}
+              {/* Barra de progresso com animação ritmada */}
               <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
                 <div
-                  className="h-full bg-[var(--despesa)] transition-all duration-700 ease-out"
+                  className="h-full bg-[var(--despesa)] transition-[width] duration-600"
                   style={{
-                    width: animado ? `${cat.percentualIndividual}%` : '0%',
+                    width: inView ? `${cat.percentualIndividual}%` : '0%',
                     opacity: cat.pertenceAos80 ? 1 : 0.4,
+                    transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                    transitionDelay: `${idx * 45}ms`,
                   }}
                 />
               </div>

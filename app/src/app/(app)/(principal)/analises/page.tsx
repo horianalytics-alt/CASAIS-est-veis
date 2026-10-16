@@ -17,6 +17,7 @@ import { PrevisaoFixos } from '@/components/analises/previsao-fixos'
 import { GraficoOrcamento } from '@/components/analises/grafico-orcamento'
 import { GraficoPatrimonio } from '@/components/analises/grafico-patrimonio'
 import { SimuladorFutil } from '@/components/analises/simulador-futil'
+import { ScrollReveal } from '@/components/ui/scroll-reveal'
 
 export const metadata: Metadata = { title: ANALISES.titulo }
 
@@ -217,48 +218,66 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
       </div>
 
       {/* Orçamento do mês (Dash, PLANO.md 8.1): barra horizontal + marcador de meta */}
-      <GraficoOrcamento
-        linhas={orcamentos.data ?? []}
-        erro={orcamentos.error !== null}
-        mesRotulo={rotuloDoMes(mes)}
-        emAndamento={mes === mesAtual}
-        atualizadoEm={atualizadoEm}
-      />
+      <ScrollReveal replayOnScroll>
+        <GraficoOrcamento
+          linhas={orcamentos.data ?? []}
+          erro={orcamentos.error !== null}
+          mesRotulo={rotuloDoMes(mes)}
+          emAndamento={mes === mesAtual}
+          atualizadoEm={atualizadoEm}
+        />
+      </ScrollReveal>
 
       {/* Grid de Gráficos Principais */}
       <div className="grid gap-[var(--esp-6)] xl:grid-cols-2">
-        <GraficoRoscaCategorias itens={itensCategorias} />
-        <GraficoPareto itens={itensCategorias} />
+        <ScrollReveal replayOnScroll>
+          <GraficoRoscaCategorias itens={itensCategorias} />
+        </ScrollReveal>
+        <ScrollReveal replayOnScroll delay={80}>
+          <GraficoPareto itens={itensCategorias} />
+        </ScrollReveal>
       </div>
 
       {/* Evolução Mensal */}
-      <GraficoBarrasMensais historico={historicoMensal} />
+      <ScrollReveal replayOnScroll>
+        <GraficoBarrasMensais historico={historicoMensal} />
+      </ScrollReveal>
 
       {/* Patrimônio (Dash, PLANO.md 8.2): linha, eixo único */}
-      <GraficoPatrimonio
-        linhas={patrimonio.data ?? []}
-        erro={patrimonio.error !== null}
-        mes={mes}
-        mesAtual={mesAtual}
-        atualizadoEm={atualizadoEm}
-      />
+      <ScrollReveal replayOnScroll>
+        <GraficoPatrimonio
+          linhas={patrimonio.data ?? []}
+          erro={patrimonio.error !== null}
+          mes={mes}
+          mesAtual={mesAtual}
+          atualizadoEm={atualizadoEm}
+        />
+      </ScrollReveal>
 
       {/* Previsão de fixos e parcelas (próximos 6 meses) */}
-      <PrevisaoFixos meses={previsaoMeses} />
+      <ScrollReveal replayOnScroll>
+        <PrevisaoFixos meses={previsaoMeses} />
+      </ScrollReveal>
 
       {/* Indicadores de Inteligência Financeira: Benefícios, Supérfluos e Metas */}
-      <IndicadoresInteligencia
-        totalBeneficios={totalBeneficios}
-        totalFuteis={totalFuteis}
-        rotulosFuteis={rotulosFuteis}
-        metas={metasInfo}
-      />
+      <ScrollReveal replayOnScroll>
+        <IndicadoresInteligencia
+          totalBeneficios={totalBeneficios}
+          totalFuteis={totalFuteis}
+          rotulosFuteis={rotulosFuteis}
+          metas={metasInfo}
+        />
+      </ScrollReveal>
 
       {/* Simulador de gasto fútil (Dash, PLANO.md 8.3): stat + linha, eixo único */}
-      <SimuladorFutil futilDoMesCentavos={futilDoMesCentavos} mesRotulo={rotuloDoMes(mes)} />
+      <ScrollReveal replayOnScroll>
+        <SimuladorFutil futilDoMesCentavos={futilDoMesCentavos} mesRotulo={rotuloDoMes(mes)} />
+      </ScrollReveal>
 
       {/* Mapa de Calor: Dias de Maior Gasto */}
-      <MapaDeCalorDias anoMes={mes} transacoes={transacoes} />
+      <ScrollReveal replayOnScroll>
+        <MapaDeCalorDias anoMes={mes} transacoes={transacoes} />
+      </ScrollReveal>
     </main>
   )
 }

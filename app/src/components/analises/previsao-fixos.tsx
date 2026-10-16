@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { ValorMonetario } from '@/components/financeiro/valor-monetario'
 import { ANALISES } from '@/features/analises/copy'
+import { useInView } from '@/hooks/use-in-view'
 import { cn } from '@/lib/utils'
 
 export interface MesPrevisao {
@@ -23,6 +24,10 @@ interface PrevisaoFixosProps {
 }
 
 export function PrevisaoFixos({ meses }: PrevisaoFixosProps) {
+  const { ref, inView } = useInView<HTMLDivElement>({
+    threshold: 0.15,
+    replayOnScroll: true,
+  })
   const [modo, setModo] = React.useState<ModoTema>('claro')
 
   React.useEffect(() => {
@@ -49,7 +54,7 @@ export function PrevisaoFixos({ meses }: PrevisaoFixosProps) {
   )
 
   return (
-    <Card>
+    <Card ref={ref}>
       <CardHeader>
         <div className="flex flex-col gap-[var(--esp-2)] sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -91,7 +96,7 @@ export function PrevisaoFixos({ meses }: PrevisaoFixosProps) {
 
       <CardContent>
         <div className="flex flex-col gap-[var(--esp-3)]">
-          {meses.map((item) => {
+          {meses.map((item, idx) => {
             const totalSaida = item.aPagar + item.jaPago
             const percAPagar = Math.min((item.aPagar / maiorSaida) * 100, 100)
             const percJaPago = Math.min((item.jaPago / maiorSaida) * 100, 100 - percAPagar)
@@ -100,11 +105,16 @@ export function PrevisaoFixos({ meses }: PrevisaoFixosProps) {
               <div
                 key={item.mes}
                 className={cn(
-                  'flex flex-col gap-2 rounded-xl border p-3.5 transition-colors',
+                  'flex flex-col gap-2 rounded-xl border p-3.5 transition-all duration-500',
                   item.ehMesAtual
                     ? 'border-primary/40 bg-primary/5 ring-1 ring-primary/20'
                     : 'border-border/70 bg-card/50',
+                  inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
                 )}
+                style={{
+                  transitionDelay: `${idx * 40}ms`,
+                  transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -112,7 +122,7 @@ export function PrevisaoFixos({ meses }: PrevisaoFixosProps) {
                       {item.rotulo}
                     </span>
                     {item.ehMesAtual && (
-                      <Badge variant="default" className="text-[11px]">
+                      <Badge variant="default" className="text-[11px] animate-micro-pulso">
                         {ANALISES.mesAtualBadge}
                       </Badge>
                     )}
@@ -177,19 +187,23 @@ export function PrevisaoFixos({ meses }: PrevisaoFixosProps) {
                 >
                   {item.jaPago > 0 && (
                     <div
-                      className="h-full transition-all duration-300"
+                      className="h-full transition-[width] duration-600"
                       style={{
-                        width: `${Math.max(percJaPago, 2)}%`,
+                        width: `${inView ? Math.max(percJaPago, 2) : 0}%`,
                         backgroundColor: corJaPago,
+                        transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                        transitionDelay: `${idx * 40}ms`,
                       }}
                     />
                   )}
                   {item.aPagar > 0 && (
                     <div
-                      className="h-full transition-all duration-300"
+                      className="h-full transition-[width] duration-600"
                       style={{
-                        width: `${Math.max(percAPagar, 2)}%`,
+                        width: `${inView ? Math.max(percAPagar, 2) : 0}%`,
                         backgroundColor: corAPagar,
+                        transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                        transitionDelay: `${idx * 40 + 20}ms`,
                       }}
                     />
                   )}

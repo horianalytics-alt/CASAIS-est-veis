@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge'
 import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
 import { formatBRL } from '@/lib/format'
 import { ANALISES } from '@/features/analises/copy'
+import { useInView } from '@/hooks/use-in-view'
 import {
   dominioDaRazao,
   percentualInteiro,
@@ -58,7 +59,7 @@ function SeloStatus({ status, razao }: { status: StatusOrcamento; razao: number 
   const rotulo = status === 'estourado' ? ANALISES.orcamentoStatusEstourado : ANALISES.orcamentoStatusAtencao
   return (
     <span className="text-foreground inline-flex items-center gap-[var(--esp-1)] font-medium">
-      <Icone className="size-4 shrink-0" style={{ color: COR_STATUS[status] }} aria-hidden="true" />
+      <Icone className="size-4 shrink-0 animate-micro-pulso" style={{ color: COR_STATUS[status] }} aria-hidden="true" />
       <span>{rotulo}</span>
       <span className="tabular-nums">· {pct}</span>
     </span>
@@ -85,10 +86,14 @@ function LinhaDoOrcamento({
   linha,
   dominio,
   oculto,
+  inView,
+  indice,
 }: {
   linha: LinhaOrcamento
   dominio: number
   oculto: boolean
+  inView: boolean
+  indice: number
 }) {
   const [aberto, setAberto] = React.useState(false)
   const cor = COR_STATUS[linha.status]
@@ -127,12 +132,18 @@ function LinhaDoOrcamento({
           className="absolute top-1 h-3 rounded-r-[4px]"
           style={{ left: 0, width: `${posMeta}%`, backgroundColor: trilho(cor) }}
         />
-        {/* preenchimento: ponta de 4px arredondada, reta na base */}
+        {/* preenchimento: ponta de 4px arredondada, reta na base com animação por scroll */}
         {larguraFill > 0 ? (
           <div
             aria-hidden="true"
-            className="absolute top-1 h-3 rounded-r-[4px] transition-[width] duration-300"
-            style={{ left: 0, width: `${larguraFill}%`, backgroundColor: cor }}
+            className="absolute top-1 h-3 rounded-r-[4px] transition-[width] duration-600"
+            style={{
+              left: 0,
+              width: `${inView ? larguraFill : 0}%`,
+              backgroundColor: cor,
+              transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+              transitionDelay: `${indice * 45}ms`,
+            }}
           />
         ) : null}
         {/* marcador de meta (100%), com anel da superfície para separar do preenchimento */}
@@ -181,11 +192,12 @@ function ChaveLegenda({ cor, rotulo }: { cor: string; rotulo: string }) {
 
 export function GraficoOrcamento({ linhas, erro, mesRotulo, emAndamento, atualizadoEm }: GraficoOrcamentoProps) {
   const { oculto } = useOcultarValores()
+  const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.1, replayOnScroll: true })
   const orcamentos = React.useMemo(() => prepararOrcamentos(linhas), [linhas])
   const dominio = dominioDaRazao(orcamentos)
 
   return (
-    <Card>
+    <Card ref={ref}>
       <CardHeader>
         <div className="flex flex-wrap items-center gap-[var(--esp-2)]">
           <CardTitle className="text-[length:var(--texto-subtitulo)] font-semibold">
@@ -215,8 +227,15 @@ export function GraficoOrcamento({ linhas, erro, mesRotulo, emAndamento, atualiz
         ) : (
           <>
             <ul className="grid gap-x-[var(--esp-8)] gap-y-[var(--esp-4)] lg:grid-cols-2">
-              {orcamentos.map((l) => (
-                <LinhaDoOrcamento key={l.id} linha={l} dominio={dominio} oculto={oculto} />
+              {orcamentos.map((l, idx) => (
+                <LinhaDoOrcamento
+                  key={l.id}
+                  linha={l}
+                  dominio={dominio}
+                  oculto={oculto}
+                  inView={inView}
+                  indice={idx}
+                />
               ))}
             </ul>
 

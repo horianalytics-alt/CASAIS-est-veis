@@ -5,6 +5,8 @@ import { useOcultarValores } from '@/components/providers/ocultar-valores-provid
 import { SERIES_CLARO, SERIES_ESCURO, SERIE_OUTROS, MARCADORES } from '@/styles/chart-palette'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ANALISES } from '@/features/analises/copy'
+import { useInView } from '@/hooks/use-in-view'
+import { cn } from '@/lib/utils'
 
 export interface ItemCategoriaGasto {
   id: string
@@ -18,6 +20,10 @@ interface GraficoRoscaCategoriasProps {
 
 export function GraficoRoscaCategorias({ itens }: GraficoRoscaCategoriasProps) {
   const { oculto } = useOcultarValores()
+  const { ref, inView } = useInView<HTMLDivElement>({
+    threshold: 0.15,
+    replayOnScroll: true,
+  })
   const total = itens.reduce((acc, curr) => acc + curr.valor, 0)
 
   if (total <= 0 || itens.length === 0) {
@@ -70,7 +76,7 @@ export function GraficoRoscaCategorias({ itens }: GraficoRoscaCategoriasProps) {
   let acumulado = 0
 
   return (
-    <Card>
+    <Card ref={ref}>
       <CardHeader>
         <CardTitle className="text-[length:var(--texto-subtitulo)] font-semibold">
           {ANALISES.roscaTitulo}
@@ -95,9 +101,9 @@ export function GraficoRoscaCategorias({ itens }: GraficoRoscaCategoriasProps) {
               strokeWidth="24"
             />
             {series.map((item, idx) => {
-              const dashLength = (item.percentual / 100) * circunferencia
+              const dashLength = inView ? (item.percentual / 100) * circunferencia : 0
               const dashOffset = -acumulado
-              acumulado += dashLength
+              acumulado += (item.percentual / 100) * circunferencia
 
               return (
                 <circle
@@ -110,16 +116,20 @@ export function GraficoRoscaCategorias({ itens }: GraficoRoscaCategoriasProps) {
                   strokeWidth="24"
                   strokeDasharray={`${dashLength} ${circunferencia}`}
                   strokeDashoffset={dashOffset}
-                  className="dark:hidden transition-all duration-300"
+                  className="dark:hidden transition-[stroke-dasharray] duration-700"
+                  style={{
+                    transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                    transitionDelay: `${idx * 40}ms`,
+                  }}
                 />
               )
             })}
             {(() => {
               let acumuladoEscuro = 0
               return series.map((item, idx) => {
-                const dashLength = (item.percentual / 100) * circunferencia
+                const dashLength = inView ? (item.percentual / 100) * circunferencia : 0
                 const dashOffset = -acumuladoEscuro
-                acumuladoEscuro += dashLength
+                acumuladoEscuro += (item.percentual / 100) * circunferencia
 
                 return (
                   <circle
@@ -132,7 +142,11 @@ export function GraficoRoscaCategorias({ itens }: GraficoRoscaCategoriasProps) {
                     strokeWidth="24"
                     strokeDasharray={`${dashLength} ${circunferencia}`}
                     strokeDashoffset={dashOffset}
-                    className="hidden dark:block transition-all duration-300"
+                    className="hidden dark:block transition-[stroke-dasharray] duration-700"
+                    style={{
+                      transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                      transitionDelay: `${idx * 40}ms`,
+                    }}
                   />
                 )
               })
@@ -140,7 +154,12 @@ export function GraficoRoscaCategorias({ itens }: GraficoRoscaCategoriasProps) {
           </svg>
 
           {/* Rótulo central */}
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
+          <div
+            className={cn(
+              'pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-8 text-center transition-all duration-500 delay-200',
+              inView ? 'opacity-100 scale-100' : 'opacity-0 scale-95',
+            )}
+          >
             <span className="text-muted-foreground text-[10px] uppercase">
               {ANALISES.totalGasto}
             </span>
@@ -155,7 +174,14 @@ export function GraficoRoscaCategorias({ itens }: GraficoRoscaCategoriasProps) {
           {series.map((s, idx) => (
             <div
               key={idx}
-              className="flex items-center justify-between gap-[var(--esp-2)] text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)]"
+              className={cn(
+                'flex items-center justify-between gap-[var(--esp-2)] text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)] transition-all duration-500',
+                inView ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2',
+              )}
+              style={{
+                transitionDelay: `${150 + idx * 35}ms`,
+                transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
             >
               <div className="flex items-center gap-[var(--esp-2)] min-w-0">
                 <span

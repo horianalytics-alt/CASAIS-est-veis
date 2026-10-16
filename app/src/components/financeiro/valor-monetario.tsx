@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { TriangleAlert } from 'lucide-react'
 import { formatBRL } from '@/lib/format'
 import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
+import { useInView } from '@/hooks/use-in-view'
 import { cn } from '@/lib/utils'
 
 /**
@@ -105,19 +106,24 @@ export function ValorMonetario({
   const oculto = propOculto ?? contextOculto
 
   const deveAnimar = animar ?? (tamanho === 'heroi' || tamanho === 'destaque')
-  const [valorExibido, setValorExibido] = useState(valor)
-  const valorAnteriorRef = useRef<number | null>(null)
+  const { ref, inView } = useInView<HTMLSpanElement>({
+    threshold: 0.1,
+    replayOnScroll: true,
+  })
+  const [valorExibido, setValorExibido] = useState(deveAnimar ? 0 : valor)
 
   useEffect(() => {
     if (!deveAnimar || oculto) {
       setValorExibido(valor)
-      valorAnteriorRef.current = valor
       return
     }
 
-    const valorInicial = valorAnteriorRef.current ?? 0
-    valorAnteriorRef.current = valor
+    if (!inView) {
+      setValorExibido(0)
+      return
+    }
 
+    const valorInicial = 0
     const diferenca = valor - valorInicial
     if (Math.abs(diferenca) < 0.01) {
       setValorExibido(valor)
@@ -143,7 +149,7 @@ export function ValorMonetario({
 
     idAnimacao = requestAnimationFrame(animarPasso)
     return () => cancelAnimationFrame(idAnimacao)
-  }, [valor, deveAnimar, oculto])
+  }, [valor, deveAnimar, oculto, inView])
 
   const valorParaExibir = deveAnimar && !oculto ? valorExibido : valor
   const negativoContabil = contabil && valorParaExibir < 0
@@ -168,6 +174,7 @@ export function ValorMonetario({
 
   return (
     <span
+      ref={deveAnimar ? ref : undefined}
       // .valor = mono + tabular-nums + alinhado à direita + sem quebra (T-1).
       className={cn(
         'valor inline-flex items-center gap-[var(--esp-1)]',

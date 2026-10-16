@@ -1,3 +1,5 @@
+'use client'
+
 import * as React from 'react'
 import Link from 'next/link'
 import {
@@ -12,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ValorSaldo } from '@/components/financeiro/valor-saldo'
 import { Badge } from '@/components/ui/badge'
 import { INICIO, TIPOS_DE_CONTA } from '@/features/transacoes/copy'
+import { useInView } from '@/hooks/use-in-view'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/types/database'
 
@@ -39,8 +42,10 @@ function getIconeConta(tipo: string | null) {
  * cartões de banco do app antigo com o minimalismo limpo e responsivo do novo app.
  */
 export function SaldoDasContas({ contas }: SaldoDasContasProps) {
+  const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.15, replayOnScroll: true })
+
   return (
-    <Card className="border-border/80 shadow-xs">
+    <Card ref={ref} className="border-border/80 shadow-xs">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 sm:px-6 py-4 border-b border-border/60">
         <div className="flex items-center gap-2">
           <div className="bg-primary/10 text-primary flex size-7 items-center justify-center rounded-lg border border-primary/20 shrink-0">
@@ -65,14 +70,21 @@ export function SaldoDasContas({ contas }: SaldoDasContasProps) {
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {contas.map((conta) => {
+            {contas.map((conta, idx) => {
               const { Icone, classe } = getIconeConta(conta.type)
               const rotuloTipo = TIPOS_DE_CONTA[conta.type ?? ''] ?? conta.type ?? 'Conta'
 
               return (
                 <div
                   key={conta.account_id}
-                  className="flex flex-col justify-between gap-3 p-3.5 rounded-xl border border-border/70 bg-card hover:border-border hover:shadow-2xs transition-all"
+                  className={cn(
+                    'flex flex-col justify-between gap-3 p-3.5 rounded-xl border border-border/70 bg-card hover:border-border hover:shadow-2xs transition-all duration-500',
+                    inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
+                  )}
+                  style={{
+                    transitionDelay: `${idx * 45}ms`,
+                    transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
