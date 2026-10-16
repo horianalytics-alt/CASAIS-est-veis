@@ -1,3 +1,5 @@
+'use client'
+
 import * as React from 'react'
 import { CreditCard, Check, Clock, ShoppingBag, Calendar } from 'lucide-react'
 import type { Database } from '@/types/database'
@@ -11,6 +13,8 @@ import {
   DialogoPagarFatura,
   type ContaOrigem,
 } from './dialogo-pagar-fatura'
+import { useInView } from '@/hooks/use-in-view'
+import { cn } from '@/lib/utils'
 
 type Fatura = Database['public']['Views']['v_invoices']['Row']
 
@@ -19,9 +23,8 @@ export interface SecaoFaturasProps {
   contasOrigem: ContaOrigem[]
 }
 
-import { cn } from '@/lib/utils'
-
 export function SecaoFaturas({ faturas, contasOrigem }: SecaoFaturasProps) {
+  const { ref, inView } = useInView<HTMLElement>({ threshold: 0.1, replayOnScroll: true })
   const hoje = todayISO()
 
   if (faturas.length === 0) {
@@ -44,7 +47,7 @@ export function SecaoFaturas({ faturas, contasOrigem }: SecaoFaturasProps) {
   }
 
   return (
-    <section aria-labelledby="titulo-faturas" className="flex flex-col gap-4">
+    <section ref={ref} aria-labelledby="titulo-faturas" className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h2
           id="titulo-faturas"
@@ -77,9 +80,14 @@ export function SecaoFaturas({ faturas, contasOrigem }: SecaoFaturasProps) {
             <div
               key={`${fatura.account_id ?? 'card'}-${ano}-${mes}-${idx}`}
               className={cn(
-                'bg-card border-border/80 flex flex-col gap-3 rounded-xl border p-4 transition-all sm:flex-row sm:items-center sm:justify-between',
+                'bg-card border-border/80 flex flex-col gap-3 rounded-xl border p-4 transition-all duration-500 sm:flex-row sm:items-center sm:justify-between',
                 ehCicloAtual && 'border-primary/40 ring-1 ring-primary/20 shadow-xs',
+                inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
               )}
+              style={{
+                transitionDelay: `${idx * 40}ms`,
+                transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
             >
               {/* Informações da fatura */}
               <div className="flex flex-col gap-1.5">
@@ -94,7 +102,13 @@ export function SecaoFaturas({ faturas, contasOrigem }: SecaoFaturasProps) {
 
                   {/* Badge de Classificação do Ciclo */}
                   {ehCicloAtual ? (
-                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs font-semibold">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'bg-primary/10 text-primary border-primary/20 text-xs font-semibold',
+                        aberta && inView && 'animate-micro-pulso',
+                      )}
+                    >
                       Fatura atual
                     </Badge>
                   ) : ehCicloFuturo ? (

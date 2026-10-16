@@ -14,6 +14,7 @@ import {
 import { createClient } from '@/lib/supabase/server'
 import { SeletorTema } from '@/components/ajustes/seletor-tema'
 import { AlternarSom } from '@/components/ajustes/alternar-som'
+import { ScrollReveal } from '@/components/ui/scroll-reveal'
 import { AJUSTES } from '@/features/ajustes/copy'
 
 export const metadata: Metadata = {
@@ -54,148 +55,154 @@ export default async function PaginaAjustes() {
       </div>
 
       {/* Seção de Aparência e Sons */}
-      <section
-        aria-labelledby="titulo-aparencia"
-        className="bg-card border-border/80 flex flex-col gap-4 rounded-xl border p-5 shadow-xs"
-      >
-        <div className="flex items-center gap-2">
-          <Palette className="text-muted-foreground size-5" aria-hidden="true" />
-          <div>
-            <h2 id="titulo-aparencia" className="text-foreground text-base font-semibold">
-              {AJUSTES.secaoAparencia}
-            </h2>
-            <p className="text-muted-foreground text-xs">
-              {AJUSTES.secaoAparenciaDica}
-            </p>
+      <ScrollReveal replayOnScroll delay={0}>
+        <section
+          aria-labelledby="titulo-aparencia"
+          className="bg-card border-border/80 flex flex-col gap-4 rounded-xl border p-5 shadow-xs"
+        >
+          <div className="flex items-center gap-2">
+            <Palette className="text-muted-foreground size-5" aria-hidden="true" />
+            <div>
+              <h2 id="titulo-aparencia" className="text-foreground text-base font-semibold">
+                {AJUSTES.secaoAparencia}
+              </h2>
+              <p className="text-muted-foreground text-xs">
+                {AJUSTES.secaoAparenciaDica}
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="border-border/60 border-t pt-4">
-          <SeletorTema />
-        </div>
+          <div className="border-border/60 border-t pt-4">
+            <SeletorTema />
+          </div>
 
-        <div className="border-border/60 border-t pt-4">
-          <AlternarSom />
-        </div>
-      </section>
+          <div className="border-border/60 border-t pt-4">
+            <AlternarSom />
+          </div>
+        </section>
+      </ScrollReveal>
 
       {/* Seção Casa e Membros */}
-      <section aria-labelledby="titulo-familia" className="flex flex-col gap-3">
-        <h2 id="titulo-familia" className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-          {AJUSTES.secaoFamilia}
-        </h2>
+      <ScrollReveal replayOnScroll delay={60}>
+        <section aria-labelledby="titulo-familia" className="flex flex-col gap-3">
+          <h2 id="titulo-familia" className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+            {AJUSTES.secaoFamilia}
+          </h2>
 
-        <div className="bg-card border-border/80 divide-border flex flex-col divide-y rounded-xl border shadow-xs overflow-hidden">
-          <Link
-            href="/ajustes/familia"
-            className="hover:bg-muted/40 flex min-h-[56px] items-center justify-between p-4 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg border border-border">
-                <Users className="size-4.5" aria-hidden="true" />
+          <div className="bg-card border-border/80 divide-border flex flex-col divide-y rounded-xl border shadow-xs overflow-hidden">
+            <Link
+              href="/ajustes/familia"
+              className="hover:bg-muted/40 flex min-h-[56px] items-center justify-between p-4 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg border border-border">
+                  <Users className="size-4.5" aria-hidden="true" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-foreground text-sm font-semibold">
+                    {AJUSTES.linkFamilia}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {AJUSTES.linkFamiliaDica}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-foreground text-sm font-semibold">
-                  {AJUSTES.linkFamilia}
-                </span>
-                <span className="text-muted-foreground text-xs">
-                  {AJUSTES.linkFamiliaDica}
-                </span>
-              </div>
-            </div>
-            <ChevronRight className="text-muted-foreground size-4" aria-hidden="true" />
-          </Link>
+              <ChevronRight className="text-muted-foreground size-4" aria-hidden="true" />
+            </Link>
 
-          <Link
-            href="/ajustes/perfil"
-            className="hover:bg-muted/40 flex min-h-[56px] items-center justify-between p-4 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg border border-border">
-                <User className="size-4.5" aria-hidden="true" />
+            <Link
+              href="/ajustes/perfil"
+              className="hover:bg-muted/40 flex min-h-[56px] items-center justify-between p-4 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg border border-border">
+                  <User className="size-4.5" aria-hidden="true" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-foreground text-sm font-semibold">
+                    {AJUSTES.linkPerfil}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {AJUSTES.linkPerfilDica}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-foreground text-sm font-semibold">
-                  {AJUSTES.linkPerfil}
-                </span>
-                <span className="text-muted-foreground text-xs">
-                  {AJUSTES.linkPerfilDica}
-                </span>
-              </div>
-            </div>
-            <ChevronRight className="text-muted-foreground size-4" aria-hidden="true" />
-          </Link>
-        </div>
-      </section>
+              <ChevronRight className="text-muted-foreground size-4" aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
+      </ScrollReveal>
 
       {/* Seção Estrutura Financeira */}
-      <section aria-labelledby="titulo-financeiro" className="flex flex-col gap-3">
-        <h2 id="titulo-financeiro" className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-          {AJUSTES.secaoFinanceiro}
-        </h2>
+      <ScrollReveal replayOnScroll delay={120}>
+        <section aria-labelledby="titulo-financeiro" className="flex flex-col gap-3">
+          <h2 id="titulo-financeiro" className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+            {AJUSTES.secaoFinanceiro}
+          </h2>
 
-        <div className="bg-card border-border/80 divide-border flex flex-col divide-y rounded-xl border shadow-xs overflow-hidden">
-          <Link
-            href="/ajustes/contas"
-            className="hover:bg-muted/40 flex min-h-[56px] items-center justify-between p-4 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg border border-border">
-                <WalletCards className="size-4.5" aria-hidden="true" />
+          <div className="bg-card border-border/80 divide-border flex flex-col divide-y rounded-xl border shadow-xs overflow-hidden">
+            <Link
+              href="/ajustes/contas"
+              className="hover:bg-muted/40 flex min-h-[56px] items-center justify-between p-4 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg border border-border">
+                  <WalletCards className="size-4.5" aria-hidden="true" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-foreground text-sm font-semibold">
+                    {AJUSTES.linkContas}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {AJUSTES.linkContasDica}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-foreground text-sm font-semibold">
-                  {AJUSTES.linkContas}
-                </span>
-                <span className="text-muted-foreground text-xs">
-                  {AJUSTES.linkContasDica}
-                </span>
-              </div>
-            </div>
-            <ChevronRight className="text-muted-foreground size-4" aria-hidden="true" />
-          </Link>
+              <ChevronRight className="text-muted-foreground size-4" aria-hidden="true" />
+            </Link>
 
-          <Link
-            href="/ajustes/categorias"
-            className="hover:bg-muted/40 flex min-h-[56px] items-center justify-between p-4 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg border border-border">
-                <Tags className="size-4.5" aria-hidden="true" />
+            <Link
+              href="/ajustes/categorias"
+              className="hover:bg-muted/40 flex min-h-[56px] items-center justify-between p-4 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg border border-border">
+                  <Tags className="size-4.5" aria-hidden="true" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-foreground text-sm font-semibold">
+                    {AJUSTES.linkCategorias}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {AJUSTES.linkCategoriasDica}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-foreground text-sm font-semibold">
-                  {AJUSTES.linkCategorias}
-                </span>
-                <span className="text-muted-foreground text-xs">
-                  {AJUSTES.linkCategoriasDica}
-                </span>
-              </div>
-            </div>
-            <ChevronRight className="text-muted-foreground size-4" aria-hidden="true" />
-          </Link>
+              <ChevronRight className="text-muted-foreground size-4" aria-hidden="true" />
+            </Link>
 
-          <Link
-            href="/ajustes/formas-pagamento"
-            className="hover:bg-muted/40 flex min-h-[56px] items-center justify-between p-4 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg border border-border">
-                <CreditCard className="size-4.5" aria-hidden="true" />
+            <Link
+              href="/ajustes/formas-pagamento"
+              className="hover:bg-muted/40 flex min-h-[56px] items-center justify-between p-4 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg border border-border">
+                  <CreditCard className="size-4.5" aria-hidden="true" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-foreground text-sm font-semibold">
+                    {AJUSTES.linkFormasPagamento}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {AJUSTES.linkFormasPagamentoDica}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-foreground text-sm font-semibold">
-                  {AJUSTES.linkFormasPagamento}
-                </span>
-                <span className="text-muted-foreground text-xs">
-                  {AJUSTES.linkFormasPagamentoDica}
-                </span>
-              </div>
-            </div>
-            <ChevronRight className="text-muted-foreground size-4" aria-hidden="true" />
-          </Link>
-        </div>
-      </section>
+              <ChevronRight className="text-muted-foreground size-4" aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
+      </ScrollReveal>
     </main>
   )
 }

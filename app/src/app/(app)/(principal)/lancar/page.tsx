@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { connection } from 'next/server'
 import { FormLancamento } from '@/components/transacoes/form-lancamento'
+import { ScrollReveal } from '@/components/ui/scroll-reveal'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { buttonVariants } from '@/components/ui/button'
 import { EstadoVazio } from '@/components/ui/estado-vazio'
@@ -91,12 +92,14 @@ export default async function PaginaLancar() {
           }
         />
       ) : (
-        <FormLancamento
-          contas={listaDeContas}
-          categorias={listaDeCategorias}
-          grupos={listaDeGrupos}
-          hoje={hojeEmSaoPaulo()}
-        />
+        <ScrollReveal triggerOnce={false} replayOnScroll>
+          <FormLancamento
+            contas={listaDeContas}
+            categorias={listaDeCategorias}
+            grupos={listaDeGrupos}
+            hoje={hojeEmSaoPaulo()}
+          />
+        </ScrollReveal>
       )}
     </main>
   )

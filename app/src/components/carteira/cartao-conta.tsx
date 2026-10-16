@@ -1,3 +1,5 @@
+'use client'
+
 import * as React from 'react'
 import {
   CreditCard,
@@ -18,6 +20,7 @@ import {
   type ContaOrigem,
 } from './dialogo-pagar-fatura'
 import { Button } from '@/components/ui/button'
+import { useInView } from '@/hooks/use-in-view'
 import { cn } from '@/lib/utils'
 
 type SaldoConta = Database['public']['Views']['v_account_balances']['Row']
@@ -29,6 +32,7 @@ export interface CartaoContaProps {
   faturaAberta?: Fatura | null
   contasOrigem?: ContaOrigem[]
   className?: string
+  index?: number
 }
 
 function iconeDoTipo(tipo: string | null) {
@@ -50,7 +54,9 @@ export function CartaoConta({
   faturaAberta,
   contasOrigem = [],
   className,
+  index = 0,
 }: CartaoContaProps) {
+  const { ref, inView } = useInView<HTMLElement>({ threshold: 0.1, replayOnScroll: true })
   const { Icone, classe: classeIcone } = iconeDoTipo(conta.type)
   const saldoAtual = conta.current_balance ?? 0
   const pendenteEntrada = conta.pending_inflow ?? 0
@@ -67,14 +73,20 @@ export function CartaoConta({
 
   return (
     <article
+      ref={ref}
       aria-label={`Conta ${conta.name ?? ''}`}
       className={cn(
-        'group relative flex flex-col justify-between overflow-hidden rounded-2xl p-5 transition-all duration-200',
+        'group relative flex flex-col justify-between overflow-hidden rounded-2xl p-5 transition-all duration-500',
         'shadow-cartao border border-border/80 dark:border-white/10',
         'bg-linear-to-br from-card via-card to-muted/40',
+        inView ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-[0.98]',
         arquivada && 'opacity-65',
         className,
       )}
+      style={{
+        transitionDelay: `${index * 50}ms`,
+        transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+      }}
     >
       {/* Topo do Cartão: Tipo da Conta, Ícone e Ações */}
       <div className="flex items-center justify-between gap-3">

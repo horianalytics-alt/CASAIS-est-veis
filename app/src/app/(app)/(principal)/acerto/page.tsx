@@ -4,6 +4,7 @@ import { connection } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { resolveTransfer, type SettlementBalance } from '@/lib/settlement'
 import { ResumoAcerto } from '@/components/acerto/resumo-acerto'
+import { ScrollReveal } from '@/components/ui/scroll-reveal'
 import { ACERTO } from '@/features/acerto/copy'
 import type { Database } from '@/types/database'
 
@@ -59,11 +60,13 @@ export default async function PaginaAcerto() {
         </p>
       </div>
 
-      <ResumoAcerto
-        linhas={linhas}
-        regra={regra}
-        transferencia={transferencia}
-      />
+      <ScrollReveal replayOnScroll>
+        <ResumoAcerto
+          linhas={linhas}
+          regra={regra}
+          transferencia={transferencia}
+        />
+      </ScrollReveal>
     </main>
   )
 }

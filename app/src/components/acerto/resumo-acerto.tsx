@@ -1,3 +1,5 @@
+'use client'
+
 import * as React from 'react'
 import {
   ArrowRight,
@@ -13,6 +15,8 @@ import { ValorSaldo } from '@/components/financeiro/valor-saldo'
 import { ValorMonetario } from '@/components/financeiro/valor-monetario'
 import { Badge } from '@/components/ui/badge'
 import { ACERTO } from '@/features/acerto/copy'
+import { useInView } from '@/hooks/use-in-view'
+import { cn } from '@/lib/utils'
 import { DialogoAcertar } from './dialogo-acertar'
 
 type LinhaAcerto = Database['public']['Views']['v_settlement']['Row']
@@ -28,6 +32,7 @@ export function ResumoAcerto({
   regra,
   transferencia,
 }: ResumoAcertoProps) {
+  const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.1, replayOnScroll: true })
   const devedor = transferencia
     ? linhas.find((l) => l.member_id === transferencia.from_member_id)
     : null
@@ -38,7 +43,7 @@ export function ResumoAcerto({
   const ehProporcional = regra === 'proportional'
 
   return (
-    <div className="flex flex-col gap-6">
+    <div ref={ref} className="flex flex-col gap-6">
       {/* Bloco Herói: Quem deve para quem */}
       <section
         aria-labelledby="titulo-resultado-acerto"
@@ -73,7 +78,12 @@ export function ResumoAcerto({
                 </div>
               </div>
 
-              <div className="flex flex-col items-center gap-1 px-4 py-2 rounded-lg bg-card border border-border/60">
+              <div
+                className={cn(
+                  'flex flex-col items-center gap-1 px-4 py-2 rounded-lg bg-card border border-border/60 transition-all',
+                  inView && 'animate-micro-pulso',
+                )}
+              >
                 <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Valor do acerto</span>
                 <ValorMonetario valor={transferencia.amount} tipo="transferencia" tamanho="destaque" className="font-bold" />
                 <ArrowRight className="size-4 text-primary hidden sm:block" />
@@ -134,14 +144,21 @@ export function ResumoAcerto({
         </h3>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {linhas.map((membro) => {
+          {linhas.map((membro, idx) => {
             const saldo = membro.balance ?? 0
             const cotaPct = Math.round((membro.share ?? 0.5) * 100)
 
             return (
               <div
                 key={membro.member_id}
-                className="bg-card border-border/80 flex flex-col justify-between rounded-xl border p-5 transition-colors"
+                className={cn(
+                  'bg-card border-border/80 flex flex-col justify-between rounded-xl border p-5 transition-all duration-500',
+                  inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
+                )}
+                style={{
+                  transitionDelay: `${idx * 60}ms`,
+                  transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">

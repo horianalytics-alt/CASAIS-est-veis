@@ -16,6 +16,7 @@ import { ValorSaldo } from '@/components/financeiro/valor-saldo'
 import { INICIO } from '@/features/transacoes/copy'
 import { formatBRL } from '@/lib/format'
 import { useOcultarValores } from '@/components/providers/ocultar-valores-provider'
+import { useInView } from '@/hooks/use-in-view'
 import { cn } from '@/lib/utils'
 
 export interface ResumoDoMesProps {
@@ -48,14 +49,20 @@ export function ResumoDoMes({
   investimentos = 0,
   aReceber = 0,
 }: ResumoDoMesProps) {
+  const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.1, replayOnScroll: true })
   const { oculto } = useOcultarValores()
   const saldo = Math.round((entrou - saiu) * 100) / 100
   const taxaComprometimento = entrou > 0 ? Math.min(100, Math.round((saiu / entrou) * 100)) : 0
 
   return (
-    <div className="flex flex-col gap-3 sm:gap-4">
+    <div ref={ref} className="flex flex-col gap-3 sm:gap-4">
       {/* 1. Card Herói: Saldo do Mês */}
-      <Card className="relative overflow-hidden border-border/80 bg-gradient-to-br from-card to-muted/30 shadow-xs">
+      <Card
+        className={cn(
+          'relative overflow-hidden border-border/80 bg-gradient-to-br from-card to-muted/30 shadow-xs transition-all duration-500',
+          inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
+        )}
+      >
         <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5 sm:p-6">
           <div className="flex flex-col gap-1.5 min-w-0">
             <div className="flex items-center gap-2">
@@ -77,7 +84,12 @@ export function ResumoDoMes({
           {/* Indicador de comprometimento / status */}
           <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1.5 pt-2 sm:pt-0 border-t border-border/60 sm:border-0 shrink-0">
             <span className="text-muted-foreground text-xs">Comprometimento</span>
-            <div className="flex items-center gap-1.5 bg-muted/60 px-2.5 py-1 rounded-full border border-border/80">
+            <div
+              className={cn(
+                'flex items-center gap-1.5 bg-muted/60 px-2.5 py-1 rounded-full border border-border/80 transition-all',
+                taxaComprometimento >= 80 && inView && 'border-amber-500/50 bg-amber-500/10 text-amber-500 animate-micro-pulso',
+              )}
+            >
               <Percent className="size-3 text-muted-foreground" aria-hidden="true" />
               <span className="text-foreground text-xs font-semibold num-tabular">
                 {oculto ? '••••' : `${taxaComprometimento}% da receita`}
@@ -90,7 +102,16 @@ export function ResumoDoMes({
       {/* 2. Grade de Indicadores (KPI Cards) coloridos e intuitivos */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Receitas */}
-        <Card className="border-border/70 bg-card hover:border-receita/40 transition-colors shadow-2xs">
+        <Card
+          className={cn(
+            'border-border/70 bg-card hover:border-receita/40 transition-all duration-500 shadow-2xs',
+            inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
+          )}
+          style={{
+            transitionDelay: '40ms',
+            transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        >
           <CardContent className="p-3 sm:p-4 flex flex-col gap-1.5 sm:gap-2 min-w-0">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground text-xs font-medium">
@@ -116,7 +137,16 @@ export function ResumoDoMes({
         </Card>
 
         {/* Despesas */}
-        <Card className="border-border/70 bg-card hover:border-despesa/40 transition-colors shadow-2xs">
+        <Card
+          className={cn(
+            'border-border/70 bg-card hover:border-despesa/40 transition-all duration-500 shadow-2xs',
+            inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
+          )}
+          style={{
+            transitionDelay: '80ms',
+            transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        >
           <CardContent className="p-3 sm:p-4 flex flex-col gap-1.5 sm:gap-2 min-w-0">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground text-xs font-medium">
@@ -142,7 +172,16 @@ export function ResumoDoMes({
         </Card>
 
         {/* A Pagar (Pendente) */}
-        <Card className="border-border/70 bg-card hover:border-pendente/40 transition-colors shadow-2xs">
+        <Card
+          className={cn(
+            'border-border/70 bg-card hover:border-pendente/40 transition-all duration-500 shadow-2xs',
+            inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
+          )}
+          style={{
+            transitionDelay: '120ms',
+            transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        >
           <CardContent className="p-3 sm:p-4 flex flex-col gap-1.5 sm:gap-2 min-w-0">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground text-xs font-medium">
@@ -163,7 +202,16 @@ export function ResumoDoMes({
 
         {/* Investimentos ou A Receber */}
         {investimentos > 0 ? (
-          <Card className="border-border/70 bg-card hover:border-investimento/40 transition-colors shadow-2xs">
+          <Card
+            className={cn(
+              'border-border/70 bg-card hover:border-investimento/40 transition-all duration-500 shadow-2xs',
+              inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
+            )}
+            style={{
+              transitionDelay: '160ms',
+              transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+          >
             <CardContent className="p-3 sm:p-4 flex flex-col gap-1.5 sm:gap-2 min-w-0">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground text-xs font-medium">
