@@ -244,11 +244,10 @@ export function AreaInvestimentos({
   return (
     <div className={cn('flex flex-col gap-6', className)}>
       {/* 1. Resumo Patrimonial da Carteira de Investimento (Hero) */}
-      <ScrollReveal replayOnScroll>
-        <section
-          aria-label="Resumo dos Investimentos"
-          className="bg-card border-border/80 flex flex-col gap-5 rounded-2xl border p-5 sm:p-6 shadow-xs transition-all duration-300"
-        >
+      <section
+        aria-label="Resumo dos Investimentos"
+        className="bg-card border-border/80 flex flex-col gap-5 rounded-2xl border p-5 sm:p-6 shadow-xs transition-all duration-300"
+      >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {/* Saldo Total Investido */}
             <div className="flex flex-col">
@@ -337,7 +336,6 @@ export function AreaInvestimentos({
             )}
           </div>
         </section>
-      </ScrollReveal>
 
       {/* 2. Lista de Caixinhas de Investimento */}
       <section aria-labelledby="titulo-caixinhas" className="flex flex-col gap-3.5">
