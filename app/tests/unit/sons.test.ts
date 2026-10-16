@@ -139,9 +139,12 @@ describe('tocarSomSucesso', () => {
     expect(ctx.osciladores).toHaveLength(0)
     await Promise.resolve()
     await Promise.resolve()
-    expect(ctx.osciladores).toHaveLength(1)
-    expect(ctx.osciladores[0].estado).toBe('running')
-    expect(ctx.osciladores[0].quando).toBeCloseTo(5.03, 5)
+    // fundamental + parcial, os dois no relógio já andando
+    expect(ctx.osciladores).toHaveLength(2)
+    for (const osc of ctx.osciladores) {
+      expect(osc.estado).toBe('running')
+      expect(osc.quando).toBeCloseTo(5.03, 5)
+    }
   })
 
   it('reaproveita o contexto destravado no gesto, mesmo chamado depois de um await', async () => {
@@ -150,7 +153,7 @@ describe('tocarSomSucesso', () => {
     await new Promise((r) => setTimeout(r, 10)) // simula a Server Action
     tocarSomSucesso()
     expect(ContextoFalso.instancias).toHaveLength(1)
-    expect(ContextoFalso.instancias[0].osciladores).toHaveLength(1)
+    expect(ContextoFalso.instancias[0].osciladores).toHaveLength(2)
   })
 
   it('não toca fora de hora quando o resume só destrava depois do limite', async () => {
@@ -176,7 +179,7 @@ describe('tocarSomSucesso', () => {
     ContextoFalso.liberarResume?.()
     await Promise.resolve()
     await Promise.resolve()
-    expect(ContextoFalso.instancias[0].osciladores).toHaveLength(1)
+    expect(ContextoFalso.instancias[0].osciladores).toHaveLength(2)
   })
 
   it('não cria contexto antes de qualquer ativação do usuário na página', async () => {
@@ -205,6 +208,62 @@ function batidas(valores: number[]) {
   return valores.filter((v) => v >= 0.04).length
 }
 
+describe('tocarSomSucesso — o "ding" de conclusão', () => {
+  /** Toca o sucesso e devolve [fundamental, parcial] e [envelope, brilho]. */
+  async function tocarEColher() {
+    const { tocarSomSucesso } = await carregar()
+    tocarSomSucesso()
+    await esvaziarMicrotarefas()
+    const ctx = ContextoFalso.instancias[0]
+    return { osciladores: ctx.osciladores, ganhos: ctx.ganhos }
+  }
+
+  it('sobe E5 -> A5 (dominante -> tônica) em sine, com parcial uma oitava acima', async () => {
+    const { osciladores } = await tocarEColher()
+    expect(osciladores).toHaveLength(2)
+    const [fundamental, parcial] = osciladores
+    expect(fundamental.tipo).toBe('sine')
+    expect(parcial.tipo).toBe('sine')
+    expect(fundamental.frequencias).toEqual([659.25, 880])
+    parcial.frequencias.forEach((f, i) => {
+      expect(f).toBeCloseTo(fundamental.frequencias[i] * 2, 1)
+    })
+  })
+
+  it('o segundo golpe é mais forte que o primeiro e a cauda some no silêncio', async () => {
+    const { ganhos } = await tocarEColher()
+    const envelope = ganhos[0]
+    const picos = envelope.filter((v) => v >= 0.04)
+    expect(picos).toHaveLength(2)
+    expect(picos[1]).toBeGreaterThan(picos[0])
+    expect(envelope.at(-1)).toBeLessThanOrEqual(0.001)
+    // o brilho do parcial termina abaixo de onde começou: some antes do corpo
+    const brilho = ganhos[1]
+    expect(brilho.at(-1)).toBeLessThan(brilho[0])
+  })
+
+  it('soa mais longo e mais presente que o aviso do parceiro, sem passar do teto', async () => {
+    const { tocarSomSucesso, tocarSomParceiro } = await carregar()
+    tocarSomSucesso()
+    await esvaziarMicrotarefas()
+    tocarSomParceiro()
+    await esvaziarMicrotarefas()
+
+    const ctx = ContextoFalso.instancias[0]
+    const [fundamental, , parceiro] = ctx.osciladores
+    const duracaoSucesso = fundamental.parada - fundamental.quando
+    const duracaoParceiro = parceiro.parada - parceiro.quando
+    expect(duracaoSucesso).toBeGreaterThan(duracaoParceiro * 2)
+    expect(duracaoSucesso).toBeLessThanOrEqual(0.45)
+
+    // pico somado = envelope × (fundamental + parcial)
+    const picoSucesso = Math.max(...ctx.ganhos[0]) * (1 + Math.max(...ctx.ganhos[1]))
+    const picoParceiro = Math.max(...ctx.ganhos[2])
+    expect(picoSucesso).toBeGreaterThan(picoParceiro)
+    expect(picoSucesso).toBeLessThanOrEqual(0.1)
+  })
+})
+
 describe('tocarSomParceiro', () => {
   it('são duas batidas em triangle descendo C6 -> G5, em até 200ms', async () => {
     const { tocarSomParceiro } = await carregar()
@@ -229,23 +288,33 @@ describe('tocarSomParceiro', () => {
     tocarSomParceiro()
     await esvaziarMicrotarefas()
 
+    // osciladores: [sucesso, sucesso-parcial, erro, parceiro]
+    // ganhos:      [sucesso-envelope, sucesso-brilho, erro, parceiro]
     const ctx = ContextoFalso.instancias[0]
-    const [sucesso, erro, parceiro] = ctx.osciladores
-    const assinatura = (i: number) =>
+    expect(ctx.osciladores).toHaveLength(4)
+    const [sucesso, , erro, parceiro] = ctx.osciladores
+    const assinatura = (osc: (typeof ctx.osciladores)[number], envelope: number[]) =>
       JSON.stringify({
-        tipo: ctx.osciladores[i].tipo,
-        f: ctx.osciladores[i].frequencias,
-        batidas: batidas(ctx.ganhos[i]),
+        tipo: osc.tipo,
+        f: osc.frequencias,
+        batidas: batidas(envelope),
+        duracao: Number((osc.parada - osc.quando).toFixed(3)),
       })
-    expect(new Set([assinatura(0), assinatura(1), assinatura(2)]).size).toBe(3)
+    expect(
+      new Set([
+        assinatura(sucesso, ctx.ganhos[0]),
+        assinatura(erro, ctx.ganhos[2]),
+        assinatura(parceiro, ctx.ganhos[3]),
+      ]).size,
+    ).toBe(3)
 
-    // sucesso sobe; parceiro desce e é agudo; erro também é triangle, mas grave
+    // sucesso sobe e é sine; parceiro desce e é agudo; erro também é triangle, mas grave
     expect(sucesso.tipo).toBe('sine')
     expect(sucesso.frequencias[1]).toBeGreaterThan(sucesso.frequencias[0])
+    expect(parceiro.tipo).toBe('triangle')
     expect(parceiro.frequencias[1]).toBeLessThan(parceiro.frequencias[0])
     expect(Math.min(...parceiro.frequencias)).toBeGreaterThan(Math.max(...erro.frequencias) * 3)
-    expect(batidas(ctx.ganhos[0])).toBe(1)
-    expect(batidas(ctx.ganhos[2])).toBe(2)
+    expect(batidas(ctx.ganhos[3])).toBe(2)
   })
 
   it('reaproveita o contexto destravado no gesto (Realtime chega fora de gesto)', async () => {
@@ -323,6 +392,7 @@ describe('tocarSomParceiro', () => {
     tocarSomSucesso()
     expect(ContextoFalso.instancias[0].osciladores.map((o) => o.tipo)).toEqual([
       'triangle',
+      'sine',
       'sine',
     ])
   })
