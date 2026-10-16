@@ -772,7 +772,13 @@ export function ListaTransacoesInterativa({
         contas={contasDisponiveis}
         categorias={categoriasDisponiveis}
         membros={membros}
-        onSalvo={() => {
+        onSalvo={(salvo) => {
+          // Itens da cauda ("carregar mais") não são trocados pelo
+          // router.refresh(); sem isto, reabrir o diálogo neles mostraria e
+          // reenviaria os valores de antes da edição.
+          setItens((anteriores) =>
+            anteriores.map((t) => (t.id === salvo.id ? { ...t, ...salvo } : t)),
+          )
           dispararFeedback('Lançamento atualizado com sucesso.')
         }}
       />

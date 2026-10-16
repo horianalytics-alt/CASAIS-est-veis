@@ -27,6 +27,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CampoErro } from '@/components/ui/campo-erro'
 import { parseBRLInput, todayISO } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { LANCAR } from '@/features/transacoes/copy'
 import type { Database } from '@/types/database'
 
 type Transacao = Database['public']['Tables']['transactions']['Row']
@@ -68,8 +69,28 @@ export interface DialogoEditarLancamentoProps {
   contas: ItemSelectOpcao[]
   categorias: ItemSelectOpcao[]
   membros: MembroOpcao[]
-  onSalvo?: () => void
+  onSalvo?: (salvo: LancamentoSalvo) => void
 }
+
+/** Colunas que a edição individual grava (espelho de montarPatchIndividual). */
+export type LancamentoSalvo = Pick<
+  Transacao,
+  | 'id'
+  | 'type'
+  | 'description'
+  | 'amount'
+  | 'date'
+  | 'account_id'
+  | 'to_account_id'
+  | 'category_id'
+  | 'paid_by_member_id'
+  | 'is_paid'
+  | 'paid_date'
+  | 'notes'
+  | 'is_benefit'
+  | 'is_futile'
+  | 'futile_label'
+>
 
 export function DialogoEditarLancamento({
   aberto,
@@ -97,6 +118,22 @@ export function DialogoEditarLancamento({
   const [estaPago, setEstaPago] = React.useState(false)
   const [dataPagamento, setDataPagamento] = React.useState(todayISO())
   const [observacao, setObservacao] = React.useState('')
+  // Benefício (VR/VA) e gasto fútil: só existem em despesa (mesma regra do
+  // form de criar e de montarPatchIndividual no servidor).
+  const [ehBeneficio, setEhBeneficio] = React.useState(false)
+  const [ehFutil, setEhFutil] = React.useState(false)
+  const [rotuloFutil, setRotuloFutil] = React.useState('')
+
+  // Erro de campo some quando AQUELE campo muda; o aviso geral some junto
+  // quando não sobra nenhum erro de campo (L-013 do caderno). Chamar no
+  // máximo uma vez por evento: lê `camposComErro` do render atual.
+  const limparErroDoCampo = (campo: string) => {
+    if (!camposComErro[campo]) return
+    const resto = { ...camposComErro }
+    delete resto[campo]
+    setCamposComErro(resto)
+    if (Object.keys(resto).length === 0) setErro(null)
+  }
 
   // Listas mais recentes, lidas pelo preenchimento sem virar dependência dele.
   // A página /inicio remonta `contas`/`membros` como arrays NOVOS a cada
@@ -133,6 +170,9 @@ export function DialogoEditarLancamento({
       setEstaPago(Boolean(transacao.is_paid))
       setDataPagamento(transacao.paid_date || transacao.date || todayISO())
       setObservacao(transacao.notes || '')
+      setEhBeneficio(Boolean(transacao.is_benefit))
+      setEhFutil(Boolean(transacao.is_futile))
+      setRotuloFutil(transacao.futile_label || '')
       setErro(null)
       setCamposComErro({})
     }
@@ -206,12 +246,21 @@ export function DialogoEditarLancamento({
 
     setPendente(true)
 
+    // Os 3 campos vão SEMPRE (recomendação do contrato do Estrutura): omitir
+    // significaria "manter o que a linha tem". Fora de despesa vão zerados,
+    // igual ao form de criar.
+    const ehDespesa = tipo === 'despesa'
+    const futilFinal = ehDespesa && ehFutil
+    const valorFinal = Math.round(valorNumero * 100) / 100
+    const observacaoFinal = observacao.trim() || null
+    const rotuloFinal = futilFinal ? rotuloFutil.trim() || null : null
+
     try {
       const resposta = await atualizarLancamento({
         id: transacao.id,
         tipo,
         descricao: descLimpa,
-        valor: Math.round(valorNumero * 100) / 100,
+        valor: valorFinal,
         data,
         contaId,
         contaDestinoId: tipo === 'transferencia' ? contaDestinoId : undefined,
@@ -219,7 +268,10 @@ export function DialogoEditarLancamento({
         pagoPorId: membroId,
         estaPago,
         dataDoPagamento: estaPago ? dataPagamento : null,
-        observacao: observacao.trim() || null,
+        observacao: observacaoFinal,
+        ehBeneficio: ehDespesa && ehBeneficio,
+        ehFutil: futilFinal,
+        rotuloDoFutil: rotuloFinal,
       })
 
       if (!resposta.ok) {
@@ -232,7 +284,27 @@ export function DialogoEditarLancamento({
 
       setPendente(false)
       onOpenChange(false)
-      onSalvo?.()
+      // O que foi gravado, nas colunas da linha. A lista usa para atualizar o
+      // item na hora: itens vindos de "carregar mais" não são substituídos pelo
+      // router.refresh(), e reabrir o diálogo neles mostraria (e reenviaria)
+      // os valores antigos.
+      onSalvo?.({
+        id: transacao.id,
+        type: tipo,
+        description: descLimpa,
+        amount: valorFinal,
+        date: data,
+        account_id: contaId,
+        to_account_id: tipo === 'transferencia' ? contaDestinoId : null,
+        category_id: tipo === 'transferencia' ? null : categoriaId || null,
+        paid_by_member_id: membroId,
+        is_paid: estaPago,
+        paid_date: estaPago ? dataPagamento : null,
+        notes: observacaoFinal,
+        is_benefit: ehDespesa && ehBeneficio,
+        is_futile: futilFinal,
+        futile_label: rotuloFinal,
+      })
       router.refresh()
     } catch (err: unknown) {
       setErro(err instanceof Error ? err.message : 'Erro inesperado ao salvar alterações.')
@@ -533,6 +605,83 @@ export function DialogoEditarLancamento({
               </div>
             )}
           </div>
+
+          {/* 6b. Mais detalhes (só despesa) — sempre aberto aqui, ao contrário do
+              form de criar: quem edita precisa VER a marcação que a linha já tem. */}
+          {tipo === 'despesa' && (
+            <fieldset className="flex flex-col gap-1 rounded-lg border border-border/70 bg-muted/30 p-3">
+              {/* float-left tira a legenda de cima da borda (sem o recorte que o
+                  navegador abre na borda do fieldset), igual ao bloco "pago". */}
+              <legend className="float-left w-full text-xs font-medium">
+                {LANCAR.maisDetalhes}
+              </legend>
+
+              <div className="flex min-h-[44px] items-center gap-2">
+                <Checkbox
+                  id="edit-beneficio"
+                  checked={ehBeneficio}
+                  onCheckedChange={(marcado) => setEhBeneficio(marcado === true)}
+                  disabled={pendente}
+                />
+                <Label
+                  htmlFor="edit-beneficio"
+                  className="flex min-h-[44px] flex-1 cursor-pointer items-center text-xs font-medium"
+                >
+                  {LANCAR.ehBeneficioLabel}
+                </Label>
+              </div>
+
+              {/* Sem slot de erro nos 2 checkboxes: este form sempre manda
+                  boolean, e o schema da action só acusa tipo inválido neles. */}
+              <div className="flex min-h-[44px] items-center gap-2">
+                <Checkbox
+                  id="edit-futil"
+                  checked={ehFutil}
+                  onCheckedChange={(marcado) => {
+                    setEhFutil(marcado === true)
+                    // Desmarcar fútil esconde o rótulo; o erro dele sai junto.
+                    limparErroDoCampo('rotuloDoFutil')
+                  }}
+                  disabled={pendente}
+                />
+                <Label
+                  htmlFor="edit-futil"
+                  className="flex min-h-[44px] flex-1 cursor-pointer items-center text-xs font-medium"
+                >
+                  {LANCAR.ehFutilLabel}
+                </Label>
+              </div>
+
+              {ehFutil && (
+                <div className="flex flex-col gap-1 pt-1.5 pl-6">
+                  <Label
+                    htmlFor="edit-rotulo-futil"
+                    className="text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)] text-muted-foreground"
+                  >
+                    {LANCAR.rotuloDoFutilLabel}
+                  </Label>
+                  <Input
+                    id="edit-rotulo-futil"
+                    type="text"
+                    value={rotuloFutil}
+                    onChange={(e) => {
+                      setRotuloFutil(e.target.value)
+                      limparErroDoCampo('rotuloDoFutil')
+                    }}
+                    placeholder={LANCAR.rotuloDoFutilPlaceholder}
+                    maxLength={60}
+                    disabled={pendente}
+                    aria-invalid={camposComErro.rotuloDoFutil ? true : undefined}
+                    aria-describedby={camposComErro.rotuloDoFutil ? 'erro-rotulo-futil' : undefined}
+                    className="h-9 text-xs"
+                  />
+                  {camposComErro.rotuloDoFutil && (
+                    <CampoErro id="erro-rotulo-futil" mensagens={camposComErro.rotuloDoFutil} />
+                  )}
+                </div>
+              )}
+            </fieldset>
+          )}
 
           {/* 7. Observação */}
           <div className="flex flex-col gap-1.5">
