@@ -102,6 +102,23 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
   do digitado por 1 centavo, em silêncio.
 - **Severidade:** BAIXA. Correção simples (arredondamento decimal-safe).
 
+### P-013 — atualizarLancamento devolve só o id, não a linha completa
+- **Origem:** Fachada, achado durante a correção de VR/VA e gasto fútil
+  no diálogo de editar, 2026-10-16.
+- **O quê:** a action termina em `.select('id')` em vez de `.select('*')`.
+  Depois de editar, a lista local (`lista-transacoes-interativa.tsx`)
+  faz merge com o que a Action devolveu, mas sem `invoice_year`/
+  `invoice_month`/`owner_member_id`/`owner_share` atualizados o item
+  pode ficar com esses campos desatualizados até a próxima
+  `router.refresh()` — mais visível em itens carregados via scroll
+  infinito.
+- **Severidade:** BAIXA/MÉDIA — o banco está sempre correto, é só a
+  lista em memória do navegador que pode mostrar dado velho
+  temporariamente.
+- **Correção:** trocar `.select('id')` por `.select('*').single()` e
+  `ResultadoAction<void>` por `ResultadoAction<Lancamento>`
+  (`Database['public']['Tables']['transactions']['Row']`).
+
 ### P-012 — Diálogo de editar lançamento não filtra categoria por tipo
 - **Origem:** Fachada, achado colateral na correção do bug de troca de
   tipo, 2026-10-15.
