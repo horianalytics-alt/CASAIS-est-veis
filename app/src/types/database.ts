@@ -316,6 +316,237 @@ export type Database = {
           },
         ];
       };
+      investment_box_movements: {
+        Row: {
+          amount_cents: number;
+          box_id: string;
+          competencia: string | null;
+          counterpart: string | null;
+          created_at: string;
+          created_by_member_id: string;
+          family_id: string;
+          id: string;
+          kind: string;
+          occurred_on: string;
+          transaction_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          amount_cents: number;
+          box_id: string;
+          competencia?: string | null;
+          counterpart?: string | null;
+          created_at?: string;
+          created_by_member_id: string;
+          family_id: string;
+          id?: string;
+          kind: string;
+          occurred_on: string;
+          transaction_id?: string | null;
+        };
+        Update: {
+          amount_cents?: number;
+          box_id?: string;
+          competencia?: string | null;
+          counterpart?: string | null;
+          created_at?: string;
+          created_by_member_id?: string;
+          family_id?: string;
+          id?: string;
+          kind?: string;
+          occurred_on?: string;
+          transaction_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "investment_box_movements_family_id_box_id_fkey";
+            columns: ["family_id", "box_id"];
+            isOneToOne: false;
+            referencedRelation: "investment_boxes";
+            referencedColumns: ["family_id", "id"];
+          },
+          {
+            foreignKeyName: "investment_box_movements_family_id_created_by_member_id_fkey";
+            columns: ["family_id", "created_by_member_id"];
+            isOneToOne: false;
+            referencedRelation: "family_members";
+            referencedColumns: ["family_id", "id"];
+          },
+          {
+            foreignKeyName: "investment_box_movements_family_id_created_by_member_id_fkey";
+            columns: ["family_id", "created_by_member_id"];
+            isOneToOne: false;
+            referencedRelation: "v_settlement";
+            referencedColumns: ["family_id", "member_id"];
+          },
+          {
+            foreignKeyName: "investment_box_movements_family_id_fkey";
+            columns: ["family_id"];
+            isOneToOne: false;
+            referencedRelation: "families";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "investment_box_movements_transaction_id_fkey";
+            columns: ["transaction_id"];
+            isOneToOne: false;
+            referencedRelation: "transactions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      investment_box_rates: {
+        Row: {
+          box_id: string;
+          created_at: string;
+          family_id: string;
+          id: string;
+          rate_bps: number;
+          valid_from: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          box_id: string;
+          created_at?: string;
+          family_id: string;
+          id?: string;
+          rate_bps: number;
+          valid_from: string;
+        };
+        Update: {
+          box_id?: string;
+          created_at?: string;
+          family_id?: string;
+          id?: string;
+          rate_bps?: number;
+          valid_from?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "investment_box_rates_family_id_box_id_fkey";
+            columns: ["family_id", "box_id"];
+            isOneToOne: false;
+            referencedRelation: "investment_boxes";
+            referencedColumns: ["family_id", "id"];
+          },
+          {
+            foreignKeyName: "investment_box_rates_family_id_fkey";
+            columns: ["family_id"];
+            isOneToOne: false;
+            referencedRelation: "families";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      investment_boxes: {
+        Row: {
+          account_id: string;
+          balance_cents: number;
+          created_at: string;
+          data_vencimento: string | null;
+          family_id: string;
+          id: string;
+          name: string;
+          rate_bps: number;
+          rate_defined_at: string;
+          rate_type: string;
+          resgate_imediato: boolean;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          account_id: string;
+          balance_cents?: number;
+          created_at?: string;
+          data_vencimento?: string | null;
+          family_id: string;
+          id?: string;
+          name: string;
+          rate_bps: number;
+          rate_defined_at: string;
+          rate_type: string;
+          resgate_imediato: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          account_id?: string;
+          balance_cents?: number;
+          created_at?: string;
+          data_vencimento?: string | null;
+          family_id?: string;
+          id?: string;
+          name?: string;
+          rate_bps?: number;
+          rate_defined_at?: string;
+          rate_type?: string;
+          resgate_imediato?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "investment_boxes_family_id_account_id_fkey";
+            columns: ["family_id", "account_id"];
+            isOneToOne: false;
+            referencedRelation: "investment_wallets";
+            referencedColumns: ["family_id", "account_id"];
+          },
+          {
+            foreignKeyName: "investment_boxes_family_id_account_id_fkey";
+            columns: ["family_id", "account_id"];
+            isOneToOne: false;
+            referencedRelation: "v_carteira_resumo";
+            referencedColumns: ["family_id", "account_id"];
+          },
+          {
+            foreignKeyName: "investment_boxes_family_id_fkey";
+            columns: ["family_id"];
+            isOneToOne: false;
+            referencedRelation: "families";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      investment_wallets: {
+        Row: {
+          account_id: string;
+          created_at: string;
+          family_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          account_id: string;
+          created_at?: string;
+          family_id: string;
+        };
+        Update: {
+          account_id?: string;
+          created_at?: string;
+          family_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "investment_wallets_family_id_account_id_fkey";
+            columns: ["family_id", "account_id"];
+            isOneToOne: true;
+            referencedRelation: "accounts";
+            referencedColumns: ["family_id", "id"];
+          },
+          {
+            foreignKeyName: "investment_wallets_family_id_account_id_fkey";
+            columns: ["family_id", "account_id"];
+            isOneToOne: true;
+            referencedRelation: "v_account_balances";
+            referencedColumns: ["family_id", "account_id"];
+          },
+          {
+            foreignKeyName: "investment_wallets_family_id_fkey";
+            columns: ["family_id"];
+            isOneToOne: true;
+            referencedRelation: "families";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       join_attempts: {
         Row: {
           id: number;
@@ -673,6 +904,39 @@ export type Database = {
           },
         ];
       };
+      v_carteira_resumo: {
+        Row: {
+          account_id: string | null;
+          alocado_cents: number | null;
+          family_id: string | null;
+          nao_alocado_cents: number | null;
+          total_cents: number | null;
+        };
+        ComputedFields: never;
+        Relationships: [
+          {
+            foreignKeyName: "investment_wallets_family_id_account_id_fkey";
+            columns: ["family_id", "account_id"];
+            isOneToOne: true;
+            referencedRelation: "accounts";
+            referencedColumns: ["family_id", "id"];
+          },
+          {
+            foreignKeyName: "investment_wallets_family_id_account_id_fkey";
+            columns: ["family_id", "account_id"];
+            isOneToOne: true;
+            referencedRelation: "v_account_balances";
+            referencedColumns: ["family_id", "account_id"];
+          },
+          {
+            foreignKeyName: "investment_wallets_family_id_fkey";
+            columns: ["family_id"];
+            isOneToOne: true;
+            referencedRelation: "families";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       v_invoices: {
         Row: {
           account_id: string | null;
@@ -816,6 +1080,65 @@ export type Database = {
       };
     };
     Functions: {
+      carteira_alocar: { Args: { p_caixinha_id: string; p_valor_cents: number }; Returns: string };
+      carteira_aplicar: {
+        Args: { p_caixinha_id?: string; p_conta_origem_id: string; p_valor_cents: number };
+        Returns: {
+          lancamento_id: string;
+          movimento_id: string;
+        }[];
+      };
+      carteira_atualizar_taxa: {
+        Args: { p_caixinha_id: string; p_taxa_bps: number };
+        Returns: undefined;
+      };
+      carteira_confirmar_rendimento: {
+        Args: { p_caixinha_id: string; p_competencia: string };
+        Returns: {
+          lancamento_id: string;
+          movimento_id: string;
+          valor_cents: number;
+        }[];
+      };
+      carteira_criar_caixinha: {
+        Args: {
+          p_data_vencimento?: string;
+          p_nome: string;
+          p_resgate_imediato: boolean;
+          p_taxa_bps: number;
+          p_tipo: string;
+        };
+        Returns: string;
+      };
+      carteira_garantir: { Args: { p_family_id: string }; Returns: string };
+      carteira_hoje: { Args: Record<PropertyKey, never>; Returns: string };
+      carteira_meses_pendentes_da_caixinha: {
+        Args: { p_caixinha_id: string };
+        Returns: {
+          competencia: string;
+          rendimento_cents: number;
+        }[];
+      };
+      carteira_rendimento_calculado: {
+        Args: { p_caixinha_id: string; p_competencia: string };
+        Returns: number;
+      };
+      carteira_rendimentos_pendentes: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          caixinha_id: string;
+          competencia: string;
+          rendimento_cents: number;
+        }[];
+      };
+      carteira_resgatar: {
+        Args: { p_caixinha_id: string; p_conta_destino_id?: string; p_valor_cents: number };
+        Returns: {
+          lancamento_id: string;
+          movimento_id: string;
+        }[];
+      };
+      carteira_validar_valor: { Args: { p_valor_cents: number }; Returns: undefined };
       chave_nome: { Args: { p_nome: string }; Returns: string };
       create_family: {
         Args: {
