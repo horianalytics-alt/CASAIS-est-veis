@@ -863,7 +863,9 @@ o rendimento é confirmado manualmente, mês a mês, e só então vira saldo
   confirmado tem de ser calculado no banco. Por isso a Task 3 em TypeScript não
   foi criada. Desvio registrado.
 - **Regras (todas cobertas no `carteira-rls.sql`):** só mês **encerrado**
-  (competência < mês corrente em São Paulo); **ordem cronológica**, decisão
+  (competência < mês corrente em São Paulo) — **confirmado pelo Heitor** em
+  2026-10-16, depois de perguntado explicitamente se preferia poder confirmar
+  o mês corrente (não quis); **ordem cronológica**, decisão
   minha delegada pelo Maestro, porque o valor de um mês depende dos anteriores
   confirmados; mês anterior ao último confirmado nunca mais confirma; uma vez
   por mês por caixinha (índice único parcial + lock); taxa = a vigente no
