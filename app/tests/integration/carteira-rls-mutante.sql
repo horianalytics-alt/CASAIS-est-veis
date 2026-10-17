@@ -20,6 +20,11 @@ CREATE POLICY mutante_boxes_insert ON public.investment_boxes FOR INSERT TO auth
 DROP POLICY IF EXISTS investment_box_movements_select ON public.investment_box_movements;
 CREATE POLICY investment_box_movements_select ON public.investment_box_movements FOR SELECT TO authenticated USING (true);
 GRANT ALL ON public.investment_wallets, public.investment_boxes, public.investment_box_movements TO authenticated;
+-- Histórico de taxa (00017).
+DROP POLICY IF EXISTS investment_box_rates_select ON public.investment_box_rates;
+CREATE POLICY investment_box_rates_select ON public.investment_box_rates FOR SELECT TO authenticated USING (true);
+CREATE POLICY mutante_rates_insert ON public.investment_box_rates FOR INSERT TO authenticated WITH CHECK (true);
+GRANT ALL ON public.investment_box_rates TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.carteira_resgatar(
   p_caixinha_id uuid, p_valor_cents bigint, p_conta_destino_id uuid DEFAULT NULL)

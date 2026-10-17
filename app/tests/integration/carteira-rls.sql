@@ -316,6 +316,22 @@ BEGIN
   IF v_texto = 'Caixinha não encontrada' THEN v_linhas := v_linhas || E'\n  PASS  I10 B muda a taxa da caixinha de A: recusado';
   ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA I10 B atualizar taxa de A — ' || v_texto; END IF;
 
+  -- I12: histórico de taxa (00017) isolado. Controle positivo: como postgres,
+  -- a caixinha de A tem exatamente 1 linha de taxa (a da criação).
+  SELECT count(*) INTO n FROM public.investment_box_rates WHERE box_id = box_a;
+  RESET ROLE;
+  SELECT count(*) INTO nb FROM public.investment_box_rates WHERE box_id = box_a;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', ub, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  v_estado := 'ok';
+  BEGIN
+    INSERT INTO public.investment_box_rates (family_id, box_id, rate_bps, valid_from) VALUES (fa, box_a, 9999, hoje);
+  EXCEPTION WHEN OTHERS THEN v_estado := SQLSTATE;
+  END;
+  v_total := v_total + 1;
+  IF n = 0 AND nb = 1 AND v_estado = '42501' THEN v_linhas := v_linhas || E'\n  PASS  I12 B não lê (0 de 1) nem planta histórico de taxa na caixinha de A (42501)';
+  ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA I12 histórico de taxa — B leu ' || n || ' de ' || nb || ', insert: ' || v_estado; END IF;
+
   -- Por último entre os ataques de B: no mutante, apagar antes impediria os
   -- resgates de gravar.
   v_estado := 'ok';
