@@ -35,7 +35,7 @@ export interface DialogoAlocarProps {
   saldoNaoAlocadoCents: number
   caixinhas: CaixinhaInvestimento[]
   caixinhaPreSelecionadaId?: string | null
-  onAlocar: (dados: DadosAlocacao) => Promise<void> | void
+  onAlocar: (dados: DadosAlocacao) => Promise<{ ok: boolean; erro?: string } | void> | { ok: boolean; erro?: string } | void
   pendente?: boolean
 }
 
@@ -54,13 +54,16 @@ export function DialogoAlocar({
 
   const saldoNaoAlocadoReais = saldoNaoAlocadoCents / 100
 
-  // Inicializa ao abrir
+  const abertoAnterior = React.useRef(false)
+
+  // Inicializa ao abrir (apenas na transição de false -> true)
   React.useEffect(() => {
-    if (aberto) {
+    if (aberto && !abertoAnterior.current) {
       setCaixinhaId(caixinhaPreSelecionadaId ?? caixinhas[0]?.id ?? '')
       setValorTexto('')
       setErro(null)
     }
+    abertoAnterior.current = aberto
   }, [aberto, caixinhaPreSelecionadaId, caixinhas])
 
   const caixinhaSelecionada = caixinhas.find((c) => c.id === caixinhaId)
@@ -92,10 +95,13 @@ export function DialogoAlocar({
 
     hapticFeedback.medium()
     try {
-      await onAlocar({
+      const resposta = await onAlocar({
         caixinhaId,
         valor: valorNumero,
       })
+      if (resposta && typeof resposta === 'object' && 'ok' in resposta && !resposta.ok) {
+        throw new Error(resposta.erro || 'Erro ao alocar saldo na caixinha.')
+      }
       hapticFeedback.success()
       onOpenChange(false)
     } catch (err: unknown) {
