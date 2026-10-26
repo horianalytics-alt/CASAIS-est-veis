@@ -1,0 +1,71 @@
+### select p.proname, strpos(p.prosrc,'pg_advisory_xact_lock') pos_lock, (select min(x) from unnest(array[nullif(strpos(p.prosrc,'INSERT INTO'),0), nullif(strpos(p.prosrc,'UPDATE public'),0), nullif(strpos(p.prosrc,'carteira_garantir('),0)]) x) pos_primeira_escrita, (p.prosrc ~ 'balance_cents >= p_valor_cents') debito_condicional, (p.prosrc ~ 'ROW_COUNT') confere_rowcount from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('carteira_aplicar','carteira_criar_caixinha','carteira_alocar','carteira_resgatar','carteira_atualizar_taxa','carteira_confirmar_rendimento') order by 1
+{
+  "rows": [
+    {
+      "confere_rowcount": false,
+      "debito_condicional": false,
+      "pos_lock": 484,
+      "pos_primeira_escrita": 1008,
+      "proname": "carteira_alocar"
+    },
+    {
+      "confere_rowcount": false,
+      "debito_condicional": false,
+      "pos_lock": 569,
+      "pos_primeira_escrita": 1551,
+      "proname": "carteira_aplicar"
+    },
+    {
+      "confere_rowcount": true,
+      "debito_condicional": false,
+      "pos_lock": 604,
+      "pos_primeira_escrita": 748,
+      "proname": "carteira_atualizar_taxa"
+    },
+    {
+      "confere_rowcount": false,
+      "debito_condicional": false,
+      "pos_lock": 947,
+      "pos_primeira_escrita": 2666,
+      "proname": "carteira_confirmar_rendimento"
+    },
+    {
+      "confere_rowcount": false,
+      "debito_condicional": false,
+      "pos_lock": 1470,
+      "pos_primeira_escrita": 1592,
+      "proname": "carteira_criar_caixinha"
+    },
+    {
+      "confere_rowcount": true,
+      "debito_condicional": true,
+      "pos_lock": 581,
+      "pos_primeira_escrita": 1626,
+      "proname": "carteira_resgatar"
+    }
+  ],
+}
+### select string_agg(conname || ': ' || pg_get_constraintdef(oid), ' || ') checks from pg_constraint where conrelid='public.investment_boxes'::regclass and contype='c'
+{
+  "rows": [
+    {
+      "checks": "investment_boxes_nome_valido: CHECK (((char_length(btrim(name)) \u003e= 1) AND (char_length(btrim(name)) \u003c= 60))) || investment_boxes_regra_resgate: CHECK (((resgate_imediato AND (data_vencimento IS NULL)) OR ((NOT resgate_imediato) AND (data_vencimento IS NOT NULL)))) || investment_boxes_saldo_valido: CHECK (((balance_cents \u003e= 0) AND (balance_cents \u003c= '99999999999999'::bigint))) || investment_boxes_taxa_valida: CHECK (((rate_bps \u003e= 0) AND (rate_bps \u003c= 10000))) || investment_boxes_tipo_valido: CHECK ((rate_type = ANY (ARRAY['liquidez_diaria'::text, 'pos_fixado'::text, 'pre_fixado'::text])))"
+    }
+  ],
+}
+### select string_agg(p.proname, ', ' order by p.proname) funcoes_que_escrevem_balance_cents from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.prosrc ~* 'investment_boxes' and p.prosrc ~* 'balance_cents\s*=\s*balance_cents'
+{
+  "rows": [
+    {
+      "funcoes_que_escrevem_balance_cents": "carteira_alocar, carteira_aplicar, carteira_confirmar_rendimento, carteira_resgatar"
+    }
+  ],
+}
+### select coalesce(string_agg(tgname || ' on ' || tgrelid::regclass::text, ', '),'<nenhum>') triggers_tabelas_novas from pg_trigger where not tgisinternal and tgrelid in ('public.investment_boxes'::regclass,'public.investment_box_movements'::regclass,'public.investment_wallets'::regclass,'public.investment_box_rates'::regclass)
+{
+  "rows": [
+    {
+      "triggers_tabelas_novas": "trg_investment_boxes_touch on investment_boxes"
+    }
+  ],
+}

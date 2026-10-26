@@ -1,0 +1,10 @@
+
+ RUN  v5.0.3 C:/dev/financas-a-dois/app
+
+
+ Test Files  2 passed (2)
+      Tests  50 passed (50)
+   Start at  23:09:38
+   Duration  26.76s (environment 73%, setup 20%, import 5%, transform 1%, tests 1%)
+
+vitest exit=0

@@ -1,0 +1,51 @@
+contra o schema aplicado
+placar: 48 de 48 passaram, 0 falha(s)
+
+  PASS  C01 A cria a própria caixinha
+  PASS  C02 A aplica R$500 da corrente direto na caixinha
+  PASS  C03 A aplica R$100 no não alocado (sem movimento de caixinha)
+  PASS  C04 A lê a própria caixinha
+  PASS  C05 resumo de A: total/alocado/não alocado = 60000/50000/10000
+  PASS  C06 A não altera o saldo da PRÓPRIA caixinha direto (42501)
+  PASS  C07 A não insere movimento direto (42501)
+  PASS  C08 resgatar acima do saldo: recusado, saldo e movimentos iguais
+  PASS  C09 alocar acima do não alocado: recusado
+  PASS  C10 aplicar 1 centavo acima do saldo da origem: recusado
+  PASS  C11 cartão e a própria carteira não servem de origem
+  PASS  C12 INSERT direto de transferência para a carteira recusado (42501)
+  PASS  C13 save_transactions (/lancar) com a carteira recusado (42501)
+  PASS  C14 excluir a transferência da aplicação recusado (42501)
+  PASS  C15 pagar fatura com a carteira como origem recusado (42501, fatura em aberto)
+  PASS  C16 editar só a descrição da transferência da carteira continua livre
+  PASS  C17 mudar o valor da transferência da carteira recusado (42501)
+  PASS  C18 saldo inicial da conta-carteira congelado (42501); renomear continua livre
+  PASS  I01 B não lê carteira, caixinha, movimentos, histórico de taxa nem resumo de A
+  PASS  I02 B não altera caixinha de A (42501)
+  PASS  I04 B não cria caixinha na carteira de A (42501)
+  PASS  I05 B resgata caixinha de A para a corrente de A: recusado
+  PASS  I06 B resgata caixinha de A para o não alocado: recusado
+  PASS  I07 B aplica da corrente de A: recusado
+  PASS  I08 B aplica da própria corrente na caixinha de A: recusado
+  PASS  I09 B aloca na caixinha de A: recusado
+  PASS  I10 B muda a taxa da caixinha de A: recusado
+  PASS  I12 B não lê (0 de 1) nem planta histórico de taxa na caixinha de A (42501)
+  PASS  I03 B não apaga caixinha de A (42501)
+  PASS  N01 anon sem acesso a caixinhas nem ao resumo (42501)
+  PASS  N02 anon não executa carteira_aplicar (42501)
+  PASS  I11 B: 0 pendentes, cálculo 0 e confirmação recusada na caixinha de A
+  PASS  R01 pendentes de A: só os 2 meses ENCERRADOS, 1000 cada; mês da entrada e mês corrente de fora
+  PASS  R07 mês da entrada (base zero): nada a confirmar
+  PASS  R02 confirmar fora de ordem: recusado, aponta o mês mais antigo
+  PASS  R03 confirmar m1: 1000 vira saldo (101000)
+  PASS  R09 receita e movimento do rendimento datados no último dia da competência
+  PASS  R04 confirmar m1 de novo: recusado, saldo não duplica
+  PASS  R05 m2 = 1010 (1% sobre 101000, mesmo com a taxa mudada para 2% depois): juro composto só do confirmado, taxa do fim do mês
+  PASS  R06 mês corrente e mês futuro: recusados (o mês ainda não rendeu)
+  PASS  R10 data fora do dia 1: recusada
+  PASS  R11 mês anterior ao último confirmado: recusado
+  PASS  R08 sem pendentes depois de confirmar; não alocado continua 10000
+  PASS  F01 caixinha de A intacta depois dos ataques de B (nome, saldo 50000, taxa 100)
+  PASS  F02 CHECK balance_cents >= 0 morde até para o dono da tabela (23514)
+  PASS  F04 nem postgres muda o saldo inicial da conta-carteira sem a chave (42501)
+  PASS  F05 UPDATE aninhado no valor de lançamento da carteira recusado (42501), valor intacto
+  PASS  F03 limpeza como service_role apaga lançamentos e família, sem sobras

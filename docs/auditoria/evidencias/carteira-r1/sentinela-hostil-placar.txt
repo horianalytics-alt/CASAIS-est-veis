@@ -1,0 +1,15 @@
+PLACAR sentinela-hostil:
+  OBS S01 B resgata a propria caixinha para a corrente de A -> Conta de destino inválida | saldo caixinha B=10000
+  OBS S02a resgatar caixinha com vencimento em hoje+30 -> Esta caixinha só pode ser resgatada a partir de 15/11/2026 | saldo=5000
+  OBS S02b resgatar caixinha que vence HOJE -> ok
+  OBS S03 RPC direta: nome so U+200B -> ok | nome com U+202E, \
+ e U+0007 -> ok | 61 chars -> Use no máximo 60 caracteres.
+  OBS S04 RPC direta: valor 10000000000 -> Esse valor é alto demais. | valor -1 -> O valor precisa ser maior que zero. | taxa 10001 -> A taxa precisa estar entre 0% e 100% ao mês.
+  OBS S05 UPDATE de transferencia comum apontando to_account_id para a conta-carteira -> 42501 Movimentos da carteira de investimento só podem ser feitos pela área de Investimentos.
+  OBS S06 arquivar conta-carteira -> ok, 1 linha(s) arquivada(s) | aplicar com carteira arquivada -> ok | excluir conta-carteira -> 23503 update or delete on table "accounts" violates foreign key constraint "transactions_family_id_to_account_id_fkey" on table "transactions"
+  OBS S07 authenticated em SQL liga app.carteira_rpc e insere receita na carteira -> INSERT aceito (current_user=authenticated)
+  OBS S08a caixinha zerada no dia 1 de 2026-08 (saldo=0): pendentes = 2026-08=1000
+  OBS S08b confirmar 2026-08 -> ok valor=1000 | saldo da caixinha agora=1000
+  OBS S08c resgatar esse saldo para a corrente de A -> ok | saldo da caixinha depois=0
+  OBS S09 B: carteira_meses_pendentes_da_caixinha(caixinha de A) -> 0 linha(s) | v_account_balances da conta-carteira de A -> 0 linha(s)"}}
+
