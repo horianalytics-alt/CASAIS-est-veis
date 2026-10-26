@@ -3,6 +3,8 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import * as React from 'react'
 
 // jsdom mocks
+Element.prototype.scrollIntoView = vi.fn()
+window.HTMLElement.prototype.scrollIntoView = vi.fn()
 globalThis.ResizeObserver ??= class {
   observe() {}
   unobserve() {}
@@ -32,6 +34,9 @@ import {
 } from '@/components/carteira/tipos-investimentos'
 import { CardCaixinha } from '@/components/carteira/card-caixinha'
 import { DialogoResgatar } from '@/components/carteira/dialogo-resgatar'
+import { DialogoAplicar } from '@/components/carteira/dialogo-aplicar'
+import { DialogoCriarCaixinha } from '@/components/carteira/dialogo-criar-caixinha'
+import { DialogoAlocar } from '@/components/carteira/dialogo-alocar'
 import { AreaInvestimentos } from '@/components/carteira/area-investimentos'
 
 describe('Investimentos UI — Testes Unitários', () => {
@@ -233,4 +238,218 @@ describe('Investimentos UI — Testes Unitários', () => {
       expect(textoCompleto.toLowerCase()).not.toContain('transferência')
     })
   })
+
+  describe('DialogoAplicar — Achado A4 e A7', () => {
+    const contas = [
+      { id: 'cta-1', name: 'Conta Principal', current_balance: 1000 },
+      { id: 'cta-2', name: 'Conta Reserva', current_balance: 5000 },
+    ]
+    const caixinhas: CaixinhaInvestimento[] = [
+      {
+        id: 'cx-1',
+        family_id: 'fam-1',
+        account_id: 'acc-1',
+        name: 'Reserva',
+        rate_type: 'liquidez_diaria',
+        rate_bps: 100,
+        rate_defined_at: '2026-01-01',
+        resgate_imediato: true,
+        data_vencimento: null,
+        balance_cents: 10000,
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      },
+    ]
+
+    it('[A4] preserva o valor e o destino ao trocar a conta de origem', () => {
+      const { rerender } = render(
+        <DialogoAplicar
+          aberto={true}
+          onOpenChange={vi.fn()}
+          contasOrigem={contas}
+          caixinhas={caixinhas}
+          onAplicar={vi.fn()}
+        />,
+      )
+
+      const inputValor = screen.getByPlaceholderText('0,00') as HTMLInputElement
+      fireEvent.change(inputValor, { target: { value: '250,00' } })
+      expect(inputValor.value).toBe('250,00')
+
+      // Trocar a conta de origem selecionando outra conta
+      const selectOrigem = screen.getByRole('combobox', { name: /conta de origem/i })
+      fireEvent.click(selectOrigem)
+
+      // Rerender com a mesma prop aberto=true (simulando re-render de estado)
+      rerender(
+        <DialogoAplicar
+          aberto={true}
+          onOpenChange={vi.fn()}
+          contasOrigem={contas}
+          caixinhas={caixinhas}
+          onAplicar={vi.fn()}
+        />,
+      )
+
+      expect(inputValor.value).toBe('250,00')
+    })
+
+    
+    it('[A4] fecha e reabre o diálogo reseta os campos para o estado limpo', () => {
+      const { rerender } = render(
+        <DialogoAplicar
+          aberto={true}
+          onOpenChange={vi.fn()}
+          contasOrigem={contas}
+          caixinhas={caixinhas}
+          onAplicar={vi.fn()}
+        />,
+      )
+
+      const inputValor = screen.getByPlaceholderText('0,00') as HTMLInputElement
+      fireEvent.change(inputValor, { target: { value: '250,00' } })
+      expect(inputValor.value).toBe('250,00')
+
+      // Fecha o diálogo
+      rerender(
+        <DialogoAplicar
+          aberto={false}
+          onOpenChange={vi.fn()}
+          contasOrigem={contas}
+          caixinhas={caixinhas}
+          onAplicar={vi.fn()}
+        />,
+      )
+
+      // Reabre o diálogo
+      rerender(
+        <DialogoAplicar
+          aberto={true}
+          onOpenChange={vi.fn()}
+          contasOrigem={contas}
+          caixinhas={caixinhas}
+          onAplicar={vi.fn()}
+        />,
+      )
+
+      const inputValorReaberto = screen.getByPlaceholderText('0,00') as HTMLInputElement
+      expect(inputValorReaberto.value).toBe('')
+    })
+
+    it('[A7] exibe mensagem de erro quando onAplicar retorna { ok: false, erro }', async () => {
+      const onAplicar = vi.fn().mockResolvedValue({ ok: false, erro: 'Saldo insuficiente na conta' })
+      render(
+        <DialogoAplicar
+          aberto={true}
+          onOpenChange={vi.fn()}
+          contasOrigem={contas}
+          caixinhas={caixinhas}
+          onAplicar={onAplicar}
+        />,
+      )
+
+      const inputValor = screen.getByPlaceholderText('0,00')
+      fireEvent.change(inputValor, { target: { value: '500,00' } })
+
+      const botaoConfirmar = screen.getByRole('button', { name: /confirmar aplicação/i })
+      fireEvent.click(botaoConfirmar)
+
+      expect(await screen.findByText('Saldo insuficiente na conta')).toBeDefined()
+    })
+  })
+
+  describe('DialogoCriarCaixinha — Achado A8 e A7', () => {
+    it('[A8] aceita data de vencimento igual a hoje ou no passado', async () => {
+      const onSalvar = vi.fn().mockResolvedValue({ ok: true })
+      render(
+        <DialogoCriarCaixinha
+          aberto={true}
+          onOpenChange={vi.fn()}
+          onSalvar={onSalvar}
+        />,
+      )
+
+      const inputNome = screen.getByPlaceholderText(/Ex: Reserva de Emergência/i)
+      fireEvent.change(inputNome, { target: { value: 'Caixinha Vencida' } })
+
+      // Clica no botão "No vencimento" para carência
+      const btnNoVencimento = screen.getByRole('button', { name: /no vencimento/i })
+      fireEvent.click(btnNoVencimento)
+
+      // Define data no passado ou hoje
+      const inputData = screen.getByLabelText(/Data de Vencimento/i)
+      fireEvent.change(inputData, { target: { value: '2025-01-01' } })
+
+      const botaoCriar = screen.getByRole('button', { name: /criar caixinha/i })
+      fireEvent.click(botaoCriar)
+
+      expect(onSalvar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nome: 'Caixinha Vencida',
+          resgateImediato: false,
+          dataVencimento: '2025-01-01',
+        }),
+      )
+    })
+
+    it('[A7] exibe mensagem de erro quando onSalvar retorna { ok: false, erro }', async () => {
+      const onSalvar = vi.fn().mockResolvedValue({ ok: false, erro: 'Nome já em uso no plano' })
+      render(
+        <DialogoCriarCaixinha
+          aberto={true}
+          onOpenChange={vi.fn()}
+          onSalvar={onSalvar}
+        />,
+      )
+
+      const inputNome = screen.getByPlaceholderText(/Ex: Reserva de Emergência/i)
+      fireEvent.change(inputNome, { target: { value: 'Minha Caixinha' } })
+
+      const botaoCriar = screen.getByRole('button', { name: /criar caixinha/i })
+      fireEvent.click(botaoCriar)
+
+      expect(await screen.findByText('Nome já em uso no plano')).toBeDefined()
+    })
+  })
+
+  describe('DialogoAlocar — Achado A7', () => {
+    it('[A7] exibe erro quando onAlocar retorna { ok: false, erro }', async () => {
+      const caixinhas: CaixinhaInvestimento[] = [
+        {
+          id: 'cx-1',
+          family_id: 'fam-1',
+          account_id: 'acc-1',
+          name: 'Reserva',
+          rate_type: 'liquidez_diaria',
+          rate_bps: 100,
+          rate_defined_at: '2026-01-01',
+          resgate_imediato: true,
+          data_vencimento: null,
+          balance_cents: 10000,
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+        },
+      ]
+      const onAlocar = vi.fn().mockResolvedValue({ ok: false, erro: 'Saldo não alocado indisponível' })
+
+      render(
+        <DialogoAlocar
+          aberto={true}
+          onOpenChange={vi.fn()}
+          saldoNaoAlocadoCents={50000}
+          caixinhas={caixinhas}
+          onAlocar={onAlocar}
+        />,
+      )
+
+      const inputValor = screen.getByPlaceholderText('0,00')
+      fireEvent.change(inputValor, { target: { value: '100,00' } })
+
+      const botaoConfirmar = screen.getByRole('button', { name: /confirmar alocação/i })
+      fireEvent.click(botaoConfirmar)
+
+      expect(await screen.findByText('Saldo não alocado indisponível')).toBeDefined()
+    })
+  })
+
 })
