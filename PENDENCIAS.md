@@ -102,6 +102,20 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
   do digitado por 1 centavo, em silêncio.
 - **Severidade:** BAIXA. Correção simples (arredondamento decimal-safe).
 
+### P-014 — Projeção da caixinha parte só do saldo confirmado, não do estimado
+- **Origem:** Dash, plano `dash-grafico-projecao-caixinha.md` (M-4), 2026-10-26.
+- **O quê:** o gráfico de projeção de 12 meses calcula a simulação a
+  partir de `balance_cents` (só rendimento já CONFIRMADO pelo usuário),
+  nunca do rendimento estimado/pendente de confirmação. Quem demora para
+  confirmar um mês vê a curva de projeção começar de um ponto mais baixo
+  do que "deveria" se o rendimento pendente já contasse.
+- **Severidade:** não é bug — é consequência direta da decisão 4b da
+  spec (rendimento só vira saldo de verdade por confirmação manual).
+  Registrado como característica esperada, não para correção.
+- **Se incomodar o Heitor no uso real:** considerar um aviso textual no
+  gráfico tipo "projeção não inclui rendimento ainda não confirmado",
+  decisão de produto, não técnica.
+
 ### P-013 — atualizarLancamento devolve só o id, não a linha completa
 - **Origem:** Fachada, achado durante a correção de VR/VA e gasto fútil
   no diálogo de editar, 2026-10-16.
