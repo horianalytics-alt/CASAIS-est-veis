@@ -42,7 +42,7 @@ export interface DialogoAplicarProps {
   contasOrigem: ContaOrigem[]
   caixinhas: CaixinhaInvestimento[]
   caixinhaPreSelecionadaId?: string | null
-  onAplicar: (dados: DadosAplicacao) => Promise<void> | void
+  onAplicar: (dados: DadosAplicacao) => Promise<{ ok: boolean; erro?: string } | void> | { ok: boolean; erro?: string } | void
   pendente?: boolean
 }
 
@@ -60,17 +60,20 @@ export function DialogoAplicar({
   const [destinoId, setDestinoId] = React.useState<string>('nao_alocado')
   const [erro, setErro] = React.useState<string | null>(null)
 
-  // Inicializa campos ao abrir
+  const abertoAnterior = React.useRef(false)
+
+  // Inicializa campos ao abrir (apenas na transição de false -> true)
   React.useEffect(() => {
-    if (aberto) {
-      if (contasOrigem.length > 0 && !contaOrigemId) {
+    if (aberto && !abertoAnterior.current) {
+      if (contasOrigem.length > 0) {
         setContaOrigemId(contasOrigem[0].id)
       }
       setDestinoId(caixinhaPreSelecionadaId ?? 'nao_alocado')
       setValorTexto('')
       setErro(null)
     }
-  }, [aberto, contasOrigem, caixinhaPreSelecionadaId, contaOrigemId])
+    abertoAnterior.current = aberto
+  }, [aberto, contasOrigem, caixinhaPreSelecionadaId])
 
   const contaSelecionada = contasOrigem.find((c) => c.id === contaOrigemId)
   const saldoOrigem = contaSelecionada?.current_balance ?? 0
@@ -102,11 +105,14 @@ export function DialogoAplicar({
 
     hapticFeedback.medium()
     try {
-      await onAplicar({
+      const resposta = await onAplicar({
         contaOrigemId,
         valor: valorNumero,
         caixinhaId: destinoId === 'nao_alocado' ? undefined : destinoId,
       })
+      if (resposta && typeof resposta === 'object' && 'ok' in resposta && !resposta.ok) {
+        throw new Error(resposta.erro || 'Erro ao aplicar valor na carteira.')
+      }
       hapticFeedback.success()
       onOpenChange(false)
     } catch (err: unknown) {
