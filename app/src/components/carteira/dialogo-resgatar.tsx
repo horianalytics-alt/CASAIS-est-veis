@@ -29,7 +29,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { formatBRL, parseBRLInput, isoToBR, todayISO } from '@/lib/format'
+import { formatBRL, parseBRLInput, isoToBR } from '@/lib/format'
+import { hojeEmSaoPaulo } from '@/lib/hoje'
 import { hapticFeedback } from '@/lib/haptics'
 import type { CaixinhaInvestimento } from './tipos-investimentos'
 import type { ContaOrigem } from './dialogo-aplicar'
@@ -45,7 +46,7 @@ export interface DialogoResgatarProps {
   onOpenChange: (aberto: boolean) => void
   caixinha: CaixinhaInvestimento | null
   contasDestino: ContaOrigem[]
-  onResgatar: (dados: DadosResgate) => Promise<void> | void
+  onResgatar: (dados: DadosResgate) => Promise<{ ok: boolean; erro?: string } | void> | { ok: boolean; erro?: string } | void
   pendente?: boolean
 }
 
@@ -63,7 +64,7 @@ export function DialogoResgatar({
   const [erro, setErro] = React.useState<string | null>(null)
   const [sucessoCarimbo, setSucessoCarimbo] = React.useState(false)
 
-  const hoje = todayISO()
+  const hoje = hojeEmSaoPaulo()
   const bloqueadaPorCarencia = Boolean(
     caixinha &&
       !caixinha.resgate_imediato &&
@@ -73,9 +74,11 @@ export function DialogoResgatar({
 
   const saldoCaixinhaReais = caixinha ? caixinha.balance_cents / 100 : 0
 
-  // Reseta estado ao abrir
+  const abertoAnterior = React.useRef(false)
+
+  // Reseta estado ao abrir (apenas na transição de false -> true)
   React.useEffect(() => {
-    if (aberto) {
+    if (aberto && !abertoAnterior.current) {
       setValorTexto('')
       setDestinoTipo('nao_alocado')
       if (contasDestino.length > 0) {
@@ -84,6 +87,7 @@ export function DialogoResgatar({
       setErro(null)
       setSucessoCarimbo(false)
     }
+    abertoAnterior.current = aberto
   }, [aberto, contasDestino])
 
   if (!caixinha) return null
@@ -122,11 +126,14 @@ export function DialogoResgatar({
           ? 'nao_alocado'
           : { contaId: contaDestinoId }
 
-      await onResgatar({
+      const resposta = await onResgatar({
         caixinhaId: caixinha.id,
         valor: valorNumero,
         destino,
       })
+      if (resposta && typeof resposta === 'object' && 'ok' in resposta && !resposta.ok) {
+        throw new Error(resposta.erro || 'Erro ao resgatar saldo da caixinha.')
+      }
 
       setSucessoCarimbo(true)
       hapticFeedback.success()
