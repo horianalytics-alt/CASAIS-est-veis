@@ -243,6 +243,16 @@ export function AreaInvestimentos({
 
   return (
     <div className={cn('flex flex-col gap-6', className)}>
+      {/* Banner informativo de demonstração (Briefing Rodada 11 - A2) */}
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-700 dark:text-amber-400 flex items-start gap-2.5">
+        <Sparkles className="size-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+        <div className="flex flex-col gap-0.5">
+          <span className="font-semibold">Prévia da Carteira — Dados de Demonstração</span>
+          <span>
+            Esta área exibe dados simulados para validação de interface. Nenhuma operação financeira real é executada ou persistida até a integração final na Rodada 12.
+          </span>
+        </div>
+      </div>
       {/* 1. Resumo Patrimonial da Carteira de Investimento (Hero) */}
       <section
         aria-label="Resumo dos Investimentos"
