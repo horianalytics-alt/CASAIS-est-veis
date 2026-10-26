@@ -17,7 +17,8 @@ import { Button } from '@/components/ui/button'
 import { ValorMonetario } from '@/components/financeiro/valor-monetario'
 import { useInView } from '@/hooks/use-in-view'
 import { hapticFeedback } from '@/lib/haptics'
-import { isoToBR, todayISO } from '@/lib/format'
+import { isoToBR } from '@/lib/format'
+import { hojeEmSaoPaulo } from '@/lib/hoje'
 import { cn } from '@/lib/utils'
 import {
   type CaixinhaInvestimento,
@@ -46,7 +47,7 @@ export function CardCaixinha({
 }: CardCaixinhaProps) {
   const { ref, inView } = useInView<HTMLElement>({ threshold: 0.08, replayOnScroll: true })
 
-  const hoje = todayISO()
+  const hoje = hojeEmSaoPaulo()
   const estaVencida = Boolean(
     !caixinha.resgate_imediato &&
       caixinha.data_vencimento &&
