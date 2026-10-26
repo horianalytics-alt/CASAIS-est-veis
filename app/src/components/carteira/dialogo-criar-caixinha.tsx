@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { hapticFeedback } from '@/lib/haptics'
-import { todayISO } from '@/lib/format'
+import { hojeEmSaoPaulo } from '@/lib/hoje'
 import {
   type TipoRendimento,
   ROTULOS_TIPO_RENDIMENTO,
@@ -38,7 +38,7 @@ export interface DadosNovaCaixinha {
 export interface DialogoCriarCaixinhaProps {
   aberto: boolean
   onOpenChange: (aberto: boolean) => void
-  onSalvar: (dados: DadosNovaCaixinha) => Promise<void> | void
+  onSalvar: (dados: DadosNovaCaixinha) => Promise<{ ok: boolean; erro?: string } | void> | { ok: boolean; erro?: string } | void
   pendente?: boolean
 }
 
@@ -55,9 +55,11 @@ export function DialogoCriarCaixinha({
   const [dataVencimento, setDataVencimento] = React.useState('')
   const [erro, setErro] = React.useState<string | null>(null)
 
-  // Reseta campos ao abrir
+  const abertoAnterior = React.useRef(false)
+
+  // Reseta campos ao abrir (apenas na transição de false -> true)
   React.useEffect(() => {
-    if (aberto) {
+    if (aberto && !abertoAnterior.current) {
       setNome('')
       setTipoRendimento('liquidez_diaria')
       setTaxaString('1,05')
@@ -65,6 +67,7 @@ export function DialogoCriarCaixinha({
       setDataVencimento('')
       setErro(null)
     }
+    abertoAnterior.current = aberto
   }, [aberto])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,9 +96,8 @@ export function DialogoCriarCaixinha({
         hapticFeedback.warning()
         return
       }
-      const hoje = todayISO()
-      if (dataVencimento <= hoje) {
-        setErro('A data de vencimento deve ser uma data futura.')
+      if (dataVencimento < '2000-01-01' || dataVencimento > '2100-12-31') {
+        setErro('Data de vencimento inválida.')
         hapticFeedback.warning()
         return
       }
@@ -103,13 +105,16 @@ export function DialogoCriarCaixinha({
 
     hapticFeedback.medium()
     try {
-      await onSalvar({
+      const resposta = await onSalvar({
         nome: nomeLimpo,
         tipoRendimento,
         taxaMensalBps,
         resgateImediato,
         dataVencimento: resgateImediato ? null : dataVencimento,
       })
+      if (resposta && typeof resposta === 'object' && 'ok' in resposta && !resposta.ok) {
+        throw new Error(resposta.erro || 'Erro ao criar caixinha.')
+      }
       hapticFeedback.success()
       onOpenChange(false)
     } catch (err: unknown) {
@@ -252,7 +257,8 @@ export function DialogoCriarCaixinha({
                 type="date"
                 value={dataVencimento}
                 onChange={(e) => setDataVencimento(e.target.value)}
-                min={todayISO()}
+                min="2000-01-01"
+                max="2100-12-31"
                 className="h-9 text-xs rounded-xl"
               />
               <span className="text-[11px] text-muted-foreground">
