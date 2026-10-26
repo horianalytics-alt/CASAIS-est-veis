@@ -30,12 +30,16 @@ interface PaginaCarteiraProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
+// Feature flag (Briefing Rodada 11 - A2):
+// Esconde a aba de Investimentos da navegação até a fiação com dados reais (Rodada 12).
+const EXIBIR_ABA_INVESTIMENTOS = process.env.NEXT_PUBLIC_FEATURE_INVESTIMENTOS === 'true'
+
 export default async function PaginaCarteira({ searchParams }: PaginaCarteiraProps) {
   await connection()
 
   const params = await searchParams
   const mostrarArquivadas = params.arquivadas === '1'
-  const abaAtiva = params.aba === 'investimentos' ? 'investimentos' : 'contas'
+  const abaAtiva = EXIBIR_ABA_INVESTIMENTOS && params.aba === 'investimentos' ? 'investimentos' : 'contas'
 
   const supabase = await createClient()
 
@@ -165,6 +169,7 @@ export default async function PaginaCarteira({ searchParams }: PaginaCarteiraPro
 
       {/* Abas de Navegação: Contas & Cartões vs Investimentos */}
       <Tabs key={abaAtiva} defaultValue={abaAtiva} className="w-full flex flex-col gap-6">
+        {EXIBIR_ABA_INVESTIMENTOS && (
         <TabsList className="grid w-full grid-cols-2 max-w-xs self-start rounded-xl p-1 bg-muted/60 border border-border/60">
           <TabsTrigger value="contas" className="rounded-lg text-xs font-semibold">
             Contas & Cartões
@@ -174,6 +179,7 @@ export default async function PaginaCarteira({ searchParams }: PaginaCarteiraPro
             <span>Investimentos</span>
           </TabsTrigger>
         </TabsList>
+      )}
 
         <TabsContent value="contas" className="flex flex-col gap-6 outline-none m-0">
           {/* Resumo Patrimonial em Destaque */}
@@ -272,9 +278,11 @@ export default async function PaginaCarteira({ searchParams }: PaginaCarteiraPro
           </ScrollReveal>
         </TabsContent>
 
+        {EXIBIR_ABA_INVESTIMENTOS && (
         <TabsContent value="investimentos" className="flex flex-col gap-6 outline-none m-0">
           <AreaInvestimentos contasOrigem={contasOrigem} />
         </TabsContent>
+      )}
       </Tabs>
     </main>
   )
