@@ -84,10 +84,23 @@ const taxaMensalBps = z
     if (mensagem) ctx.addIssue({ code: z.ZodIssueCode.custom, message: mensagem })
   })
 
-/** Nome limpo (sem invisíveis, espaço colapsado) e contado por code point (L-015). */
+/**
+ * O que limparNome não remove e a RPC carteira_criar_caixinha (00018, BLOCO 2)
+ * remove; a lista é a mesma da classe de regexp de lá (achado A6 do Sentinela):
+ * marcas e controles de direção (U+200E, U+200F, U+061C, U+202A..U+202E,
+ * U+2066..U+2069), operadores invisíveis (U+2061..U+2065), preenchimentos
+ * Hangul (U+115F, U+1160, U+3164, U+FFA0), U+180E e caracteres de controle
+ * que não são espaço (U+0001..U+0008, U+000E..U+001F, U+007F..U+009F).
+ * Só aqui, a mais: U+0000 e surrogates soltos, que o Postgres recusa no texto
+ * (sairia erro genérico em vez de "Informe o nome").
+ */
+const DIRECAO_E_CONTROLE =
+  /[\u{0}-\u{8}\u{e}-\u{1f}\u{7f}-\u{9f}\u{61c}\u{115f}\u{1160}\u{180e}\u{200e}\u{200f}\u{202a}-\u{202e}\u{2061}-\u{2069}\u{3164}\u{ffa0}\u{d800}-\u{dfff}]/gu
+
+/** Nome limpo (sem invisíveis, direção ou controle, espaço colapsado) e contado por code point (L-015). */
 const nomeDaCaixinha = z
   .string({ required_error: M.nomeVazio, invalid_type_error: M.nomeVazio })
-  .transform(limparNome)
+  .transform((nome) => limparNome(nome.replace(DIRECAO_E_CONTROLE, '')))
   .superRefine((nome, ctx) => {
     const tamanho = Array.from(nome).length
     const mensagem = tamanho === 0 ? M.nomeVazio : tamanho > LIMITE_NOME_CAIXINHA ? M.nomeLongo : null

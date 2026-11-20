@@ -322,17 +322,19 @@ describe.skipIf(!temAmbiente)('carteira de investimento contra o banco real', { 
     const id = await novaCaixinha(A.m1, { nome: 'Rendimento' })
     como(A.m1)
     expect((await aplicarNaCarteira({ contaOrigemId: A.conta1, valor: 1000, caixinhaId: id })).ok).toBe(true)
-    // Fixture retroativa (service_role): a caixinha e a entrada passam a ser de
-    // 3 meses atrás. Pendentes = os 2 meses ENCERRADOS depois da entrada; o mês
-    // corrente ainda não rendeu e não aparece (00017).
+    // Fixture retroativa (service_role): a caixinha e a entrada passam para o
+    // dia 15 do mês retrasado. Pendentes = os 2 meses ENCERRADOS desde a
+    // entrada: o mês da entrada rende, porque o dinheiro está lá no FIM dele
+    // (regra do saldo do fim do mês, 00018). O mês corrente ainda não fechou e
+    // não aparece (00017).
     const hoje = hojeEmSaoPaulo()
     const [ano, mes] = hoje.split('-').map(Number)
-    const tresMesesAtras = new Date(Date.UTC(ano, mes - 4, 15)).toISOString().slice(0, 10)
+    const doisMesesAtras = new Date(Date.UTC(ano, mes - 3, 15)).toISOString().slice(0, 10)
     const mesRetrasado = new Date(Date.UTC(ano, mes - 3, 1)).toISOString().slice(0, 7)
     const mesPassado = new Date(Date.UTC(ano, mes - 2, 1)).toISOString().slice(0, 7)
     const fimDoMesPassado = new Date(Date.UTC(ano, mes - 1, 0)).toISOString().slice(0, 10)
-    await admin.from('investment_boxes').update({ created_at: `${tresMesesAtras}T15:00:00Z` }).eq('id', id)
-    await admin.from('investment_box_movements').update({ occurred_on: tresMesesAtras }).eq('box_id', id)
+    await admin.from('investment_boxes').update({ created_at: `${doisMesesAtras}T15:00:00Z` }).eq('id', id)
+    await admin.from('investment_box_movements').update({ occurred_on: doisMesesAtras }).eq('box_id', id)
 
     const { data: pend } = await A.m1.cli.rpc('carteira_rendimentos_pendentes')
     expect(pend!.filter((p) => p.caixinha_id === id).map((p) => [p.competencia.slice(0, 7), p.rendimento_cents]))

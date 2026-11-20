@@ -12,8 +12,11 @@
 //   node tests/integration/carteira-rls.mjs --com-migration <migration> --mutante tests/integration/carteira-rls-mutante.sql
 //
 // --com-migration: roda a migration ANTES do teste, na MESMA transação (que é
-// desfeita no fim), e depois confere que investment_boxes NÃO ficou no banco.
-// Só faz sentido enquanto a migration ainda não foi aplicada.
+// desfeita no fim), e depois confere que a impressão digital do schema public
+// é a mesma de antes (prova do rollback). Só faz sentido enquanto a migration
+// ainda não foi aplicada. --prova "<select ... as rollback_ok>" é opcional.
+// --sim: repassa --yes ao CLI v3 (sem ele, em modo agente, o CLI recusa SQL
+// no banco hospedado). Só com autorização escrita para rodar contra produção.
 // --mutante: aplica o patch mutante depois da migration, na mesma transação.
 // Com ele, o placar TEM de mostrar falhas.
 import { execFileSync } from 'node:child_process'
@@ -44,7 +47,15 @@ const teste = resolve(import.meta.dirname, 'carteira-rls.sql')
 
 function consultar(arquivo) {
   try {
-    return execFileSync('npx', ['supabase', 'db', 'query', '--db-url', DB_URL, '-f', arquivo], {
+    // No Windows o shell junta os argumentos com espaço e sem aspas: o caminho
+    // do arquivo vai entre aspas para sobreviver a um TEMP com espaço
+    // (code-review high da 00018).
+    const caminho = process.platform === 'win32' ? `"${arquivo}"` : arquivo
+    // CLI v3 em modo agente recusa SQL no hospedado sem --yes
+    // (HostedMutationConsentRequiredError). --sim repassa o --yes: só com
+    // autorização escrita para rodar contra o banco (que aqui é produção).
+    const extra = process.argv.includes('--sim') ? ['--yes'] : []
+    return execFileSync('npx', ['supabase', 'db', 'query', '--db-url', DB_URL, ...extra, '-f', caminho], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: process.platform === 'win32',
@@ -78,6 +89,39 @@ if (migration) {
   writeFileSync(arquivo, sqlTeste)
 }
 
+// Impressão digital do schema public (funções e corpos, tabelas e views,
+// policies, triggers). Tirada antes e depois de rodar com --com-migration: se
+// mudou, o rollback NÃO aconteceu. Vale para qualquer migration, sem --prova
+// (achado A9 do Sentinela: o padrão antigo só servia para a 00016).
+// Cada parte ordena pela própria expressão: ORDER BY 1 dentro de agregado
+// ordenaria por uma constante, e a impressão poderia variar sem o schema mudar.
+const SQL_IMPRESSAO = `select md5(concat_ws('|',
+  (select string_agg(x, ',' order by x) from (
+     select p.oid::regprocedure::text || md5(p.prosrc) || coalesce(array_to_string(p.proconfig, ','), '') as x
+     from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public') a),
+  (select string_agg(x, ',' order by x) from (
+     select c.relname::text || c.relkind::text as x
+     from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public') b),
+  (select string_agg(x, ',' order by x) from (
+     select tablename::text || policyname::text || coalesce(qual, '') || coalesce(with_check, '') as x
+     from pg_policies where schemaname = 'public') c),
+  (select string_agg(x, ',' order by x) from (
+     select c.relname::text || t.tgname::text || t.tgenabled::text || pg_get_triggerdef(t.oid) as x
+     from pg_trigger t join pg_class c on c.oid = t.tgrelid join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public' and not t.tgisinternal) d)
+)) as impressao;`
+function impressao() {
+  const f = join(dir, 'impressao.sql')
+  writeFileSync(f, SQL_IMPRESSAO)
+  const m = consultar(f).match(/"impressao":\s*"([0-9a-f]{32})"/)
+  return m ? m[1] : null
+}
+const impressaoAntes = migration ? impressao() : null
+if (migration && !impressaoAntes) {
+  console.log('Não foi possível tirar a impressão digital do schema antes de rodar.')
+  process.exit(4)
+}
+
 console.log(
   migration
     ? `com rascunho de migration: ${migration}${mutante ? `\nCOM MUTANTE: ${mutante}` : ''}`
@@ -85,28 +129,40 @@ console.log(
 )
 const saida = consultar(arquivo)
 
-const m = saida.match(/PLACAR carteira-rls: (\d+) de (\d+) passaram, (\d+) falha\(s\)([\s\S]*?)(?:"|$)/)
+// A mensagem do placar chega como string JSON escapada: vai até a primeira
+// aspa NÃO escapada (uma FALHA com `\"` no SQLERRM não corta a lista —
+// code-review high da 00018) e é desescapada com JSON.parse.
+const m = saida.match(/PLACAR carteira-rls: (\d+) de (\d+) passaram, (\d+) falha\(s\)((?:\\.|[^"\\])*)/)
 if (!m) {
   console.log('O teste não chegou ao placar. Saída crua:')
   console.log(saida)
   process.exit(2)
 }
 console.log(`placar: ${m[1]} de ${m[2]} passaram, ${m[3]} falha(s)`)
-console.log(m[4].replace(/\\n/g, '\n'))
+let linhas
+try {
+  linhas = JSON.parse(`"${m[4]}"`)
+} catch {
+  linhas = m[4].replace(/\\n/g, '\n')
+}
+console.log(linhas)
 
-// Prova do rollback: por padrão, investment_boxes ausente (vale para a 00016).
-// Para migration posterior, --prova "<select ... as rollback_ok>" diz o que conferir.
-const iProva = process.argv.indexOf('--prova')
-const sqlProva = iProva > 0
-  ? process.argv[iProva + 1]
-  : "select to_regclass('public.investment_boxes') is null as rollback_ok;"
+// Prova do rollback: a impressão digital do schema tem de ser a mesma de antes.
+// --prova "<select ... as rollback_ok>" acrescenta uma checagem específica.
 if (migration) {
-  const prova = join(dir, 'prova.sql')
-  writeFileSync(prova, sqlProva)
-  const p = consultar(prova)
-  const ok = /"rollback_ok":\s*true/.test(p)
-  console.log(`rollback conferido (${sqlProva}): ${ok}`)
-  if (!ok) process.exit(3)
+  const depois = impressao()
+  const igual = depois === impressaoAntes
+  console.log(`rollback conferido (impressão do schema igual antes/depois): ${igual}`)
+  if (!igual) process.exit(3)
+  const iProva = process.argv.indexOf('--prova')
+  if (iProva > 0) {
+    const sqlProva = process.argv[iProva + 1]
+    const prova = join(dir, 'prova.sql')
+    writeFileSync(prova, sqlProva)
+    const ok = /"rollback_ok":\s*true/.test(consultar(prova))
+    console.log(`rollback conferido (${sqlProva}): ${ok}`)
+    if (!ok) process.exit(3)
+  }
 }
 
 process.exit(Number(m[3]) === 0 ? 0 : 1)

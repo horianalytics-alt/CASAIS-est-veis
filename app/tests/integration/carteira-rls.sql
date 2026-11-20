@@ -19,7 +19,7 @@ DECLARE
   ub uuid := gen_random_uuid();
   fa uuid; fb uuid; ma uuid; mb uuid;
   ca uuid; cb uuid; cart uuid; wa uuid;
-  box_a uuid; box_r uuid;
+  box_a uuid; box_r uuid; box_s uuid; box_p uuid; box_n uuid;
   tx_aplic uuid; mov uuid; tx uuid;
   hoje date; m0 date; m1 date; m2 date; m3 date;
   n int; nb bigint; v bigint;
@@ -224,6 +224,46 @@ BEGIN
   IF v_estado = '42501' AND n = 1 THEN v_linhas := v_linhas || E'\n  PASS  C18 saldo inicial da conta-carteira congelado (42501); renomear continua livre';
   ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA C18 conta-carteira — saldo inicial: ' || v_estado || ', renomear: ' || n; END IF;
 
+  -- C19 (achado A5 do Sentinela — 00018): a conta-carteira não é arquivada
+  -- pelo cliente. Arquivada, ela sumia das telas e as RPCs continuavam operando.
+  v_estado := 'ok';
+  BEGIN
+    UPDATE public.accounts SET archived_at = now() WHERE id = wa;
+  EXCEPTION WHEN OTHERS THEN v_estado := SQLSTATE;
+  END;
+  v_total := v_total + 1;
+  IF v_estado = '42501' THEN v_linhas := v_linhas || E'\n  PASS  C19 arquivar a conta-carteira recusado (42501)';
+  ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA C19 arquivar a conta-carteira — ' || v_estado; END IF;
+
+  -- C20 (achado A6 — 00018): a RPC limpa o nome como o Zod (invisíveis,
+  -- controle de direção, caracteres de controle, espaços colapsados).
+  -- Invisíveis montados com chr() para o arquivo não carregar o caractere (L-012).
+  v_texto := 'ok';
+  BEGIN
+    PERFORM public.carteira_criar_caixinha(chr(8203) || chr(8238) || chr(65279) || chr(160), 'pre_fixado', 100, true, NULL);
+  EXCEPTION WHEN OTHERS THEN v_texto := SQLERRM;
+  END;
+  -- code-review high da 00018: marca de direção U+200F e preenchimentos
+  -- Hangul U+3164 / U+115F também são "nome vazio".
+  BEGIN
+    PERFORM public.carteira_criar_caixinha(chr(8207) || chr(12644) || chr(4447), 'pre_fixado', 100, true, NULL);
+    v_texto := v_texto || '|ok';
+  EXCEPTION WHEN OTHERS THEN v_texto := v_texto || '|' || SQLERRM;
+  END;
+  v_estado := 'ok';
+  BEGIN
+    box_n := public.carteira_criar_caixinha('  Pet' || chr(8238) || chr(8203) || chr(8207) || chr(12644) || chr(160) || chr(9) || 'Teste' || chr(1) || '  ', 'pre_fixado', 100, true, NULL);
+  EXCEPTION WHEN OTHERS THEN v_estado := SQLERRM;
+  END;
+  -- Só lê o nome se a criação passou: senão o SELECT apagaria o erro (code-review high).
+  IF v_estado = 'ok' THEN
+    SELECT name INTO v_estado FROM public.investment_boxes WHERE id = box_n;
+  END IF;
+  v_total := v_total + 1;
+  IF v_texto = 'Informe o nome da caixinha.|Informe o nome da caixinha.' AND v_estado = 'Pet Teste'
+  THEN v_linhas := v_linhas || E'\n  PASS  C20 nome só de invisíveis (inclusive U+200F e Hangul) recusado; invisíveis, U+202E, U+200F, U+3164 e controle removidos, espaços colapsados';
+  ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA C20 nome — só invisíveis: ' || v_texto || ' / limpo: ' || coalesce(replace(replace(replace(v_estado, chr(8238), '<U+202E>'), chr(8207), '<U+200F>'), chr(12644), '<U+3164>'), '<nulo>'); END IF;
+
   -- ------------------------------------------------------------ como B (intruso)
   PERFORM set_config('request.jwt.claims', json_build_object('sub', ub, 'role', 'authenticated')::text, true);
   SET LOCAL ROLE authenticated;
@@ -412,39 +452,31 @@ BEGIN
   SELECT string_agg(to_char(p.competencia, 'YYYY-MM') || '=' || p.rendimento_cents, ',' ORDER BY p.competencia) INTO v_texto
     FROM public.carteira_rendimentos_pendentes() p WHERE p.caixinha_id = box_r;
   v_total := v_total + 1;
-  -- m3 é o mês CORRENTE: ainda não rendeu, não aparece e não confirma
-  -- (code-review high, achado 1 — 00017).
-  IF v_texto = to_char(m1, 'YYYY-MM') || '=1000,' || to_char(m2, 'YYYY-MM') || '=1000'
-  THEN v_linhas := v_linhas || E'\n  PASS  R01 pendentes de A: só os 2 meses ENCERRADOS, 1000 cada; mês da entrada e mês corrente de fora';
+  -- Regra do Heitor (00018): o mês M rende sobre o saldo do FIM de M. A
+  -- entrada de m0 está na caixinha no fechamento de m0, então m0 rende. m3 é o
+  -- mês CORRENTE: ainda não fechou, não aparece e não confirma (00017).
+  IF v_texto = to_char(m0, 'YYYY-MM') || '=1000,' || to_char(m1, 'YYYY-MM') || '=1000,' || to_char(m2, 'YYYY-MM') || '=1000'
+  THEN v_linhas := v_linhas || E'\n  PASS  R01 pendentes de A: os 3 meses ENCERRADOS desde a entrada, 1000 cada; mês corrente de fora';
   ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA R01 pendentes — ' || coalesce(v_texto, '<nenhum>'); END IF;
 
   v_texto := 'ok';
   BEGIN
-    PERFORM public.carteira_confirmar_rendimento(box_r, m0);
+    PERFORM public.carteira_confirmar_rendimento(box_r, m1);
   EXCEPTION WHEN OTHERS THEN v_texto := SQLERRM;
   END;
   v_total := v_total + 1;
-  IF v_texto = 'Não há rendimento a confirmar neste mês' THEN v_linhas := v_linhas || E'\n  PASS  R07 mês da entrada (base zero): nada a confirmar';
-  ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA R07 mês da entrada — ' || v_texto; END IF;
-
-  v_texto := 'ok';
-  BEGIN
-    PERFORM public.carteira_confirmar_rendimento(box_r, m2);
-  EXCEPTION WHEN OTHERS THEN v_texto := SQLERRM;
-  END;
-  v_total := v_total + 1;
-  IF v_texto = 'Confirme antes o rendimento de ' || to_char(m1, 'MM/YYYY') THEN v_linhas := v_linhas || E'\n  PASS  R02 confirmar fora de ordem: recusado, aponta o mês mais antigo';
+  IF v_texto = 'Confirme antes o rendimento de ' || to_char(m0, 'MM/YYYY') THEN v_linhas := v_linhas || E'\n  PASS  R02 confirmar fora de ordem: recusado, aponta o mês mais antigo';
   ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA R02 fora de ordem — ' || v_texto; END IF;
 
   v_texto := 'ok'; v := NULL;
   BEGIN
-    SELECT r.valor_cents, r.lancamento_id INTO v, tx FROM public.carteira_confirmar_rendimento(box_r, m1) r;
+    SELECT r.valor_cents, r.lancamento_id INTO v, tx FROM public.carteira_confirmar_rendimento(box_r, m0) r;
   EXCEPTION WHEN OTHERS THEN v_texto := SQLERRM;
   END;
   SELECT balance_cents INTO nb FROM public.investment_boxes WHERE id = box_r;
   v_total := v_total + 1;
-  IF v_texto = 'ok' AND v = 1000 AND nb = 101000 THEN v_linhas := v_linhas || E'\n  PASS  R03 confirmar m1: 1000 vira saldo (101000)';
-  ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA R03 confirmar m1 — ' || v_texto || ', valor=' || coalesce(v, -1) || ', saldo=' || nb; END IF;
+  IF v_texto = 'ok' AND v = 1000 AND nb = 101000 THEN v_linhas := v_linhas || E'\n  PASS  R03 confirmar m0: 1000 vira saldo (101000)';
+  ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA R03 confirmar m0 — ' || v_texto || ', valor=' || coalesce(v, -1) || ', saldo=' || nb; END IF;
 
   -- A receita do rendimento E o movimento são datados no ÚLTIMO dia do mês de
   -- competência, não no dia da confirmação: patrimônio, resumo mensal e
@@ -455,8 +487,8 @@ BEGIN
     JOIN public.investment_box_movements m ON m.transaction_id = t.id
    WHERE t.id = tx;
   v_total := v_total + 1;
-  IF v_texto = ((m1 + interval '1 month')::date - 1)::text || '/' || ((m1 + interval '1 month')::date - 1)::text
-              || '/receita/' || ((m1 + interval '1 month')::date - 1)::text
+  IF v_texto = ((m0 + interval '1 month')::date - 1)::text || '/' || ((m0 + interval '1 month')::date - 1)::text
+              || '/receita/' || ((m0 + interval '1 month')::date - 1)::text
   THEN v_linhas := v_linhas || E'\n  PASS  R09 receita e movimento do rendimento datados no último dia da competência';
   ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA R09 datas do rendimento — ' || coalesce(v_texto, '<nenhuma>'); END IF;
 
@@ -467,19 +499,23 @@ BEGIN
 
   v_texto := 'ok';
   BEGIN
-    PERFORM public.carteira_confirmar_rendimento(box_r, m1);
+    PERFORM public.carteira_confirmar_rendimento(box_r, m0);
   EXCEPTION WHEN OTHERS THEN v_texto := SQLERRM;
   END;
   SELECT balance_cents INTO nb FROM public.investment_boxes WHERE id = box_r;
   v_total := v_total + 1;
-  IF v_texto = 'O rendimento deste mês já foi confirmado' AND nb = 101000 THEN v_linhas := v_linhas || E'\n  PASS  R04 confirmar m1 de novo: recusado, saldo não duplica';
+  IF v_texto = 'O rendimento deste mês já foi confirmado' AND nb = 101000 THEN v_linhas := v_linhas || E'\n  PASS  R04 confirmar m0 de novo: recusado, saldo não duplica';
   ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA R04 confirmação repetida — ' || v_texto || ', saldo=' || nb; END IF;
 
-  v := NULL;
-  SELECT r.valor_cents INTO v FROM public.carteira_confirmar_rendimento(box_r, m2) r;
+  v := NULL; nb := NULL; v_texto := 'ok';
+  BEGIN
+    SELECT r.valor_cents INTO nb FROM public.carteira_confirmar_rendimento(box_r, m1) r;
+    SELECT r.valor_cents INTO v FROM public.carteira_confirmar_rendimento(box_r, m2) r;
+  EXCEPTION WHEN OTHERS THEN v_texto := SQLERRM;
+  END;
   v_total := v_total + 1;
-  IF v = 1010 THEN v_linhas := v_linhas || E'\n  PASS  R05 m2 = 1010 (1% sobre 101000, mesmo com a taxa mudada para 2% depois): juro composto só do confirmado, taxa do fim do mês';
-  ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA R05 m2=' || coalesce(v, -1); END IF;
+  IF v_texto = 'ok' AND nb = 1010 AND v = 1020 THEN v_linhas := v_linhas || E'\n  PASS  R05 m1 = 1010 (1% de 101000) e m2 = 1020 (1% de 102010), mesmo com a taxa mudada para 2% depois: juro composto só do confirmado, taxa do fim do mês';
+  ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA R05 ' || v_texto || ', m1=' || coalesce(nb, -1) || ', m2=' || coalesce(v, -1); END IF;
 
   -- Mês corrente e mês futuro: recusados com a mesma frase. Data fora do dia 1: inválida.
   v_texto := 'ok';
@@ -507,11 +543,12 @@ BEGIN
   ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA R10 dia 15 — ' || v_texto; END IF;
 
   -- Mês anterior ao último confirmado nunca mais confirma, mesmo que a taxa
-  -- mude e ele passe a render (code-review high, achado 4 — 00017). m0 tem
-  -- rendimento zero: sem a regra nova, a frase seria a de "nada a confirmar".
+  -- mude e ele passe a render (code-review high, achado 4 — 00017). O mês
+  -- antes da criação rende zero: sem a regra, a frase seria a de "nada a
+  -- confirmar".
   v_texto := 'ok';
   BEGIN
-    PERFORM public.carteira_confirmar_rendimento(box_r, m0);
+    PERFORM public.carteira_confirmar_rendimento(box_r, (m0 - interval '1 month')::date);
   EXCEPTION WHEN OTHERS THEN v_texto := SQLERRM;
   END;
   v_total := v_total + 1;
@@ -524,6 +561,59 @@ BEGIN
   v_total := v_total + 1;
   IF n = 0 AND nb = 10000 THEN v_linhas := v_linhas || E'\n  PASS  R08 sem pendentes depois de confirmar; não alocado continua 10000';
   ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA R08 pendentes=' || n || ', não alocado=' || coalesce(nb, -1); END IF;
+
+  -- ------------------------------------------------------------ S08 do Sentinela (achado A1 — 00018)
+  -- Reprodução exata: R$1.000 entra em m0, sai INTEIRO no dia 1 de m1 (caixinha
+  -- zerada). Antes da 00018, m1 rendia R$10 cheios sobre o saldo de antes do
+  -- saque ("pendentes = m1=1000"), confirmável e resgatável. Regra do Heitor:
+  -- o mês rende sobre o saldo do FIM do mês. m1 terminou com zero de
+  -- principal, então só rende sobre o que de fato ficou (o rendimento de m0,
+  -- se confirmado).
+  -- S09: saque PARCIAL (R$400) no dia 20 de m1: m1 rende sobre os R$600 que
+  -- sobraram.
+  -- Fixtures como postgres; o resumo da família já foi conferido no R08.
+  RESET ROLE;
+  INSERT INTO public.investment_boxes (family_id, account_id, name, rate_type, rate_bps, rate_defined_at, resgate_imediato, balance_cents, created_at)
+  VALUES (fa, wa, 'S08 zerada no dia 1', 'pre_fixado', 100, hoje, true, 0, (hoje - interval '3 months')::timestamp AT TIME ZONE 'America/Sao_Paulo')
+  RETURNING id INTO box_s;
+  INSERT INTO public.investment_boxes (family_id, account_id, name, rate_type, rate_bps, rate_defined_at, resgate_imediato, balance_cents, created_at)
+  VALUES (fa, wa, 'S09 saque parcial', 'pre_fixado', 100, hoje, true, 60000, (hoje - interval '3 months')::timestamp AT TIME ZONE 'America/Sao_Paulo')
+  RETURNING id INTO box_p;
+  INSERT INTO public.investment_box_rates (family_id, box_id, rate_bps, valid_from)
+  VALUES (fa, box_s, 100, (hoje - interval '3 months')::date), (fa, box_p, 100, (hoje - interval '3 months')::date);
+  INSERT INTO public.investment_box_movements (family_id, box_id, kind, counterpart, amount_cents, occurred_on, created_by_member_id)
+  VALUES (fa, box_s, 'entrada', 'nao_alocado', 100000, (hoje - interval '3 months')::date, ma),
+         (fa, box_s, 'saida',   'nao_alocado', 100000, m1,      ma),
+         (fa, box_p, 'entrada', 'nao_alocado', 100000, (hoje - interval '3 months')::date, ma),
+         (fa, box_p, 'saida',   'nao_alocado',  40000, m1 + 19, ma);
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', ua, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+
+  SELECT string_agg(to_char(p.competencia, 'YYYY-MM') || '=' || p.rendimento_cents, ',' ORDER BY p.competencia) INTO v_texto
+    FROM public.carteira_rendimentos_pendentes() p WHERE p.caixinha_id = box_s;
+  v_total := v_total + 1;
+  IF v_texto = to_char(m0, 'YYYY-MM') || '=1000'
+  THEN v_linhas := v_linhas || E'\n  PASS  S08a caixinha zerada no dia 1 de m1: pendente só m0 (saldo cheio no fim de m0); m1 e m2 rendem zero';
+  ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA S08a pendentes da caixinha zerada — ' || coalesce(v_texto, '<nenhum>'); END IF;
+
+  v_texto := 'ok'; v := NULL; nb := NULL;
+  BEGIN
+    SELECT r.valor_cents INTO nb FROM public.carteira_confirmar_rendimento(box_s, m0) r;
+    SELECT r.valor_cents INTO v FROM public.carteira_confirmar_rendimento(box_s, m1) r;
+  EXCEPTION WHEN OTHERS THEN v_texto := SQLERRM;
+  END;
+  SELECT balance_cents INTO n FROM public.investment_boxes WHERE id = box_s;
+  v_total := v_total + 1;
+  IF v_texto = 'ok' AND nb = 1000 AND v = 10 AND n = 1010 THEN v_linhas := v_linhas || E'\n  PASS  S08b m0 confirma 1000; m1 confirma só 10 (1% dos R$10 que ficaram), nunca R$10 cheios sobre o que saiu; saldo 1010';
+  ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA S08b confirmações — ' || v_texto || ', m0=' || coalesce(nb, -1) || ', m1=' || coalesce(v, -1) || ', saldo=' || coalesce(n, -1); END IF;
+
+  SELECT string_agg(to_char(p.competencia, 'YYYY-MM') || '=' || p.rendimento_cents, ',' ORDER BY p.competencia) INTO v_texto
+    FROM public.carteira_rendimentos_pendentes() p WHERE p.caixinha_id = box_p;
+  v_total := v_total + 1;
+  IF v_texto = to_char(m0, 'YYYY-MM') || '=1000,' || to_char(m1, 'YYYY-MM') || '=600,' || to_char(m2, 'YYYY-MM') || '=600'
+  THEN v_linhas := v_linhas || E'\n  PASS  S09 saque de R$400 no dia 20 de m1: m1 e m2 rendem sobre os R$600 que sobraram (600 cada)';
+  ELSE v_falhas := v_falhas + 1; v_linhas := v_linhas || E'\n  FALHA S09 pendentes do saque parcial — ' || coalesce(v_texto, '<nenhum>'); END IF;
 
   -- ------------------------------------------------------------ conferência (postgres)
   RESET ROLE;

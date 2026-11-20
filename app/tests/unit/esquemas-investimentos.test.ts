@@ -135,6 +135,19 @@ describe('esquemaCriarCaixinha', () => {
   it('nome vazio ou só invisíveis -> [Informe o nome]', () => {
     expect(campos(esquemaCriarCaixinha.safeParse({ ...valida, nome: '   ' })).nome).toEqual([NOME_VAZIO])
     expect(campos(esquemaCriarCaixinha.safeParse({ ...valida, nome: '\u{200b}' })).nome).toEqual([NOME_VAZIO])
+    // Controle de direção e caracteres de controle também não contam (A6 do
+    // Sentinela; mesma limpeza da RPC na 00018).
+    expect(campos(esquemaCriarCaixinha.safeParse({ ...valida, nome: '\u{202e}\u{2066}\u{1}' })).nome).toEqual([NOME_VAZIO])
+    // code-review high da 00018: marcas de direção, preenchimento Hangul,
+    // operador invisível, NUL e surrogate solto também não contam.
+    for (const nome of ['\u{200f}', '\u{200e}\u{61c}', '\u{3164}', '\u{115f}\u{1160}\u{ffa0}', '\u{2062}\u{180e}', '\u0000', '\uD800']) {
+      expect(campos(esquemaCriarCaixinha.safeParse({ ...valida, nome })).nome).toEqual([NOME_VAZIO])
+    }
+  })
+
+  it('nome com controle de direção e de controle no meio sai limpo (mesmo resultado da RPC)', () => {
+    const r = esquemaCriarCaixinha.safeParse({ ...valida, nome: '  Pet\u{202e}\u{200b}\u{200f}\u{3164}\u{a0}\tTeste\u{1}  ' })
+    expect(r.success && r.data.nome).toBe('Pet Teste')
   })
 
   it('nome conta code points: 59 letras + emoji (60) passa; 60 letras + emoji (61) não (L-015)', () => {
