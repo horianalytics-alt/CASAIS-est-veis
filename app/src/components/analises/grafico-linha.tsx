@@ -15,6 +15,17 @@
  *     próximo; teclado (←/→/Home/End) mostra o mesmo que o hover;
  *   - tooltip só repete o que a tabela mostra (enhance, never gate);
  *   - texto sempre em token de texto, nunca na cor da série.
+ *
+ * Extensão aditiva (docs/planos/dash-grafico-projecao-caixinha.md §4.4), usada
+ * pela projeção da caixinha. Sem as props novas a saída é idêntica à anterior
+ * (tests/unit/grafico-linha.test.tsx, bloco "regressão"):
+ *   - `projetado`: bloco CONTÍGUO no fim da série, desenhado TRACEJADO, sem
+ *     área (o dataviz reserva o tracejado para "projeção"); fora desse formato,
+ *     tudo é desenhado sólido;
+ *   - `marcador: 'pendente'`: losango vazado permanente (forma, não cor);
+ *   - `nota`: linha extra no tooltip e na leitura acessível;
+ *   - `marcoHoje`: hairline vertical SÓLIDA com rótulo (marco de tempo);
+ *   - `mostrarArea=false`: sem área (modo privacidade, L-003).
  */
 
 import * as React from 'react'
@@ -33,6 +44,12 @@ export interface PontoLinha {
   /** Em reais. */
   valor: number
   parcial?: boolean
+  /** Valor simulado. Os projetados formam um bloco contíguo no fim; senão, tudo é sólido. */
+  projetado?: boolean
+  /** Marcador permanente no ponto (losango vazado). */
+  marcador?: 'pendente'
+  /** Linha extra no tooltip e na leitura acessível (já mascarada por quem chama). */
+  nota?: string
 }
 
 export interface GraficoLinhaProps {
@@ -41,10 +58,14 @@ export interface GraficoLinhaProps {
   incluirZero?: boolean
   rotuloAcessivel: string
   /** Formata o valor do tooltip/rótulo final; já respeita o modo privacidade. */
-  formatarValor: (valor: number) => string
+  formatarValor: (valor: number, ponto?: PontoLinha) => string
   /** Modo privacidade: some com os números do eixo Y. */
   oculto: boolean
   tabela: { cabecalhos: string[]; linhas: string[][] }
+  /** Marco vertical de "hoje" no índice informado. */
+  marcoHoje?: { indice: number; rotulo: string }
+  /** false = sem área mesmo com incluirZero (modo privacidade). Padrão: true. */
+  mostrarArea?: boolean
 }
 
 /** Altura TOTAL do gráfico, incluindo a faixa do eixo X (anti-pattern: eixo cortado). */
@@ -54,6 +75,21 @@ const MARGEM = { topo: 24, direita: 16, baixo: 28, esquerda: 68 }
 // Rótulo "mês 120" ancorado no fim ocupa ~48px; 80px por rótulo evita colisão com o vizinho.
 const LARGURA_POR_ROTULO_X = 80
 const COR_SERIE = 'var(--chart-1)'
+/** Traço da simulação: com ponta redonda de 2px, lê como traço ~6px e vão ~4px. */
+const TRACEJADO_PROJECAO = '4 6'
+/** Meia-diagonal do losango de pendente: 10px de ponta a ponta (dataviz: marcador >= 8px). */
+const RAIO_LOSANGO = 5
+
+/**
+ * Índice do último ponto REAL quando os projetados formam um bloco contíguo no
+ * fim da série (e há ao menos um real). Fora disso, null: tudo é sólido.
+ */
+export function indiceDeJuncao(pontos: Pick<PontoLinha, 'projetado'>[]): number | null {
+  const primeiro = pontos.findIndex((p) => p.projetado)
+  if (primeiro <= 0) return null
+  for (let i = primeiro; i < pontos.length; i++) if (!pontos[i].projetado) return null
+  return primeiro - 1
+}
 
 function useLarguraDoElemento<T extends HTMLElement>(): [React.RefObject<T | null>, number] {
   const ref = React.useRef<T>(null)
@@ -77,6 +113,8 @@ export function GraficoLinha({
   formatarValor,
   oculto,
   tabela,
+  marcoHoje,
+  mostrarArea = true,
 }: GraficoLinhaProps) {
   const { ref: refInView, inView } = useInView<HTMLDivElement>({ threshold: 0.15, replayOnScroll: true })
   const [refCaixa, largura] = useLarguraDoElemento<HTMLDivElement>()
@@ -132,13 +170,22 @@ export function GraficoLinha({
     }
   }
 
-  const caminho = pontos
-    .map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(p.valor).toFixed(1)}`)
-    .join(' ')
+  // Sem bloco projetado válido, o trecho real é a série inteira (saída de antes).
+  const juncao = indiceDeJuncao(pontos)
+  const fimReal = juncao ?? n - 1
+  const ehProjetado = (i: number) => juncao !== null && i > juncao
+  const segmento = (de: number, ate: number) =>
+    pontos
+      .slice(de, ate + 1)
+      .map((p, k) => `${k === 0 ? 'M' : 'L'}${x(de + k).toFixed(1)},${y(p.valor).toFixed(1)}`)
+      .join(' ')
+  const caminho = segmento(0, fimReal)
+  const caminhoProjetado = juncao !== null ? segmento(juncao, n - 1) : null
   const yBase = y(Math.max(dominio.min, Math.min(0, dominio.max)))
+  // Área só sob o trecho real: a lavagem daria "volume" a um valor simulado.
   const caminhoArea =
-    incluirZero && n > 1
-      ? `${caminho} L${x(n - 1).toFixed(1)},${yBase.toFixed(1)} L${x(0).toFixed(1)},${yBase.toFixed(1)} Z`
+    incluirZero && mostrarArea && n > 1 && fimReal >= 1
+      ? `${caminho} L${x(fimReal).toFixed(1)},${yBase.toFixed(1)} L${x(0).toFixed(1)},${yBase.toFixed(1)} Z`
       : null
 
   const passoY = dominio.ticks.length > 1 ? dominio.ticks[1] - dominio.ticks[0] : undefined
@@ -149,8 +196,14 @@ export function GraficoLinha({
   const ultimo = n > 0 ? pontos[n - 1] : null
   const pontoAtivo = ativo !== null ? pontos[ativo] : null
   const leitura = pontoAtivo
-    ? `${pontoAtivo.rotuloLongo}${pontoAtivo.parcial ? ` (${ANALISES.parcial})` : ''}: ${formatarValor(pontoAtivo.valor)}`
+    ? `${pontoAtivo.rotuloLongo}${pontoAtivo.parcial ? ` (${ANALISES.parcial})` : ''}: ${formatarValor(pontoAtivo.valor, pontoAtivo)}${pontoAtivo.nota ? `. ${pontoAtivo.nota}` : ''}`
     : ''
+  const ativoProjetado = ativo !== null && ehProjetado(ativo)
+  const ultimoVazado = ultimo ? Boolean(ultimo.parcial) || ehProjetado(n - 1) : false
+  const indiceMarco =
+    marcoHoje && Number.isInteger(marcoHoje.indice) && marcoHoje.indice >= 0 && marcoHoje.indice < n
+      ? marcoHoje.indice
+      : null
 
   // Tooltip: centro no ponto, preso dentro da caixa.
   const larguraTooltip = 168
@@ -221,6 +274,28 @@ export function GraficoLinha({
               </text>
             ))}
 
+            {indiceMarco !== null && marcoHoje ? (
+              <g data-marco="hoje">
+                <line
+                  x1={x(indiceMarco)}
+                  x2={x(indiceMarco)}
+                  y1={MARGEM.topo}
+                  y2={MARGEM.topo + alturaPlot}
+                  stroke="var(--border)"
+                  strokeWidth={1}
+                  shapeRendering="crispEdges"
+                />
+                <text
+                  x={x(indiceMarco)}
+                  y={MARGEM.topo - 8}
+                  textAnchor="middle"
+                  className="fill-muted-foreground text-[length:var(--texto-micro)]"
+                >
+                  {marcoHoje.rotulo}
+                </text>
+              </g>
+            ) : null}
+
             {caminhoArea ? (
               <path
                 d={caminhoArea}
@@ -246,6 +321,57 @@ export function GraficoLinha({
                 transition: 'stroke-dashoffset 850ms cubic-bezier(0.16, 1, 0.3, 1)',
               }}
             />
+
+            {/* Simulação: tracejada, entra depois que o trecho real termina de desenhar. */}
+            {caminhoProjetado ? (
+              <path
+                d={caminhoProjetado}
+                fill="none"
+                stroke={COR_SERIE}
+                strokeWidth={2}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                strokeDasharray={TRACEJADO_PROJECAO}
+                opacity={inView ? 1 : 0}
+                className="motion-reduce:transition-none!"
+                style={{ transition: 'opacity 400ms ease 850ms' }}
+              />
+            ) : null}
+
+            {/* Junção real -> simulação: o último ponto REAL (o saldo de hoje) ganha a
+                marca cheia. Com um único ponto real o trecho sólido nem tem segmento,
+                e sem esta marca o saldo de hoje não apareceria. */}
+            {juncao !== null ? (
+              <circle
+                data-ponto-real="juncao"
+                cx={x(juncao)}
+                cy={y(pontos[juncao].valor)}
+                r={4}
+                fill={COR_SERIE}
+                stroke="var(--card)"
+                strokeWidth={2}
+              />
+            ) : null}
+
+            {/* Mês com rendimento a confirmar: losango vazado (forma, não cor). */}
+            {pontos.map((p, i) =>
+              p.marcador === 'pendente' ? (
+                <polygon
+                  key={`pendente-${p.chave}`}
+                  data-marcador="pendente"
+                  points={[
+                    `${x(i)},${y(p.valor) - RAIO_LOSANGO}`,
+                    `${x(i) + RAIO_LOSANGO},${y(p.valor)}`,
+                    `${x(i)},${y(p.valor) + RAIO_LOSANGO}`,
+                    `${x(i) - RAIO_LOSANGO},${y(p.valor)}`,
+                  ].join(' ')}
+                  fill="var(--card)"
+                  stroke={COR_SERIE}
+                  strokeWidth={2}
+                  strokeLinejoin="round"
+                />
+              ) : null,
+            )}
 
             {/* Crosshair */}
             {ativo !== null ? (
@@ -276,8 +402,8 @@ export function GraficoLinha({
                   cx={x(n - 1)}
                   cy={y(ultimo.valor)}
                   r={4}
-                  fill={ultimo.parcial ? 'var(--card)' : COR_SERIE}
-                  stroke={ultimo.parcial ? COR_SERIE : 'var(--card)'}
+                  fill={ultimoVazado ? 'var(--card)' : COR_SERIE}
+                  stroke={ultimoVazado ? COR_SERIE : 'var(--card)'}
                   strokeWidth={2}
                 />
                 {ativo === null ? (
@@ -287,7 +413,7 @@ export function GraficoLinha({
                     textAnchor="end"
                     className="fill-foreground text-[length:var(--texto-apoio)] font-semibold tabular-nums"
                   >
-                    {formatarValor(ultimo.valor)}
+                    {formatarValor(ultimo.valor, ultimo)}
                   </text>
                 ) : null}
               </g>
@@ -299,8 +425,8 @@ export function GraficoLinha({
                 cx={x(ativo)}
                 cy={y(pontoAtivo.valor)}
                 r={4}
-                fill={pontoAtivo.parcial ? 'var(--card)' : COR_SERIE}
-                stroke={pontoAtivo.parcial ? COR_SERIE : 'var(--card)'}
+                fill={pontoAtivo.parcial || ativoProjetado ? 'var(--card)' : COR_SERIE}
+                stroke={pontoAtivo.parcial || ativoProjetado ? COR_SERIE : 'var(--card)'}
                 strokeWidth={2}
               />
             ) : null}
@@ -327,19 +453,28 @@ export function GraficoLinha({
             style={{ left: centroTooltip, width: larguraTooltip, transform: 'translateX(-50%)' }}
           >
             <span className="flex items-center gap-[var(--esp-2)]">
-              <span
-                aria-hidden="true"
-                className="inline-block h-[2px] w-3 rounded-full"
-                style={{ backgroundColor: COR_SERIE }}
-              />
+              {ativoProjetado ? (
+                <svg aria-hidden="true" data-chave-tooltip="projetado" width={12} height={2} className="shrink-0">
+                  <line x1={1} x2={11} y1={1} y2={1} stroke={COR_SERIE} strokeWidth={2} strokeLinecap="round" strokeDasharray="2 4" />
+                </svg>
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-[2px] w-3 rounded-full"
+                  style={{ backgroundColor: COR_SERIE }}
+                />
+              )}
               <span className="text-[length:var(--texto-corpo)] font-semibold tabular-nums">
-                {formatarValor(pontoAtivo.valor)}
+                {formatarValor(pontoAtivo.valor, pontoAtivo)}
               </span>
             </span>
             <span className="text-muted-foreground text-[length:var(--texto-micro)]">
               {pontoAtivo.rotuloLongo}
               {pontoAtivo.parcial ? ` · ${ANALISES.parcial}` : ''}
             </span>
+            {pontoAtivo.nota ? (
+              <span className="text-muted-foreground text-[length:var(--texto-micro)]">{pontoAtivo.nota}</span>
+            ) : null}
           </div>
         ) : null}
 
