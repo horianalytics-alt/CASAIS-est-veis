@@ -1,11 +1,40 @@
 # PROJETO.md — Finanças a Dois
 
 > Retrato ÚNICO do estado atual. Sempre sobrescrito, nunca acumulado.
-> Última atualização: 2026-10-16, por Maestro, após auditoria Sentinela R5
+> Seção 0 adicionada em 2026-11-20 (retomada). Demais seções: 2026-10-16, por Maestro, após auditoria Sentinela R5
 > fechada por completo, scroll infinito na lista de lançamentos, e leva
 > grande de animações/haptics/micro-interações em todo o app.
 > Histórico de entregas: `ENTREGA.md` (quando existir). Plano vivo: `PLANO.md`
 > (revisão 2 em `C:\Users\Heitor PC\.claude\plans\harmonic-jingling-eclipse.md`).
+
+## 0. EM ANDAMENTO (retomada de 2026-11-20 — ler primeiro)
+
+Sessão anterior perdida em 2026-10-26. Estado reconstruído por `git status`,
+`migration list` e leitura dos docs:
+
+- **Carteira de Investimento** (caixinhas com taxa, carência, rendimento
+  mensal confirmado à mão). Spec `docs/superpowers/specs/2026-10-16-carteira-investimento-design.md`,
+  plano `docs/superpowers/plans/2026-10-16-carteira-investimento.md`.
+  - Banco: 00016 e 00017 **aplicadas**. **00018 escrita, NÃO aplicada**
+    (corrige A1 ALTO — rendimento sobre saldo do FIM do mês, regra confirmada
+    pelo Heitor —, A5 e A6). Testes `tests/integration/carteira-rls.*` alterados,
+    não commitados. Falta: `Skill(code-review)` high no rascunho → `db push`.
+  - Front (Antigravity, rodada 11): A2/A4/A7/A8 corrigidos e commitados; a aba
+    Investimentos está escondida da navegação (commit `92c0107`, já em
+    `origin/main`; o deploy da Vercel NÃO foi conferido nesta retomada) até a
+    rodada 12 (ligar dados reais).
+  - Dash: gráfico de projeção por caixinha executado (`grafico-projecao-caixinha.tsx`,
+    `projecao-caixinha-logica.ts`, `src/lib/queries/carteira-projecao.ts`, testes),
+    **não commitado**, sem relatório de execução localizado. Plano em
+    `docs/planos/dash-grafico-projecao-caixinha.md`.
+  - Ainda aberto da auditoria (`docs/auditoria/carteira-investimento-sentinela.md`):
+    A3 MÉDIO (carteira aparece em seletores onde o banco recusa) e A9 BAIXO.
+- Verificação em 2026-11-20 sobre o working tree: `npx tsc --noEmit` exit 0;
+  `vitest run` 620 passed / 190 skipped.
+- **Ambiente:** só existe banco de PRODUÇÃO. CLI do Supabase v3 mira o local por
+  padrão e o projeto não está linkado; use `npx -y supabase@2 ... --db-url` pelo
+  pooler `aws-1-sa-east-1.pooler.supabase.com:5432`, usuário
+  `postgres.wxhfgstgjjlmqauogeid` (senha de `.env.local`, URL-encoded, nunca impressa).
 
 ## 1. O que o sistema faz e para quem
 
