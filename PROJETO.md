@@ -15,18 +15,27 @@ Sessão anterior perdida em 2026-10-26. Estado reconstruído por `git status`,
 - **Carteira de Investimento** (caixinhas com taxa, carência, rendimento
   mensal confirmado à mão). Spec `docs/superpowers/specs/2026-10-16-carteira-investimento-design.md`,
   plano `docs/superpowers/plans/2026-10-16-carteira-investimento.md`.
-  - Banco: 00016 e 00017 **aplicadas**. **00018 escrita, NÃO aplicada**
-    (corrige A1 ALTO — rendimento sobre saldo do FIM do mês, regra confirmada
-    pelo Heitor —, A5 e A6). Testes `tests/integration/carteira-rls.*` alterados,
-    não commitados. Falta: `Skill(code-review)` high no rascunho → `db push`.
+  - Banco: 00016, 00017 e **00018 aplicadas** (confirmado por `migration list`
+    em 2026-11-20; runner da carteira 52 de 52 em transação desfeita). A 00018
+    corrige A1 ALTO (rendimento sobre saldo do FIM do mês, regra confirmada pelo
+    Heitor), A5 e A6. **Risco aceito:** dinheiro que entra no último dia do mês
+    rende o mês inteiro — é a regra escolhida, não defeito. Commits `43c3710`,
+    `d0ba90e`, `11a9a6a` já em `origin/main`. Falta re-auditoria do Sentinela.
+  - Pendente do Estrutura: `limparNome`/`chave_nome()` dos outros cadastros
+    (categorias, contas) ainda aceitam U+200F e preenchimento Hangul.
   - Front (Antigravity, rodada 11): A2/A4/A7/A8 corrigidos e commitados; a aba
     Investimentos está escondida da navegação (commit `92c0107`, já em
     `origin/main`; o deploy da Vercel NÃO foi conferido nesta retomada) até a
     rodada 12 (ligar dados reais).
   - Dash: gráfico de projeção por caixinha executado (`grafico-projecao-caixinha.tsx`,
     `projecao-caixinha-logica.ts`, `src/lib/queries/carteira-projecao.ts`, testes),
-    **não commitado**, sem relatório de execução localizado. Plano em
-    `docs/planos/dash-grafico-projecao-caixinha.md`.
+    commitado (`d0ba90e`), **ainda não ligado à tela** (a ligação é da rodada 12
+    do Antigravity). Plano em `docs/planos/dash-grafico-projecao-caixinha.md`.
+    Reconciliação contra SQL bruto e isolamento A×B: NÃO VERIFICADOS (script
+    escreve em produção, sem autorização).
+- **Recorrência de assinaturas**: desenho em
+  `docs/superpowers/specs/2026-11-20-recorrencia-assinaturas-design.md`,
+  aguardando aprovação do Heitor antes do plano técnico.
   - Ainda aberto da auditoria (`docs/auditoria/carteira-investimento-sentinela.md`):
     A3 MÉDIO (carteira aparece em seletores onde o banco recusa) e A9 BAIXO.
 - Verificação em 2026-11-20 sobre o working tree: `npx tsc --noEmit` exit 0;
