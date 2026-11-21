@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { GraficoProjecaoCaixinhaSkeleton } from '@/components/carteira/grafico-projecao-caixinha'
 
 export default function LoadingCarteira() {
   return (
@@ -56,6 +57,11 @@ export default function LoadingCarteira() {
             <Skeleton key={i} className="h-24 w-full rounded-xl" />
           ))}
         </div>
+      </div>
+
+      {/* Projeção de Investimento (Skeleton Dash) */}
+      <div className="border-border/80 flex flex-col gap-3 rounded-2xl border p-5">
+        <GraficoProjecaoCaixinhaSkeleton />
       </div>
     </div>
   )
