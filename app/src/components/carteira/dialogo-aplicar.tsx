@@ -73,6 +73,7 @@ export function DialogoAplicar({
       setDestinoId(caixinhaPreSelecionadaId ?? 'nao_alocado')
       setValorTexto('')
       setErro(null)
+      setCamposComErro({})
     }
     abertoAnterior.current = aberto
   }, [aberto, contasOrigem, caixinhaPreSelecionadaId])
@@ -83,6 +84,7 @@ export function DialogoAplicar({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErro(null)
+    setCamposComErro({})
 
     if (!contaOrigemId) {
       setErro('Selecione uma conta de origem.')
@@ -113,6 +115,9 @@ export function DialogoAplicar({
         caixinhaId: destinoId === 'nao_alocado' ? undefined : destinoId,
       })
       if (resposta && typeof resposta === 'object' && 'ok' in resposta && !resposta.ok) {
+        if ('camposComErro' in resposta && resposta.camposComErro) {
+          setCamposComErro(resposta.camposComErro as Record<string, string[]>)
+        }
         throw new Error(resposta.erro || 'Erro ao aplicar valor na carteira.')
       }
       hapticFeedback.success()
@@ -168,6 +173,7 @@ export function DialogoAplicar({
                 ))}
               </SelectContent>
             </Select>
+            <CampoErro id="erro-conta-origem" mensagens={camposComErro.contaOrigemId} />
           </div>
 
           {/* Valor a Aplicar */}
@@ -204,6 +210,7 @@ export function DialogoAplicar({
                 autoFocus
               />
             </div>
+            <CampoErro id="erro-valor-aplicar" mensagens={camposComErro.valor} />
           </div>
 
           {/* Destino da Aplicação */}
@@ -228,6 +235,7 @@ export function DialogoAplicar({
                 ))}
               </SelectContent>
             </Select>
+            <CampoErro id="erro-caixinha-destino" mensagens={camposComErro.caixinhaId} />
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0 pt-2">
