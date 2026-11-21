@@ -11,6 +11,8 @@ import {
   TrendingUp,
   Info,
   Calendar,
+  Sparkles,
+  RefreshCw,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -18,7 +20,8 @@ import { ValorMonetario } from '@/components/financeiro/valor-monetario'
 import { useInView } from '@/hooks/use-in-view'
 import { hapticFeedback } from '@/lib/haptics'
 import { isoToBR } from '@/lib/format'
-import { hojeEmSaoPaulo } from '@/lib/hoje'
+import { hojeEmSaoPaulo, rotuloDoMes } from '@/lib/hoje'
+import type { RendimentoPendente } from './projecao-caixinha-logica'
 import { cn } from '@/lib/utils'
 import {
   type CaixinhaInvestimento,
@@ -32,6 +35,8 @@ export interface CardCaixinhaProps {
   aoAlocar: (caixinha: CaixinhaInvestimento) => void
   aoResgatar: (caixinha: CaixinhaInvestimento) => void
   aoVerProjecao?: (caixinha: CaixinhaInvestimento) => void
+  pendentes?: RendimentoPendente[]
+  aoConfirmarRendimento?: (caixinhaId: string, competencia: string) => Promise<void> | void
   selecionada?: boolean
   className?: string
 }
@@ -42,9 +47,12 @@ export function CardCaixinha({
   aoAlocar,
   aoResgatar,
   aoVerProjecao,
+  pendentes = [],
+  aoConfirmarRendimento,
   selecionada = false,
   className,
 }: CardCaixinhaProps) {
+  const [confirmando, setConfirmando] = React.useState(false)
   const { ref, inView } = useInView<HTMLElement>({ threshold: 0.08, replayOnScroll: true })
 
   const hoje = hojeEmSaoPaulo()
@@ -60,6 +68,11 @@ export function CardCaixinha({
   )
 
   const saldoReais = caixinha.balance_cents / 100
+
+  const pendentesDestaCaixinha = (pendentes ?? [])
+    .filter((p) => p.caixinhaId === caixinha.id)
+    .sort((a, b) => a.competencia.localeCompare(b.competencia))
+  const proximoPendente = pendentesDestaCaixinha[0] ?? null
 
   return (
     <article
@@ -167,6 +180,55 @@ export function CardCaixinha({
           </span>
         )}
       </div>
+
+      {/* Bloco de Rendimento Estimado a Confirmar (Spec 4b / F-5) */}
+      {proximoPendente && (
+        <div className="mb-4 flex flex-col gap-2 rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-semibold text-foreground flex items-center gap-1.5">
+              <Sparkles className="size-3.5 text-sky-500 shrink-0" aria-hidden="true" />
+              <span>Rendimento estimado de {rotuloDoMes(proximoPendente.competencia.slice(0, 7))}</span>
+            </span>
+            {pendentesDestaCaixinha.length > 1 && (
+              <span className="text-[10px] text-muted-foreground font-medium shrink-0">
+                (1 de {pendentesDestaCaixinha.length} meses)
+              </span>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <ValorMonetario
+              valor={proximoPendente.valorCentavos / 100}
+              tipo="receita"
+              tamanho="linha"
+            />
+            <Button
+              type="button"
+              size="sm"
+              disabled={confirmando}
+              onClick={async () => {
+                if (!aoConfirmarRendimento) return
+                setConfirmando(true)
+                hapticFeedback.medium()
+                try {
+                  await aoConfirmarRendimento(caixinha.id, proximoPendente.competencia.slice(0, 7))
+                  hapticFeedback.success()
+                } catch {
+                  hapticFeedback.warning()
+                } finally {
+                  setConfirmando(false)
+                }
+              }}
+              className="h-7 px-3 text-xs rounded-lg font-semibold bg-sky-600 hover:bg-sky-700 text-white shadow-2xs"
+            >
+              {confirmando ? (
+                <RefreshCw className="size-3 animate-spin" />
+              ) : (
+                'Confirmar'
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Ações da Caixinha: Alocar e Resgatar */}
       <div className="flex items-center gap-2 pt-2 border-t border-border/60">
