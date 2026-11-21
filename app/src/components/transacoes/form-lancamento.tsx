@@ -3,9 +3,11 @@
 import { useEffect, useLayoutEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowRightLeft, ChevronDown, CreditCard, Plus, Trash2 } from 'lucide-react'
+import { ArrowRightLeft, Check, ChevronDown, CreditCard, Plus, Trash2 } from 'lucide-react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { salvarLancamento, type EntradaDeLancamento, type Lancamento } from '@/actions/lancamento'
+import { criarRecorrencia, type EntradaCriarRecorrencia } from '@/actions/recorrencia'
+import { Switch } from '@/components/ui/switch'
 import type { ResultadoAction } from '@/actions/resultado'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -70,6 +72,7 @@ interface CamposSimples {
   ehBeneficio: boolean
   ehFutil: boolean
   rotuloDoFutil: string
+  repetirTodoMes: boolean
 }
 
 interface ItemLote {
@@ -100,32 +103,37 @@ const OPCOES_DE_TIPO: { valor: TipoDoFormulario; rotulo: string }[] = [
 const OPCOES_DE_PARCELAS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24]
 
 function valoresIniciaisSimples(hoje: string, contas: OpcaoDeConta[]): CamposSimples {
+  const primeiraConta = contas[0]
+  const ehCartaoPrimeira = primeiraConta?.tipo === 'cartao'
   return {
     tipo: 'despesa',
     descricao: '',
     valor: '',
     data: hoje,
-    contaId: contas[0]?.id ?? '',
+    contaId: primeiraConta?.id ?? '',
     contaDestinoId: contas[1]?.id ?? '',
     categoriaId: SEM_CATEGORIA,
     parcelas: 1,
-    estaPago: true,
+    estaPago: ehCartaoPrimeira ? false : true,
     dataDoPagamento: hoje,
     ehBeneficio: false,
     ehFutil: false,
     rotuloDoFutil: '',
+    repetirTodoMes: false,
   }
 }
 
 function itemLoteVazio(hoje: string, contas: OpcaoDeConta[]): ItemLote {
+  const primeiraConta = contas[0]
+  const ehCartaoPrimeira = primeiraConta?.tipo === 'cartao'
   return {
     tipo: 'despesa',
     descricao: '',
     valor: '',
     data: hoje,
-    contaId: contas[0]?.id ?? '',
+    contaId: primeiraConta?.id ?? '',
     categoriaId: SEM_CATEGORIA,
-    estaPago: true,
+    estaPago: ehCartaoPrimeira ? false : true,
     ehBeneficio: false,
     ehFutil: false,
     rotuloDoFutil: '',
@@ -152,7 +160,8 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
   const router = useRouter()
   const [modo, setModo] = useState<'simples' | 'lote'>('simples')
   const [pendente, iniciarEnvio] = useTransition()
-  const [resultado, setResultado] = useState<ResultadoAction<Lancamento[]> | null>(null)
+  const [resultado, setResultado] = useState<ResultadoAction<unknown> | null>(null)
+  const [mensagemToast, setMensagemToast] = useState<string | null>(null)
   const [concluido, setConcluido] = useState(false)
   const [maisDetalhesAberto, setMaisDetalhesAberto] = useState(false)
   const [grupoFiltrado, setGrupoFiltrado] = useState<string | null>(null)
@@ -203,11 +212,24 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
   const contaId = watch('contaId')
   const estaPago = watch('estaPago')
   const parcelas = watch('parcelas')
+  const repetirTodoMes = watch('repetirTodoMes')
   const ehFutil = watch('ehFutil')
 
   const contaAtual = contas.find((c) => c.id === contaId)
-  const ehCartao = contaAtual?.tipo === 'cartao' && contaAtual.closing_day != null
+  const ehContaCartao = contaAtual?.tipo === 'cartao'
+  const ehCartao = ehContaCartao && contaAtual?.closing_day != null
 
+  useEffect(() => {
+    if (ehContaCartao) {
+      setValue('estaPago', false)
+    }
+  }, [ehContaCartao, setValue])
+
+  useEffect(() => {
+    if (tipo === 'transferencia' && repetirTodoMes) {
+      setValue('repetirTodoMes', false)
+    }
+  }, [tipo, repetirTodoMes, setValue])
   // Rótulo de fatura ao vivo
   let rotuloFatura: string | null = null
   if (ehCartao && contaAtual && contaAtual.closing_day != null && data) {
@@ -233,6 +255,46 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
   const aoEnviarSimples = handleSubmit((valores) => {
     setResultado(null)
     iniciarEnvio(async () => {
+      if (valores.repetirTodoMes && (valores.tipo === 'despesa' || valores.tipo === 'receita')) {
+        const ehDespesa = valores.tipo === 'despesa'
+        const entradaRecorrencia: EntradaCriarRecorrencia = {
+          tipo: valores.tipo,
+          descricao: valores.descricao,
+          valor: valores.valor,
+          data: valores.data,
+          contaId: valores.contaId,
+          categoriaId:
+            valores.categoriaId === SEM_CATEGORIA ? null : valores.categoriaId,
+          estaPago: ehContaCartao ? false : valores.estaPago,
+          dataDoPagamento:
+            !ehContaCartao && valores.estaPago ? valores.dataDoPagamento || null : null,
+          ehBeneficio: ehDespesa ? valores.ehBeneficio : false,
+          ehFutil: ehDespesa ? valores.ehFutil : false,
+          rotuloDoFutil:
+            ehDespesa && valores.ehFutil && valores.rotuloDoFutil.trim()
+              ? valores.rotuloDoFutil.trim()
+              : null,
+        }
+
+        const resposta = await criarRecorrencia(entradaRecorrencia)
+        setResultado(resposta)
+        if (resposta.ok) {
+          tocarSomSucesso()
+          hapticFeedback.success()
+          setConcluido(true)
+          deveReiniciar.current = true
+          setMensagemToast(`Recorrência criada! ${resposta.dados.lancamentosGerados} meses agendados.`)
+          router.refresh()
+          setTimeout(() => {
+            router.replace(`/inicio?mes=${valores.data.slice(0, 7)}`)
+          }, 1200)
+        } else {
+          tocarSomErro()
+          hapticFeedback.warning()
+        }
+        return
+      }
+
       const ehDespesa = valores.tipo === 'despesa'
       const entrada: EntradaDeLancamento = {
         tipo: valores.tipo,
@@ -246,8 +308,8 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
             ? null
             : valores.categoriaId,
         parcelas: ehDespesa ? valores.parcelas : 1,
-        estaPago: valores.estaPago,
-        dataDoPagamento: valores.estaPago ? valores.dataDoPagamento || null : null,
+        estaPago: ehContaCartao ? false : valores.estaPago,
+        dataDoPagamento: !ehContaCartao && valores.estaPago ? valores.dataDoPagamento || null : null,
         ehBeneficio: ehDespesa ? valores.ehBeneficio : false,
         ehFutil: ehDespesa ? valores.ehFutil : false,
         rotuloDoFutil:
@@ -321,6 +383,7 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
       setResultado(null)
       setConcluido(false)
       setModo('simples')
+      setMensagemToast(null)
       setGrupoFiltrado(null)
       setMaisDetalhesAberto(false)
       setDetalhesLoteAbertos({})
@@ -331,6 +394,9 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
     setResultado(null)
     iniciarEnvio(async () => {
       const entradas: EntradaDeLancamento[] = valores.itens.map((item) => {
+        const contaDoItem = contas.find((c) => c.id === item.contaId)
+        const ehCartaoItem = contaDoItem?.tipo === 'cartao'
+        const estaPagoItem = ehCartaoItem ? false : item.estaPago
         const ehDespesa = item.tipo === 'despesa'
         return {
           tipo: item.tipo,
@@ -339,8 +405,8 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
           data: item.data,
           contaId: item.contaId,
           categoriaId: item.categoriaId === SEM_CATEGORIA ? null : item.categoriaId,
-          estaPago: item.estaPago,
-          dataDoPagamento: item.estaPago ? item.data || null : null,
+          estaPago: estaPagoItem,
+          dataDoPagamento: estaPagoItem ? item.data || null : null,
           parcelas: 1,
           ehBeneficio: ehDespesa ? item.ehBeneficio : false,
           ehFutil: ehDespesa ? item.ehFutil : false,
@@ -640,8 +706,39 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
             </div>
           )}
 
-          {/* Parcelas (somente para Despesas) */}
-          {tipo === 'despesa' ? (
+          {/* Repetir todo mês (somente para Despesa ou Receita, mutuamente exclusivo com Parcelas) */}
+          {(tipo === 'despesa' || tipo === 'receita') && parcelas <= 1 ? (
+            <div className="flex items-center justify-between rounded-lg border border-input p-3 bg-card/40">
+              <div className="flex flex-col gap-0.5">
+                <Label htmlFor="repetirTodoMes" className="font-medium cursor-pointer">
+                  Repetir todo mês
+                </Label>
+                <span className="text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)] text-muted-foreground">
+                  Cria uma assinatura ou fixo agendado por 12 meses
+                </span>
+              </div>
+              <Controller
+                control={control}
+                name="repetirTodoMes"
+                render={({ field }) => (
+                  <Switch
+                    id="repetirTodoMes"
+                    checked={field.value}
+                    onCheckedChange={(checked) => {
+                      field.onChange(checked)
+                      if (checked) {
+                        setValue('parcelas', 1)
+                      }
+                    }}
+                    disabled={pendente}
+                  />
+                )}
+              />
+            </div>
+          ) : null}
+
+          {/* Parcelas (somente para Despesas e quando não repetir todo mês) */}
+          {tipo === 'despesa' && !repetirTodoMes ? (
             <div className="flex flex-col gap-[var(--esp-2)]">
               <Label htmlFor="parcelas">{LANCAR.parcelasLabel}</Label>
               <Controller
@@ -650,7 +747,13 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
                 render={({ field }) => (
                   <Select
                     value={String(field.value || 1)}
-                    onValueChange={(v) => field.onChange(Number(v))}
+                    onValueChange={(v) => {
+                      const num = Number(v)
+                      field.onChange(num)
+                      if (num > 1) {
+                        setValue('repetirTodoMes', false)
+                      }
+                    }}
                     disabled={pendente}
                   >
                     <SelectTrigger id="parcelas" className="w-full">
@@ -675,33 +778,35 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
             </div>
           ) : null}
 
-          {/* Status: Pago */}
-          <div className="flex flex-col gap-[var(--esp-2)]">
-            <Controller
-              control={control}
-              name="estaPago"
-              render={({ field }) => (
-                <label className="border-input flex min-h-[44px] cursor-pointer items-center gap-[var(--esp-3)] rounded-lg border px-[var(--esp-3)]">
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={(marcado) => field.onChange(marcado === true)}
-                    disabled={pendente}
-                  />
-                  <span className="text-[length:var(--texto-corpo)] leading-[var(--texto-corpo-lh)]">
-                    {tipo === 'despesa'
-                      ? LANCAR.statusRotuloDespesa
-                      : tipo === 'receita'
-                        ? LANCAR.statusRotuloReceita
-                        : LANCAR.statusRotuloTransferencia}
-                  </span>
-                </label>
-              )}
-            />
-            <CampoErro id="erro-estaPago" mensagens={erros?.estaPago} />
-          </div>
+          {/* Status: Pago (oculto quando a conta é cartão — P-016) */}
+          {!ehContaCartao ? (
+            <div className="flex flex-col gap-[var(--esp-2)]">
+              <Controller
+                control={control}
+                name="estaPago"
+                render={({ field }) => (
+                  <label className="border-input flex min-h-[44px] cursor-pointer items-center gap-[var(--esp-3)] rounded-lg border px-[var(--esp-3)]">
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(marcado) => field.onChange(marcado === true)}
+                      disabled={pendente}
+                    />
+                    <span className="text-[length:var(--texto-corpo)] leading-[var(--texto-corpo-lh)]">
+                      {tipo === 'despesa'
+                        ? LANCAR.statusRotuloDespesa
+                        : tipo === 'receita'
+                          ? LANCAR.statusRotuloReceita
+                          : LANCAR.statusRotuloTransferencia}
+                    </span>
+                  </label>
+                )}
+              />
+              <CampoErro id="erro-estaPago" mensagens={erros?.estaPago} />
+            </div>
+          ) : null}
 
-          {/* Data do Pagamento */}
-          {estaPago ? (
+          {/* Data do Pagamento (apenas se pago e não for cartão) */}
+          {!ehContaCartao && estaPago ? (
             <div className="flex flex-col gap-[var(--esp-2)]">
               <Label htmlFor="dataDoPagamento">
                 {tipo === 'despesa'
@@ -1038,6 +1143,20 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
           </div>
         </form>
       )}
+
+      {/* Toast Feedback */}
+      {mensagemToast ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-20 right-4 z-50 flex items-center gap-2.5 rounded-xl border border-border/80 bg-card px-4 py-3 shadow-lg text-xs font-medium text-foreground animate-in fade-in slide-in-from-bottom-3 duration-200"
+        >
+          <div className="flex size-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <Check className="size-3.5" />
+          </div>
+          <span>{mensagemToast}</span>
+        </div>
+      ) : null}
     </div>
   )
 }
