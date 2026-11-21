@@ -17,6 +17,9 @@ import { ScrollReveal } from '@/components/ui/scroll-reveal'
 import { getInvoicePeriod } from '@/lib/invoice'
 import { todayISO } from '@/lib/format'
 import type { Database } from '@/types/database'
+import { lerDadosProjecaoCarteira } from '@/lib/queries/carteira-projecao'
+import { hojeEmSaoPaulo } from '@/lib/hoje'
+import { MOCK_CARTEIRA_INVESTIMENTO, type CarteiraInvestimentoResumo, type TipoRendimento } from '@/components/carteira/tipos-investimentos'
 
 export const metadata: Metadata = {
   title: CARTEIRA.titulo,
@@ -49,11 +52,16 @@ export default async function PaginaCarteira({ searchParams }: PaginaCarteiraPro
 
   if (!user) redirect('/login')
 
-  const { data: memberId } = await supabase.rpc('get_user_member_id_self')
-  if (!memberId) redirect('/onboarding')
+  const [resMemberId, resFamilyId] = await Promise.all([
+    supabase.rpc('get_user_member_id_self'),
+    supabase.rpc('get_user_family_id_self'),
+  ])
+  const memberId = resMemberId.data
+  const familyId = resFamilyId.data
+  if (!memberId || !familyId) redirect('/onboarding')
 
-  // Busca saldos e faturas em paralelo
-  const [resContas, resFaturas] = await Promise.all([
+  // Busca saldos, faturas e investimentos em paralelo pela sessão do usuário
+  const [resContas, resFaturas, resCarteiraResumo, resCaixinhas, dadosProjecao] = await Promise.all([
     supabase
       .from('v_account_balances')
       .select('*')
@@ -63,17 +71,99 @@ export default async function PaginaCarteira({ searchParams }: PaginaCarteiraPro
       .select('*')
       .order('invoice_year', { ascending: false })
       .order('invoice_month', { ascending: false }),
+    supabase
+      .from('v_carteira_resumo')
+      .select('*')
+      .maybeSingle(),
+    supabase
+      .from('investment_boxes')
+      .select('*')
+      .order('created_at', { ascending: true }),
+    lerDadosProjecaoCarteira(supabase, familyId),
   ])
 
   const contas = (resContas.data ?? []) as SaldoConta[]
   const faturas = (resFaturas.data ?? []) as Fatura[]
 
+  const resumoCarteira: CarteiraInvestimentoResumo = {
+    saldoTotalCents: resCarteiraResumo.data?.total_cents ?? 0,
+    saldoNaoAlocadoCents: resCarteiraResumo.data?.nao_alocado_cents ?? 0,
+    caixinhas: (resCaixinhas.data ?? []).map((cx) => ({
+      id: cx.id,
+      family_id: cx.family_id,
+      account_id: cx.account_id,
+      name: cx.name,
+      rate_type: cx.rate_type as TipoRendimento,
+      rate_bps: cx.rate_bps,
+      rate_defined_at: cx.rate_defined_at,
+      resgate_imediato: cx.resgate_imediato,
+      data_vencimento: cx.data_vencimento,
+      balance_cents: cx.balance_cents,
+      created_at: cx.created_at,
+      updated_at: cx.updated_at,
+    })),
+  }
+
+  const mesAtual = hojeEmSaoPaulo().slice(0, 7)
+  const atualizadoEm = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+    .format(new Date())
+    .replace(',', '')
+
+
+  // Suporte a fixture para visualização segura em desenvolvimento (Briefing Rodada 12 §1.2)
+  let finalResumo = resumoCarteira
+  let finalProjecao = dadosProjecao
+
+  if (params.fixture && (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_FEATURE_INVESTIMENTOS === 'true')) {
+    if (params.fixture === 'caixinhas' || params.fixture === 'pendentes' || params.fixture === 'erro') {
+      finalResumo = MOCK_CARTEIRA_INVESTIMENTO
+      if (params.fixture === 'caixinhas') {
+        finalProjecao = {
+          ok: true,
+          movimentos: [
+            { caixinhaId: 'caixinha-1', tipo: 'entrada', valorCentavos: 2500000, ocorridoEm: '2026-09-01' },
+          ],
+          pendentes: [],
+        }
+      } else if (params.fixture === 'pendentes') {
+        finalProjecao = {
+          ok: true,
+          movimentos: [
+            { caixinhaId: 'caixinha-1', tipo: 'entrada', valorCentavos: 2500000, ocorridoEm: '2026-09-01' },
+          ],
+          pendentes: [
+            { caixinhaId: 'caixinha-1', competencia: '2026-09-01', valorCentavos: 25500 },
+            { caixinhaId: 'caixinha-1', competencia: '2026-10-01', valorCentavos: 25760 },
+          ],
+        }
+      } else if (params.fixture === 'erro') {
+        finalProjecao = { ok: false }
+      }
+    }
+  }
+
   const contasAtivas = contas.filter((c) => !c.archived_at)
   const contasArquivadas = contas.filter((c) => Boolean(c.archived_at))
 
-  // Contas disponíveis como origem de pagamento (não-cartões ativas)
-  const contasOrigem = contasAtivas
-    .filter((c) => c.type !== 'cartao' && c.account_id)
+  // Contas disponíveis como origem de pagamento de fatura (exclui cartao e investimento)
+  const contasOrigemFatura = contasAtivas
+    .filter((c) => c.type !== 'cartao' && c.type !== 'investimento' && c.account_id)
+    .map((c) => ({
+      id: c.account_id!,
+      name: c.name,
+      current_balance: c.current_balance,
+    }))
+
+  // Contas disponíveis para aplicar e resgatar na Carteira de Investimento (apenas corrente)
+  const contasCorrente = contasAtivas
+    .filter((c) => c.type === 'corrente' && c.account_id)
     .map((c) => ({
       id: c.account_id!,
       name: c.name,
@@ -264,7 +354,7 @@ export default async function PaginaCarteira({ searchParams }: PaginaCarteiraPro
                           ? faturasAbertasPorConta.get(conta.account_id)
                           : null
                       }
-                      contasOrigem={contasOrigem}
+                      contasOrigem={contasOrigemFatura}
                     />
                   ))}
                 </div>
@@ -274,13 +364,19 @@ export default async function PaginaCarteira({ searchParams }: PaginaCarteiraPro
 
           {/* Seção de Faturas de Cartão */}
           <ScrollReveal replayOnScroll delay={100}>
-            <SecaoFaturas faturas={faturas} contasOrigem={contasOrigem} />
+            <SecaoFaturas faturas={faturas} contasOrigem={contasOrigemFatura} />
           </ScrollReveal>
         </TabsContent>
 
         {EXIBIR_ABA_INVESTIMENTOS && (
         <TabsContent value="investimentos" className="flex flex-col gap-6 outline-none m-0">
-          <AreaInvestimentos contasOrigem={contasOrigem} />
+          <AreaInvestimentos
+            contasOrigem={contasCorrente}
+            dadosIniciais={finalResumo}
+            dadosProjecao={finalProjecao}
+            mesAtual={mesAtual}
+            atualizadoEm={atualizadoEm}
+          />
         </TabsContent>
       )}
       </Tabs>
