@@ -1,0 +1,10 @@
+
+ RUN  v5.0.3 C:/Users/Heitor PC/OneDrive/Documentos/SEGUNDO CÉREBRO/HORI ANALYTCIS PROJETOS/Finanças a Dois/app
+
+
+ Test Files  6 passed (6)
+      Tests  113 passed (113)
+   Start at  21:21:56
+   Duration  8.76s (environment 72%, setup 11%, import 11%, tests 4%, transform 3%)
+
+exit=0

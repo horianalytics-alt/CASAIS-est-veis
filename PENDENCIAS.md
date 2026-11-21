@@ -191,6 +191,11 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
 - **Ação do Heitor:** apagar à mão no dashboard do Supabase, se a v1 tinha
   projeto próprio.
 
+### P-015 — Nome de caixinha "invisível" passa (Sentinela N1, BAIXO, CONFIRMADO)
+- **O quê:** nome só com U+2800 (Braille em branco) ou só com U+0301 (acento solto) é aceito pelo Zod e pela RPC `carteira_criar_caixinha`. Evidência: `docs/auditoria/evidencias/carteira-r2/sonda-zod-nome.out.txt`.
+- **Dono:** Estrutura, em migration NOVA (nunca ALTER na 00018), junto com a limpeza de U+200F e Hangul filler já pendente, e o mesmo ajuste em `esquemas-investimentos.ts`.
+- **Quando:** antes de ligar a aba Investimentos.
+
 ---
 
 ## Fora de escopo por decisão registrada

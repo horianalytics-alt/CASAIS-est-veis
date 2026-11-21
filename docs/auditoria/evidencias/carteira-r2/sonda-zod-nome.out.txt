@@ -1,0 +1,3 @@
+U+2800 x3 -> ACEITO nome_len=3
+U+0301 x5 -> ACEITO nome_len=5
+U+200B so -> RECUSADO [["nome","Informe o nome da caixinha."]]
