@@ -6,6 +6,7 @@ import { NavegacaoLateral } from '@/components/navegacao/navegacao-lateral'
 import { BarraProgresso } from '@/components/navegacao/barra-progresso'
 import { BotaoOcultarValores } from '@/components/navegacao/botao-ocultar-valores'
 import { OcultarValoresProvider } from '@/components/providers/ocultar-valores-provider'
+import { PopUpCobrancaServer } from '@/components/recorrencia/popup-cobranca-server'
 import { Button } from '@/components/ui/button'
 import { PullToRefresh } from '@/components/ui/pull-to-refresh'
 import { APP } from '@/features/comum/copy'
@@ -25,6 +26,9 @@ export default function LayoutPrincipal({ children }: LayoutProps<'/'>) {
     <OcultarValoresProvider>
       <Suspense fallback={null}>
         <BarraProgresso />
+      </Suspense>
+      <Suspense fallback={null}>
+        <PopUpCobrancaServer />
       </Suspense>
       <div className="flex min-h-screen flex-col lg:flex-row">
       {/* Barra Lateral Permanente para Desktop (>= 1024px) */}
