@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Pencil, Check, Loader2, AlertCircle } from 'lucide-react'
+import { Pencil, Check, Loader2, AlertCircle, Info } from 'lucide-react'
 import { atualizarLancamento } from '@/actions/editar-lancamento'
 import { Button } from '@/components/ui/button'
 import {
@@ -328,6 +328,13 @@ export function DialogoEditarLancamento({
             </div>
           </div>
         </DialogHeader>
+
+        {transacao?.recurring_rule_id ? (
+          <div className="flex items-center gap-2 rounded-lg border border-border/80 bg-muted/40 p-2.5 text-xs text-muted-foreground">
+            <Info className="size-4 shrink-0 text-primary" aria-hidden="true" />
+            <span>Este lançamento faz parte de uma assinatura. Editá-lo altera só este mês.</span>
+          </div>
+        ) : null}
 
         {erro && (
           <Alert variant="destructive" className="py-2.5">
