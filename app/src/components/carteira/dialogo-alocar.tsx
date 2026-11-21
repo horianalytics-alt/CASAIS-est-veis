@@ -64,6 +64,7 @@ export function DialogoAlocar({
       setCaixinhaId(caixinhaPreSelecionadaId ?? caixinhas[0]?.id ?? '')
       setValorTexto('')
       setErro(null)
+      setCamposComErro({})
     }
     abertoAnterior.current = aberto
   }, [aberto, caixinhaPreSelecionadaId, caixinhas])
@@ -73,6 +74,7 @@ export function DialogoAlocar({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErro(null)
+    setCamposComErro({})
 
     if (!caixinhaId) {
       setErro('Selecione uma caixinha de destino.')
@@ -102,6 +104,9 @@ export function DialogoAlocar({
         valor: valorNumero,
       })
       if (resposta && typeof resposta === 'object' && 'ok' in resposta && !resposta.ok) {
+        if ('camposComErro' in resposta && resposta.camposComErro) {
+          setCamposComErro(resposta.camposComErro as Record<string, string[]>)
+        }
         throw new Error(resposta.erro || 'Erro ao alocar saldo na caixinha.')
       }
       hapticFeedback.success()
@@ -183,6 +188,7 @@ export function DialogoAlocar({
                 ))}
               </SelectContent>
             </Select>
+            <CampoErro id="erro-caixinha-alocar" mensagens={camposComErro.caixinhaId} />
           </div>
 
           {/* Valor a Alocar */}
@@ -205,6 +211,7 @@ export function DialogoAlocar({
                 autoFocus
               />
             </div>
+            <CampoErro id="erro-valor-alocar" mensagens={camposComErro.valor} />
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0 pt-2">
