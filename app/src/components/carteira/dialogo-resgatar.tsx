@@ -97,6 +97,7 @@ export function DialogoResgatar({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErro(null)
+    setCamposComErro({})
 
     if (bloqueadaPorCarencia) {
       setErro(
@@ -134,6 +135,9 @@ export function DialogoResgatar({
         destino,
       })
       if (resposta && typeof resposta === 'object' && 'ok' in resposta && !resposta.ok) {
+        if ('camposComErro' in resposta && resposta.camposComErro) {
+          setCamposComErro(resposta.camposComErro as Record<string, string[]>)
+        }
         throw new Error(resposta.erro || 'Erro ao resgatar saldo da caixinha.')
       }
 
@@ -250,6 +254,7 @@ export function DialogoResgatar({
                   autoFocus={!bloqueadaPorCarencia}
                 />
               </div>
+              <CampoErro id="erro-valor-resgatar" mensagens={camposComErro.valor} />
             </div>
 
             {/* Destino do Resgate */}
@@ -277,6 +282,7 @@ export function DialogoResgatar({
                   )}
                 </SelectContent>
               </Select>
+              <CampoErro id="erro-destino-resgate" mensagens={camposComErro.destino} />
             </div>
 
             {/* Seleção de Conta Bancária específica caso escolhida */}
@@ -301,6 +307,7 @@ export function DialogoResgatar({
                     ))}
                   </SelectContent>
                 </Select>
+                <CampoErro id="erro-conta-destino-resgate" mensagens={camposComErro.contaDestinoId} />
               </div>
             )}
 
