@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { hapticFeedback } from '@/lib/haptics'
-import { hojeEmSaoPaulo } from '@/lib/hoje'
+import { CampoErro } from '@/components/ui/campo-erro'
 import {
   type TipoRendimento,
   ROTULOS_TIPO_RENDIMENTO,
@@ -38,7 +38,7 @@ export interface DadosNovaCaixinha {
 export interface DialogoCriarCaixinhaProps {
   aberto: boolean
   onOpenChange: (aberto: boolean) => void
-  onSalvar: (dados: DadosNovaCaixinha) => Promise<{ ok: boolean; erro?: string } | void> | { ok: boolean; erro?: string } | void
+  onSalvar: (dados: DadosNovaCaixinha) => Promise<{ ok: boolean; erro?: string; camposComErro?: Record<string, string[]> } | void> | { ok: boolean; erro?: string; camposComErro?: Record<string, string[]> } | void
   pendente?: boolean
 }
 
@@ -54,6 +54,7 @@ export function DialogoCriarCaixinha({
   const [resgateImediato, setResgateImediato] = React.useState(true)
   const [dataVencimento, setDataVencimento] = React.useState('')
   const [erro, setErro] = React.useState<string | null>(null)
+  const [camposComErro, setCamposComErro] = React.useState<Record<string, string[]>>({})
 
   const abertoAnterior = React.useRef(false)
 

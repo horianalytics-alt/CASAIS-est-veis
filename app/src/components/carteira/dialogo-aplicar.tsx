@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { formatBRL, parseBRLInput } from '@/lib/format'
 import { hapticFeedback } from '@/lib/haptics'
+import { CampoErro } from '@/components/ui/campo-erro'
 import type { CaixinhaInvestimento } from './tipos-investimentos'
 
 export interface ContaOrigem {
@@ -42,7 +43,7 @@ export interface DialogoAplicarProps {
   contasOrigem: ContaOrigem[]
   caixinhas: CaixinhaInvestimento[]
   caixinhaPreSelecionadaId?: string | null
-  onAplicar: (dados: DadosAplicacao) => Promise<{ ok: boolean; erro?: string } | void> | { ok: boolean; erro?: string } | void
+  onAplicar: (dados: DadosAplicacao) => Promise<{ ok: boolean; erro?: string; camposComErro?: Record<string, string[]> } | void> | { ok: boolean; erro?: string; camposComErro?: Record<string, string[]> } | void
   pendente?: boolean
 }
 
@@ -59,6 +60,7 @@ export function DialogoAplicar({
   const [valorTexto, setValorTexto] = React.useState<string>('')
   const [destinoId, setDestinoId] = React.useState<string>('nao_alocado')
   const [erro, setErro] = React.useState<string | null>(null)
+  const [camposComErro, setCamposComErro] = React.useState<Record<string, string[]>>({})
 
   const abertoAnterior = React.useRef(false)
 

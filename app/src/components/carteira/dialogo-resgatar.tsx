@@ -31,6 +31,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { formatBRL, parseBRLInput, isoToBR } from '@/lib/format'
 import { hojeEmSaoPaulo } from '@/lib/hoje'
+import { CampoErro } from '@/components/ui/campo-erro'
 import { hapticFeedback } from '@/lib/haptics'
 import type { CaixinhaInvestimento } from './tipos-investimentos'
 import type { ContaOrigem } from './dialogo-aplicar'
@@ -46,7 +47,7 @@ export interface DialogoResgatarProps {
   onOpenChange: (aberto: boolean) => void
   caixinha: CaixinhaInvestimento | null
   contasDestino: ContaOrigem[]
-  onResgatar: (dados: DadosResgate) => Promise<{ ok: boolean; erro?: string } | void> | { ok: boolean; erro?: string } | void
+  onResgatar: (dados: DadosResgate) => Promise<{ ok: boolean; erro?: string; camposComErro?: Record<string, string[]> } | void> | { ok: boolean; erro?: string; camposComErro?: Record<string, string[]> } | void
   pendente?: boolean
 }
 
@@ -62,6 +63,7 @@ export function DialogoResgatar({
   const [destinoTipo, setDestinoTipo] = React.useState<string>('nao_alocado')
   const [contaDestinoId, setContaDestinoId] = React.useState<string>('')
   const [erro, setErro] = React.useState<string | null>(null)
+  const [camposComErro, setCamposComErro] = React.useState<Record<string, string[]>>({})
   const [sucessoCarimbo, setSucessoCarimbo] = React.useState(false)
 
   const hoje = hojeEmSaoPaulo()

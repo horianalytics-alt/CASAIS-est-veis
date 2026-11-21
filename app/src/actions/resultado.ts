@@ -159,6 +159,22 @@ const MENSAGENS_DE_NEGOCIO = [
   // 00007/00008 — limite de tentativas do convite e rotação do código.
   'Muitas tentativas. Tente de novo em alguns minutos.',
   'Você não faz parte de uma família',
+  // 00019 — recorrência (recorrencia_* em supabase/migrations/00019_recorrencia.sql).
+  'Recorrência só para entrada ou saída',
+  'Valor inválido',
+  'Mês inválido',
+  'A data de início pode ser no máximo 9 anos atrás',
+  'A data de início pode ser no máximo 2 anos à frente',
+  'A data do pagamento não pode ser no futuro',
+  'Data do pagamento inválida',
+  'Informe a data do pagamento',
+  'A carteira de investimento não aceita recorrência',
+  'Esta conta está arquivada',
+  'Assinatura no cartão é paga junto com a fatura',
+  'Receita recorrente não pode ser no cartão',
+  'Assinatura não encontrada',
+  'Para estender, crie uma assinatura nova',
+  'Resposta inválida',
 ] as const
 
 /**

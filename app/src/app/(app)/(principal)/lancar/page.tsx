@@ -52,7 +52,9 @@ export default async function PaginaLancar() {
       .order('name', { ascending: true }),
   ])
 
-  const listaDeContas = (contas.data ?? []).map((c) => ({
+  const listaDeContas = (contas.data ?? [])
+    .filter((c) => c.type !== 'investimento')
+    .map((c) => ({
     id: c.id,
     nome: c.name,
     tipo: c.type,

@@ -108,7 +108,7 @@ export function CartaoConta({
         </div>
 
         <div className="flex items-center gap-1">
-          {conta.account_id && (
+          {conta.account_id && conta.type !== 'investimento' && (
             <BotaoArquivarConta
               contaId={conta.account_id}
               estaArquivada={arquivada}

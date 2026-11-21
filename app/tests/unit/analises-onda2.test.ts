@@ -142,7 +142,7 @@ describe('prepararOrcamentos', () => {
   it('descarta linha sem id ou com limite <= 0 e ordena da maior razão para a menor', () => {
     const r = prepararOrcamentos([
       { ...base, budget_id: 'a', category_name: 'Mercado', budget_amount: 300, spent_amount: 230.5, used_ratio: 0.7683 },
-      { ...base, budget_id: null, category_name: 'X', budget_amount: 100, spent_amount: 1, used_ratio: 0.01 },
+      { ...base, budget_id: null as unknown as string, category_name: 'X', budget_amount: 100, spent_amount: 1, used_ratio: 0.01 },
       { ...base, budget_id: 'z', category_name: 'Zero', budget_amount: 0, spent_amount: 5, used_ratio: null },
       { ...base, budget_id: 'b', category_name: 'Lazer', budget_amount: 100, spent_amount: 130, used_ratio: 1.3 },
       { ...base, budget_id: 'c', category_name: 'Água', budget_amount: 100, spent_amount: 0, used_ratio: 0 },

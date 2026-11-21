@@ -129,10 +129,12 @@ export default async function PaginaAjustesContas() {
                     </Button>
                   }
                 />
-                <BotaoArquivarConta
-                  contaId={conta.id}
-                  estaArquivada={arquivada}
-                />
+                {conta.type !== 'investimento' && (
+                  <BotaoArquivarConta
+                    contaId={conta.id}
+                    estaArquivada={arquivada}
+                  />
+                )}
               </div>
             </div>
           )
