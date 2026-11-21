@@ -39,10 +39,24 @@ import {
   formatarTaxaMensal,
   ROTULOS_TIPO_RENDIMENTO,
 } from './tipos-investimentos'
+import type { DadosProjecaoCarteira } from '@/lib/queries/carteira-projecao'
+import { GraficoProjecaoCaixinha } from './grafico-projecao-caixinha'
+import { valorProjetadoCentavos } from './projecao-caixinha-logica'
+import {
+  aplicarNaCarteira,
+  criarCaixinha,
+  alocarParaCaixinha,
+  resgatarDaCaixinha,
+  confirmarRendimentoMensal,
+} from '@/actions/investimentos'
+import { useRouter } from 'next/navigation'
 
 export interface AreaInvestimentosProps {
   contasOrigem: ContaOrigem[]
   dadosIniciais?: CarteiraInvestimentoResumo
+  dadosProjecao?: DadosProjecaoCarteira
+  mesAtual?: string
+  atualizadoEm?: string
   carregando?: boolean
   erro?: string | null
   onAtualizar?: () => void
@@ -52,11 +66,15 @@ export interface AreaInvestimentosProps {
 export function AreaInvestimentos({
   contasOrigem,
   dadosIniciais,
+  dadosProjecao,
+  mesAtual,
+  atualizadoEm,
   carregando = false,
   erro = null,
   onAtualizar,
   className,
 }: AreaInvestimentosProps) {
+  const router = useRouter()
   // Estado local gerenciável para interação fluida antes do backend do Estrutura publicar
   const [dados, setDados] = React.useState<CarteiraInvestimentoResumo>(
     dadosIniciais ?? MOCK_CARTEIRA_INVESTIMENTO,
@@ -95,99 +113,141 @@ export function AreaInvestimentos({
     }
   }, [dadosIniciais, caixinhaParaProjecaoId])
 
-  // Ações locais (simulam o resultado das Server Actions até a publicação pelo Estrutura)
+  // Ações conectadas às Server Actions reais (com fallback seguro em mock para testes)
   const handleCriarCaixinha = async (nova: DadosNovaCaixinha) => {
-    const novaCaixinha: CaixinhaInvestimento = {
-      id: `caixinha-${Date.now()}`,
-      family_id: 'fam-local',
-      account_id: 'acc-inv',
-      name: nova.nome,
-      rate_type: nova.tipoRendimento,
-      rate_bps: nova.taxaMensalBps,
-      rate_defined_at: new Date().toISOString().slice(0, 10),
-      resgate_imediato: nova.resgateImediato,
-      data_vencimento: nova.dataVencimento ?? null,
-      balance_cents: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+    if (!dadosIniciais) {
+      const novaCaixinha: CaixinhaInvestimento = {
+        id: `caixinha-${Date.now()}`,
+        family_id: 'fam-local',
+        account_id: 'acc-inv',
+        name: nova.nome,
+        rate_type: nova.tipoRendimento,
+        rate_bps: nova.taxaMensalBps,
+        rate_defined_at: new Date().toISOString().slice(0, 10),
+        resgate_imediato: nova.resgateImediato,
+        data_vencimento: nova.dataVencimento ?? null,
+        balance_cents: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+      setDados((antigos) => ({ ...antigos, caixinhas: [...antigos.caixinhas, novaCaixinha] }))
+      setCaixinhaParaProjecaoId(novaCaixinha.id)
+      dispararFeedback(`Caixinha "${nova.nome}" criada com sucesso.`)
+      return { ok: true }
     }
 
-    setDados((antigos) => ({
-      ...antigos,
-      caixinhas: [...antigos.caixinhas, novaCaixinha],
-    }))
-    setCaixinhaParaProjecaoId(novaCaixinha.id)
+    const res = await criarCaixinha({
+      nome: nova.nome,
+      tipoRendimento: nova.tipoRendimento,
+      taxaMensalBps: nova.taxaMensalBps,
+      resgateImediato: nova.resgateImediato,
+      dataVencimento: nova.dataVencimento ?? null,
+    })
+    if (!res.ok) return res
+
     dispararFeedback(`Caixinha "${nova.nome}" criada com sucesso.`)
+    router.refresh()
+    return res
   }
 
   const handleAplicar = async (aplicacao: DadosAplicacao) => {
-    const centavos = Math.round(aplicacao.valor * 100)
-    setDados((antigos) => {
-      if (aplicacao.caixinhaId) {
-        // Aplicação direta em uma caixinha
-        const caixinhasAtualizadas = antigos.caixinhas.map((cx) =>
-          cx.id === aplicacao.caixinhaId
-            ? { ...cx, balance_cents: cx.balance_cents + centavos }
-            : cx,
-        )
+    if (!dadosIniciais) {
+      const centavos = Math.round(aplicacao.valor * 100)
+      setDados((antigos) => {
+        if (aplicacao.caixinhaId) {
+          const caixinhasAtualizadas = antigos.caixinhas.map((cx) =>
+            cx.id === aplicacao.caixinhaId ? { ...cx, balance_cents: cx.balance_cents + centavos } : cx,
+          )
+          return { ...antigos, saldoTotalCents: antigos.saldoTotalCents + centavos, caixinhas: caixinhasAtualizadas }
+        }
         return {
           ...antigos,
           saldoTotalCents: antigos.saldoTotalCents + centavos,
-          caixinhas: caixinhasAtualizadas,
+          saldoNaoAlocadoCents: antigos.saldoNaoAlocadoCents + centavos,
         }
-      }
-      // Aplicação no saldo não alocado
-      return {
-        ...antigos,
-        saldoTotalCents: antigos.saldoTotalCents + centavos,
-        saldoNaoAlocadoCents: antigos.saldoNaoAlocadoCents + centavos,
-      }
+      })
+      dispararFeedback(`Aplicação de ${formatBRL(aplicacao.valor)} realizada com sucesso.`)
+      return { ok: true }
+    }
+
+    const res = await aplicarNaCarteira({
+      contaOrigemId: aplicacao.contaOrigemId,
+      valor: aplicacao.valor,
+      caixinhaId: aplicacao.caixinhaId,
     })
+    if (!res.ok) return res
+
     dispararFeedback(`Aplicação de ${formatBRL(aplicacao.valor)} realizada com sucesso.`)
+    router.refresh()
+    return res
   }
 
   const handleAlocar = async (alocacao: DadosAlocacao) => {
-    const centavos = Math.round(alocacao.valor * 100)
-    setDados((antigos) => {
-      const caixinhasAtualizadas = antigos.caixinhas.map((cx) =>
-        cx.id === alocacao.caixinhaId
-          ? { ...cx, balance_cents: cx.balance_cents + centavos }
-          : cx,
-      )
-      return {
+    if (!dadosIniciais) {
+      const centavos = Math.round(alocacao.valor * 100)
+      setDados((antigos) => ({
         ...antigos,
         saldoNaoAlocadoCents: Math.max(0, antigos.saldoNaoAlocadoCents - centavos),
-        caixinhas: caixinhasAtualizadas,
-      }
+        caixinhas: antigos.caixinhas.map((cx) =>
+          cx.id === alocacao.caixinhaId ? { ...cx, balance_cents: cx.balance_cents + centavos } : cx,
+        ),
+      }))
+      dispararFeedback(`${formatBRL(alocacao.valor)} alocado na caixinha com sucesso.`)
+      return { ok: true }
+    }
+
+    const res = await alocarParaCaixinha({
+      caixinhaId: alocacao.caixinhaId,
+      valor: alocacao.valor,
     })
+    if (!res.ok) return res
+
     dispararFeedback(`${formatBRL(alocacao.valor)} alocado na caixinha com sucesso.`)
+    router.refresh()
+    return res
   }
 
   const handleResgatar = async (resgate: DadosResgate) => {
-    const centavos = Math.round(resgate.valor * 100)
-    setDados((antigos) => {
-      const caixinhasAtualizadas = antigos.caixinhas.map((cx) =>
-        cx.id === resgate.caixinhaId
-          ? { ...cx, balance_cents: Math.max(0, cx.balance_cents - centavos) }
-          : cx,
-      )
-      const novoNaoAlocado =
-        resgate.destino === 'nao_alocado'
-          ? antigos.saldoNaoAlocadoCents + centavos
-          : antigos.saldoNaoAlocadoCents
-      const novoTotal =
-        resgate.destino === 'nao_alocado'
-          ? antigos.saldoTotalCents
-          : Math.max(0, antigos.saldoTotalCents - centavos)
+    if (!dadosIniciais) {
+      const centavos = Math.round(resgate.valor * 100)
+      setDados((antigos) => {
+        const caixinhasAtualizadas = antigos.caixinhas.map((cx) =>
+          cx.id === resgate.caixinhaId ? { ...cx, balance_cents: Math.max(0, cx.balance_cents - centavos) } : cx,
+        )
+        const novoNaoAlocado =
+          resgate.destino === 'nao_alocado' ? antigos.saldoNaoAlocadoCents + centavos : antigos.saldoNaoAlocadoCents
+        const novoTotal =
+          resgate.destino === 'nao_alocado'
+            ? antigos.saldoTotalCents
+            : Math.max(0, antigos.saldoTotalCents - centavos)
+        return { ...antigos, saldoTotalCents: novoTotal, saldoNaoAlocadoCents: novoNaoAlocado, caixinhas: caixinhasAtualizadas }
+      })
+      dispararFeedback(`Resgate de ${formatBRL(resgate.valor)} realizado com sucesso.`)
+      return { ok: true }
+    }
 
-      return {
-        ...antigos,
-        saldoTotalCents: novoTotal,
-        saldoNaoAlocadoCents: novoNaoAlocado,
-        caixinhas: caixinhasAtualizadas,
-      }
+    const res = await resgatarDaCaixinha({
+      caixinhaId: resgate.caixinhaId,
+      valor: resgate.valor,
+      destino: resgate.destino,
     })
+    if (!res.ok) return res
+
     dispararFeedback(`Resgate de ${formatBRL(resgate.valor)} realizado com sucesso.`)
+    router.refresh()
+    return res
+  }
+
+  const handleConfirmarRendimento = async (caixinhaId: string, competencia: string) => {
+    const res = await confirmarRendimentoMensal({
+      caixinhaId,
+      competencia,
+    })
+    if (!res.ok) {
+      throw new Error(res.erro || 'Não foi possível confirmar o rendimento.')
+    }
+    dispararFeedback(`Rendimento de ${formatBRL(res.dados.valorCentavos / 100)} confirmado com sucesso!`)
+    router.refresh()
   }
 
   // Caixinha selecionada para projeção
@@ -243,16 +303,18 @@ export function AreaInvestimentos({
 
   return (
     <div className={cn('flex flex-col gap-6', className)}>
-      {/* Banner informativo de demonstração (Briefing Rodada 11 - A2) */}
-      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-700 dark:text-amber-400 flex items-start gap-2.5">
-        <Sparkles className="size-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
-        <div className="flex flex-col gap-0.5">
-          <span className="font-semibold">Prévia da Carteira — Dados de Demonstração</span>
-          <span>
-            Esta área exibe dados simulados para validação de interface. Nenhuma operação financeira real é executada ou persistida até a integração final na Rodada 12.
-          </span>
+      {/* Banner informativo de demonstração (ocultado com dados reais - Q1) */}
+      {!dadosIniciais && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-700 dark:text-amber-400 flex items-start gap-2.5">
+          <Sparkles className="size-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+          <div className="flex flex-col gap-0.5">
+            <span className="font-semibold">Prévia da Carteira — Demonstração</span>
+            <span>
+              Esta área exibe dados simulados para validação visual da interface.
+            </span>
+          </div>
         </div>
-      </div>
+      )}
       {/* 1. Resumo Patrimonial da Carteira de Investimento (Hero) */}
       <section
         aria-label="Resumo dos Investimentos"
@@ -390,6 +452,8 @@ export function AreaInvestimentos({
                 caixinha={caixinha}
                 index={idx}
                 selecionada={caixinha.id === caixinhaParaProjecaoId}
+                pendentes={dadosProjecao?.ok ? dadosProjecao.pendentes : []}
+                aoConfirmarRendimento={handleConfirmarRendimento}
                 aoAlocar={(cx) => {
                   setCaixinhaParaAlocar(cx)
                   setModalAlocarAberto(true)
@@ -452,15 +516,19 @@ export function AreaInvestimentos({
             </CardHeader>
 
             <CardContent className="p-5 flex flex-col gap-4">
-              {/* Resumo da Simulação */}
+              {/* Resumo da Simulação (Seção 2.3 - F-2 / F-3) */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="flex flex-col p-3 rounded-xl bg-muted/30 border border-border/60">
                   <span className="text-[11px] text-muted-foreground font-medium uppercase">
                     Saldo atual
                   </span>
-                  <span className="text-sm font-semibold text-foreground mt-0.5">
-                    {formatBRL(caixinhaProjecao.balance_cents / 100)}
-                  </span>
+                  <div className="mt-0.5">
+                    <ValorMonetario
+                      valor={caixinhaProjecao.balance_cents / 100}
+                      tipo="investimento"
+                      tamanho="linha"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex flex-col p-3 rounded-xl bg-muted/30 border border-border/60">
@@ -476,34 +544,34 @@ export function AreaInvestimentos({
                   <span className="text-[11px] text-muted-foreground font-medium uppercase">
                     Projeção em 12 meses
                   </span>
-                  <span className="text-sm font-semibold text-foreground mt-0.5">
-                    {formatBRL(
-                      (caixinhaProjecao.balance_cents / 100) *
-                        Math.pow(1 + caixinhaProjecao.rate_bps / 10000, 12),
-                    )}
-                  </span>
+                  <div className="mt-0.5">
+                    <ValorMonetario
+                      valor={
+                        (valorProjetadoCentavos(
+                          caixinhaProjecao.balance_cents,
+                          caixinhaProjecao.rate_bps,
+                          12,
+                        ) ?? caixinhaProjecao.balance_cents) / 100
+                      }
+                      tipo="investimento"
+                      tamanho="linha"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Slot / Invólucro reservado para o componente `GraficoProjecaoCaixinha` do Dash */}
-              <div
-                id="container-grafico-projecao-caixinha"
-                className="relative flex flex-col items-center justify-center min-h-[220px] rounded-xl border border-dashed border-border/80 bg-muted/20 p-6 text-center"
-              >
-                <div className="flex size-10 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 mb-2">
-                  <TrendingUp className="size-5" />
-                </div>
-                <h4 className="text-xs font-semibold text-foreground">
-                  Gráfico de Linha da Caixinha
-                </h4>
-                <p className="text-[11px] text-muted-foreground max-w-sm mt-0.5">
-                  Slot arquitetural pronto para plugar o componente <code>GraficoProjecaoCaixinha</code> do agente Dash assim que publicado.
-                </p>
-                <div className="mt-3 flex items-center gap-2">
-                  <Badge variant="outline" className="text-[10px] text-muted-foreground font-mono">
-                    {caixinhaProjecao.name} · {caixinhaProjecao.rate_bps} bps
-                  </Badge>
-                </div>
+              <div id="container-grafico-projecao-caixinha" className="w-full">
+                <GraficoProjecaoCaixinha
+                  key={caixinhaProjecao.id}
+                  caixinha={caixinhaProjecao}
+                  movimentos={dadosProjecao?.ok ? dadosProjecao.movimentos : []}
+                  pendentes={dadosProjecao?.ok ? dadosProjecao.pendentes : []}
+                  mesAtual={mesAtual ?? new Date().toISOString().slice(0, 7)}
+                  atualizadoEm={atualizadoEm ?? ''}
+                  erro={dadosProjecao ? !dadosProjecao.ok : false}
+                  aoTentarNovamente={() => router.refresh()}
+                />
               </div>
             </CardContent>
           </Card>
