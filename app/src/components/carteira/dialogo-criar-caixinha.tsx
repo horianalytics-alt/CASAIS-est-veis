@@ -67,6 +67,7 @@ export function DialogoCriarCaixinha({
       setResgateImediato(true)
       setDataVencimento('')
       setErro(null)
+      setCamposComErro({})
     }
     abertoAnterior.current = aberto
   }, [aberto])
@@ -74,6 +75,7 @@ export function DialogoCriarCaixinha({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErro(null)
+    setCamposComErro({})
 
     const nomeLimpo = nome.trim()
     if (!nomeLimpo) {
@@ -114,6 +116,9 @@ export function DialogoCriarCaixinha({
         dataVencimento: resgateImediato ? null : dataVencimento,
       })
       if (resposta && typeof resposta === 'object' && 'ok' in resposta && !resposta.ok) {
+        if ('camposComErro' in resposta && resposta.camposComErro) {
+          setCamposComErro(resposta.camposComErro as Record<string, string[]>)
+        }
         throw new Error(resposta.erro || 'Erro ao criar caixinha.')
       }
       hapticFeedback.success()
@@ -163,6 +168,7 @@ export function DialogoCriarCaixinha({
               className="h-9 text-xs rounded-xl"
               autoFocus
             />
+            <CampoErro id="erro-nome-caixinha" mensagens={camposComErro.nome} />
           </div>
 
           {/* Tipo de Rendimento */}
@@ -185,6 +191,7 @@ export function DialogoCriarCaixinha({
                 ))}
               </SelectContent>
             </Select>
+            <CampoErro id="erro-tipo-rendimento" mensagens={camposComErro.tipoRendimento} />
           </div>
 
           {/* Taxa Estimada Mensal */}
@@ -207,6 +214,7 @@ export function DialogoCriarCaixinha({
               <Info className="size-3 shrink-0" />
               <span>A taxa é informada manualmente por você e serve para simulação de rendimento.</span>
             </div>
+            <CampoErro id="erro-taxa-mensal" mensagens={camposComErro.taxaMensalBps} />
           </div>
 
           {/* Regra de Resgate (Liquidez vs Vencimento) */}
