@@ -24,6 +24,8 @@ export const AJUSTES = {
   linkCategoriasDica: 'Categorias de despesas, receitas e investimentos',
   linkFormasPagamento: 'Formas de pagamento',
   linkFormasPagamentoDica: 'Métodos utilizados nos lançamentos da casa',
+  linkAssinaturas: 'Assinaturas e fixos',
+  linkAssinaturasDica: 'Gerencie pagamentos e recebimentos recorrentes da casa',
   sonsTitulo: 'Sons do aplicativo',
   sonsDica: 'Toque curto ao salvar lançamentos ou quando ocorrer um erro',
   sonsAtivo: 'Ativado',
@@ -181,4 +183,18 @@ export const AJUSTES_ORCAMENTOS = {
   excluirBotao: 'Excluir orçamento',
   excluindo: 'Excluindo…',
   erroGeral: 'Não foi possível salvar o orçamento.',
+} as const
+
+export const AJUSTES_ASSINATURAS = {
+  titulo: 'Assinaturas e fixos',
+  subtitulo: 'Regras mensais que geram despesas e receitas automaticamente',
+  ativasTitulo: 'Assinaturas ativas',
+  encerradasTitulo: 'Encerradas',
+  semAtivas: 'Nenhuma assinatura ativa no momento.',
+  semEncerradas: 'Nenhuma assinatura encerrada.',
+  editarValor: 'Editar valor',
+  encerrar: 'Encerrar assinatura',
+  dicaEditar: 'Altera o valor deste mês em diante. Para mudar só este mês, edite o lançamento pelo extrato.',
+  dicaEncerrar: 'Os lançamentos futuros serão removidos. O histórico fica.',
+  badgeArquivada: 'Conta arquivada — assinatura pausada',
 } as const

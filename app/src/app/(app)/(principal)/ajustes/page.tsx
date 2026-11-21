@@ -10,6 +10,7 @@ import {
   User,
   Users,
   WalletCards,
+  Repeat,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { SeletorTema } from '@/components/ajustes/seletor-tema'
@@ -195,6 +196,26 @@ export default async function PaginaAjustes() {
                   </span>
                   <span className="text-muted-foreground text-xs">
                     {AJUSTES.linkFormasPagamentoDica}
+                  </span>
+                </div>
+              </div>
+              <ChevronRight className="text-muted-foreground size-4" aria-hidden="true" />
+            </Link>
+
+            <Link
+              href="/ajustes/assinaturas"
+              className="hover:bg-muted/40 flex min-h-[56px] items-center justify-between p-4 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg border border-border">
+                  <Repeat className="size-4.5" aria-hidden="true" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-foreground text-sm font-semibold">
+                    {AJUSTES.linkAssinaturas}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {AJUSTES.linkAssinaturasDica}
                   </span>
                 </div>
               </div>
