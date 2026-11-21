@@ -57,9 +57,19 @@ Lista simples "Assinaturas e fixos" (em Ajustes ou Carteira, a definir pelo Fach
 - Estado do pop-up: coluna "perguntar de novo a partir de" no lançamento recorrente. **A PROVAR** se cabe em `transactions` sem quebrar a imutabilidade do acerto (00015).
 - Geração reaproveita a regra de fatura de cartão do `save_transactions` (compra no dia do fechamento cai na fatura seguinte).
 
-## 6. Perguntas que ainda dependem do Heitor
+## 6. Decisões do Heitor (2026-11-20, após o plano do Estrutura)
 
-1. Em **cartão de crédito**, "já foi pago" significa o quê? A despesa já conta como gasto no mês da fatura; o pop-up aí confirmaria a fatura ou a compra? (o Estrutura traz os fatos na FASE: PLANO e eu te pergunto)
+Plano: `docs/planos/estrutura-recorrencia.md`. Decisões numeradas como no §5 do plano.
+
+1. **Cartão de crédito [Heitor]:** assinatura no cartão NÃO entra no pop-up; nasce pendente e vira paga quando a fatura é paga (`pay_invoice`). Motivo: marcar a compra como paga fora do `pay_invoice` desfaz a conta da fatura (plano §3.2).
+2. **"Ainda não" [Heitor]:** some para os dois até o dia seguinte.
+3. **Data do pagamento [Heitor]:** ao responder "sim", um CAMPO DE DATA para informar o dia do pagamento, preenchido por padrão com o **dia do vencimento**; pode trocar. (Muda o plano: `recorrencia_responder` recebe a data.)
+4. **12 meses [Heitor]:** mês atual + 11 à frente.
+5. **"A pagar/a receber" na Carteira [Heitor]:** mostrar só o mês atual. Muda também como as parcelas aparecem ali. Migration separada (00020).
+6. **Orçamento [Heitor]:** a assinatura pendente do mês conta como gasto comprometido, como as parcelas.
+7. **Encerrar e datas passadas [Heitor]:** último mês >= mês de início; meses passados de uma assinatura cadastrada com data no passado nascem pendentes e entram na fila do pop-up.
+
+Aceito pelo Maestro (técnico, reversível): valor em reais `numeric(14,2)` como `transactions.amount`; sem coluna "ativa" (derivada de `end_period`).
 
 ## 7. Divisão de trabalho
 

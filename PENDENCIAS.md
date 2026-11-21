@@ -196,6 +196,11 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
 - **Dono:** Estrutura, em migration NOVA (nunca ALTER na 00018), junto com a limpeza de U+200F e Hangul filler já pendente, e o mesmo ajuste em `esquemas-investimentos.ts`.
 - **Quando:** antes de ligar a aba Investimentos.
 
+### P-016 — Formulário deixa lançar compra de cartão já como paga (achado do Estrutura)
+- **O quê:** `form-lancamento.tsx:112/128` usa `estaPago: true` como padrão, inclusive em conta cartão. Marcar compra de cartão como paga fora do `pay_invoice` tira a compra do `open_amount` da fatura; a transferência de pagamento sai menor que a real e o cartão fica negativo para sempre (plano da recorrência §3.2).
+- **Hoje:** 0 lançamentos em cartão em produção, então ainda não houve estrago.
+- **Dono:** front (Antigravity): em conta cartão, não oferecer "já está pago". Entra no briefing da rodada 13. O back pode recusar `is_paid=true` em cartão numa migration própria (a decidir com o Heitor).
+
 ---
 
 ## Fora de escopo por decisão registrada
