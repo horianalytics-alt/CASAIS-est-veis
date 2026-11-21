@@ -23,6 +23,10 @@ vi.mock('@/lib/haptics', () => ({
   },
 }))
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+}))
+
 vi.mock('@/hooks/use-in-view', () => ({
   useInView: () => ({ ref: { current: null }, inView: true }),
 }))
@@ -449,6 +453,166 @@ describe('Investimentos UI — Testes Unitários', () => {
       fireEvent.click(botaoConfirmar)
 
       expect(await screen.findByText('Saldo não alocado indisponível')).toBeDefined()
+    })
+  })
+
+
+  describe('CardCaixinha — Rendimento Estimado a Confirmar (Spec 4b / F-5)', () => {
+    const mockCaixinha: CaixinhaInvestimento = {
+      id: 'cx-rendimento',
+      family_id: 'fam-1',
+      account_id: 'acc-1',
+      name: 'Reserva Ouro',
+      rate_type: 'liquidez_diaria',
+      rate_bps: 100,
+      rate_defined_at: '2026-01-01',
+      resgate_imediato: true,
+      data_vencimento: null,
+      balance_cents: 1000000,
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    }
+
+    it('exibe bloco de rendimento estimado pendente com botao confirmar', async () => {
+      const aoConfirmar = vi.fn().mockResolvedValue(undefined)
+      const pendentes = [
+        { caixinhaId: 'cx-rendimento', competencia: '2026-09-01', valorCentavos: 10000 },
+        { caixinhaId: 'cx-rendimento', competencia: '2026-10-01', valorCentavos: 10100 },
+      ]
+
+      render(
+        <CardCaixinha
+          caixinha={mockCaixinha}
+          aoAlocar={vi.fn()}
+          aoResgatar={vi.fn()}
+          pendentes={pendentes}
+          aoConfirmarRendimento={aoConfirmar}
+        />,
+      )
+
+      expect(screen.getByText(/Rendimento estimado de setembro de 2026/i)).toBeDefined()
+      expect(screen.getByText('(1 de 2 meses)')).toBeDefined()
+
+      const botaoConfirmar = screen.getByRole('button', { name: /confirmar/i })
+      fireEvent.click(botaoConfirmar)
+
+      expect(aoConfirmar).toHaveBeenCalledWith('cx-rendimento', '2026-09')
+    })
+  })
+
+  describe('Dialogos — Erros de campo com camposComErro (Achado A7 / F-1)', () => {
+    it('DialogoCriarCaixinha exibe erros de campos individuais quando a Action devolve camposComErro', async () => {
+      const onSalvar = vi.fn().mockResolvedValue({
+        ok: false,
+        erro: 'Confira os campos destacados.',
+        camposComErro: {
+          nome: ['Nome já em uso.'],
+          taxaMensalBps: ['Taxa inválida.'],
+        },
+      })
+
+      render(
+        <DialogoCriarCaixinha
+          aberto={true}
+          onOpenChange={vi.fn()}
+          onSalvar={onSalvar}
+        />,
+      )
+
+      const inputNome = screen.getByPlaceholderText(/Ex: Reserva de Emergência/i)
+      fireEvent.change(inputNome, { target: { value: 'Caixinha Duplicada' } })
+
+      const botaoCriar = screen.getByRole('button', { name: /criar caixinha/i })
+      fireEvent.click(botaoCriar)
+
+      expect(await screen.findByText('Nome já em uso.')).toBeDefined()
+    })
+
+    it('DialogoAplicar exibe erros de campo quando onAplicar devolve camposComErro', async () => {
+      const onAplicar = vi.fn().mockResolvedValue({
+        ok: false,
+        erro: 'Confira os campos destacados.',
+        camposComErro: {
+          valor: ['Saldo insuficiente na conta de origem'],
+        },
+      })
+
+      const contas = [{ id: 'cta-1', name: 'Conta Corrente', current_balance: 500 }]
+      const caixinhas = [{
+        id: 'cx-1',
+        family_id: 'fam-1',
+        account_id: 'acc-1',
+        name: 'Reserva',
+        rate_type: 'liquidez_diaria' as const,
+        rate_bps: 100,
+        rate_defined_at: '2026-01-01',
+        resgate_imediato: true,
+        data_vencimento: null,
+        balance_cents: 10000,
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      }]
+
+      render(
+        <DialogoAplicar
+          aberto={true}
+          onOpenChange={vi.fn()}
+          contasOrigem={contas}
+          caixinhas={caixinhas}
+          onAplicar={onAplicar}
+        />,
+      )
+
+      const inputValor = screen.getByPlaceholderText('0,00')
+      fireEvent.change(inputValor, { target: { value: '100,00' } })
+
+      const botaoConfirmar = screen.getByRole('button', { name: /confirmar aplicação/i })
+      fireEvent.click(botaoConfirmar)
+
+      expect(await screen.findByText('Saldo insuficiente na conta de origem')).toBeDefined()
+    })
+
+    it('DialogoResgatar exibe erros de campo quando onResgatar devolve camposComErro', async () => {
+      const onResgatar = vi.fn().mockResolvedValue({
+        ok: false,
+        erro: 'Confira os campos destacados.',
+        camposComErro: {
+          valor: ['Saldo insuficiente na caixinha'],
+        },
+      })
+
+      const caixinha: CaixinhaInvestimento = {
+        id: 'cx-1',
+        family_id: 'fam-1',
+        account_id: 'acc-1',
+        name: 'Reserva',
+        rate_type: 'liquidez_diaria',
+        rate_bps: 100,
+        rate_defined_at: '2026-01-01',
+        resgate_imediato: true,
+        data_vencimento: null,
+        balance_cents: 100000,
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      }
+
+      render(
+        <DialogoResgatar
+          aberto={true}
+          onOpenChange={vi.fn()}
+          caixinha={caixinha}
+          contasDestino={[]}
+          onResgatar={onResgatar}
+        />,
+      )
+
+      const inputValor = screen.getByPlaceholderText('0,00')
+      fireEvent.change(inputValor, { target: { value: '50,00' } })
+
+      const botaoConfirmar = screen.getByRole('button', { name: /confirmar resgate/i })
+      fireEvent.click(botaoConfirmar)
+
+      expect(await screen.findByText('Saldo insuficiente na caixinha')).toBeDefined()
     })
   })
 
