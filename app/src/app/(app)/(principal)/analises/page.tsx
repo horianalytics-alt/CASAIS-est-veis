@@ -276,7 +276,11 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
 
       {/* Mapa de Calor: Dias de Maior Gasto */}
       <ScrollReveal replayOnScroll>
-        <MapaDeCalorDias anoMes={mes} transacoes={transacoes} />
+        <MapaDeCalorDias
+          anoMes={mes}
+          transacoes={transacoes}
+          contas={listaContas.map((c) => ({ id: c.id, nome: c.name }))}
+        />
       </ScrollReveal>
     </main>
   )
