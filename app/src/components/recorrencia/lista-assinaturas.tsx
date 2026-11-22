@@ -301,13 +301,13 @@ export function ListaAssinaturas({
                   )}
 
                   {/* Ações */}
-                  <div className="flex items-center justify-end gap-2 border-t border-border/50 pt-3">
+                  <div className="flex flex-wrap items-center gap-2 border-t border-border/50 pt-3">
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => abrirCorrecaoRegra(r)}
-                      className="h-8 text-xs gap-1.5"
+                      className="h-8 text-xs gap-1.5 flex-1 min-w-[120px]"
                     >
                       <Repeat className="size-3.5" aria-hidden="true" />
                       Corrigir regra
@@ -317,7 +317,7 @@ export function ListaAssinaturas({
                       variant="outline"
                       size="sm"
                       onClick={() => abrirEdicao(r)}
-                      className="h-8 text-xs gap-1.5"
+                      className="h-8 text-xs gap-1.5 flex-1 min-w-[120px]"
                     >
                       <Edit2 className="size-3.5" aria-hidden="true" />
                       {AJUSTES_ASSINATURAS.editarValor}
@@ -327,7 +327,7 @@ export function ListaAssinaturas({
                       variant="ghost"
                       size="sm"
                       onClick={() => abrirEncerramento(r)}
-                      className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
+                      className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5 w-full"
                     >
                       <PowerOff className="size-3.5" aria-hidden="true" />
                       {AJUSTES_ASSINATURAS.encerrar}

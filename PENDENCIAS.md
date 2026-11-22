@@ -191,6 +191,13 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
 - **Ação do Heitor:** apagar à mão no dashboard do Supabase, se a v1 tinha
   projeto próprio.
 
+### P-016 — Excluir conta permanentemente (hoje só arquiva)
+- **Origem:** Heitor, 2026-11-22 — "não tem como excluir um cartão que já foi criado, só arquivar; futuramente vai ser péssimo encontrar conta ativa em meio a várias arquivadas".
+- **O quê:** a tela `ajustes/contas` tem botão de arquivar (`BotaoArquivarConta`) mas não de excluir. Conta com transações vinculadas não pode ser excluída sem decisão arquitetural: exclusão física destrói histórico; exclusão com verificação ("conta sem transações pode ser apagada") é a rota mais segura.
+- **Dono:** Estrutura (Server Action `excluirConta` com verificação de transações vinculadas + guard de constraint FK) + Fachada (botão de excluir com diálogo de confirmação, só visível para contas sem transações ou arquivadas sem movimentação).
+- **Quando:** próxima rodada de manutenção.
+- **Restrição importante:** conta com transações NÃO pode ser apagada — o histórico é dado do usuário. A Action deve verificar antes e devolver erro claro se houver transações vinculadas.
+
 ### P-015 — Nome de caixinha "invisível" passa (Sentinela N1, BAIXO, CONFIRMADO)
 - **O quê:** nome só com U+2800 (Braille em branco) ou só com U+0301 (acento solto) é aceito pelo Zod e pela RPC `carteira_criar_caixinha`. Evidência: `docs/auditoria/evidencias/carteira-r2/sonda-zod-nome.out.txt`.
 - **Dono:** Estrutura, em migration NOVA (nunca ALTER na 00018), junto com a limpeza de U+200F e Hangul filler já pendente, e o mesmo ajuste em `esquemas-investimentos.ts`.
