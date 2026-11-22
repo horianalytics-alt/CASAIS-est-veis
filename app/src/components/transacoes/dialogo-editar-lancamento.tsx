@@ -361,29 +361,10 @@ export function DialogoEditarLancamento({
 
       setPendente(false)
       onOpenChange(false)
-      // O que foi gravado, nas colunas da linha. A lista usa para atualizar o
-      // item na hora: itens vindos de "carregar mais" não são substituídos pelo
-      // router.refresh(), e reabrir o diálogo neles mostraria (e reenviaria)
-      // os valores antigos.
-      onSalvo?.({
-        id: transacao.id,
-        type: tipo,
-        description: descLimpa,
-        amount: valorFinal,
-        date: data,
-        account_id: contaId,
-        to_account_id: tipo === 'transferencia' ? contaDestinoId : null,
-        category_id: tipo === 'transferencia' ? null : categoriaId || null,
-        paid_by_member_id: membroId,
-        payment_method_id: formaDePagamentoId || null,
-        owner_member_id: tipo === 'transferencia' ? null : (responsavelId || null),
-        is_paid: estaPago,
-        paid_date: estaPago ? dataPagamento : null,
-        notes: observacaoFinal,
-        is_benefit: ehDespesa && ehBeneficio,
-        is_futile: futilFinal,
-        futile_label: rotuloFinal,
-      })
+      // A linha real completa que foi gravada no banco (incluindo invoice_year, invoice_month,
+      // owner_share e demais campos calculados na action). A lista usa para atualizar o item
+      // na hora no scroll infinito.
+      onSalvo?.(resposta.dados)
       router.refresh()
     } catch (err: unknown) {
       setErro(err instanceof Error ? err.message : 'Erro inesperado ao salvar alterações.')
