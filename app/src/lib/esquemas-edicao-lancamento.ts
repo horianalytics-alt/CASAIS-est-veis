@@ -89,6 +89,10 @@ export const esquemaAtualizarLancamento = z
     contaDestinoId: uuid.nullish(),
     categoriaId: uuid.nullish(),
     pagoPorId: uuid,
+    /** undefined = manter o que a linha tem; null = "sem forma de pagamento". */
+    formaDePagamentoId: uuid.nullish(),
+    /** undefined = manter; null só se for transferência. */
+    responsavelId: uuid.nullish(),
     estaPago: z.boolean({ required_error: 'Informe se está pago.', invalid_type_error: 'Informe se está pago.' }),
     dataDoPagamento: dataISO.nullish(),
     observacao: z
@@ -146,11 +150,18 @@ export const esquemaAtualizarEmMassa = z
     categoriaId: uuid.nullable().optional(),
     contaId: uuid.optional(),
     pagoPorId: uuid.optional(),
+    formaDePagamentoId: uuid.nullable().optional(),
+    responsavelId: uuid.optional(),
     estaPago: z.boolean({ invalid_type_error: 'Informe se está pago.' }).optional(),
   })
   .refine(
     (e) =>
-      e.categoriaId !== undefined || e.contaId !== undefined || e.pagoPorId !== undefined || e.estaPago !== undefined,
+      e.categoriaId !== undefined ||
+      e.contaId !== undefined ||
+      e.pagoPorId !== undefined ||
+      e.estaPago !== undefined ||
+      e.formaDePagamentoId !== undefined ||
+      e.responsavelId !== undefined,
     { message: M.NENHUM_CAMPO, path: ['formulario'] },
   )
 
@@ -221,10 +232,15 @@ export function montarPatchIndividual(
     paid_date: e.estaPago ? (e.dataDoPagamento ?? null) : null,
     notes: e.observacao,
   }
+  if (e.formaDePagamentoId !== undefined) {
+    patch.payment_method_id = e.formaDePagamentoId
+  }
   // CHECK tx_transferencia_sem_rateio.
   if (ehTransferencia) {
     patch.owner_member_id = null
     patch.owner_share = null
+  } else if (e.responsavelId !== undefined) {
+    patch.owner_member_id = e.responsavelId
   }
   // Benefício e fútil só existem em despesa (form-lancamento.tsx manda false
   // nos dois fora de despesa). Fora dela, zerados mesmo se pedidos ou omitidos: uma
@@ -264,7 +280,10 @@ function chaveDoPatch(patch: PatchDeLancamento): string {
  */
 export function planejarEdicaoEmMassa(
   linhas: LinhaEditavel[],
-  e: Pick<LoteParseado, 'categoriaId' | 'contaId' | 'pagoPorId' | 'estaPago'> & { ids: string[] },
+  e: Pick<
+    LoteParseado,
+    'categoriaId' | 'contaId' | 'pagoPorId' | 'estaPago' | 'formaDePagamentoId' | 'responsavelId'
+  > & { ids: string[] },
   contaNova: { id: string; closing_day: number | null } | null,
   hoje: string,
 ): { ok: true; grupos: { ids: string[]; patch: PatchDeLancamento }[] } | Recusa {
@@ -289,6 +308,8 @@ export function planejarEdicaoEmMassa(
       if (linha.account_id !== e.contaId) Object.assign(patch, faturaPara(contaNova.closing_day, linha.date))
     }
     if (e.pagoPorId !== undefined) patch.paid_by_member_id = e.pagoPorId
+    if (e.formaDePagamentoId !== undefined) patch.payment_method_id = e.formaDePagamentoId
+    if (e.responsavelId !== undefined && linha.type !== 'transferencia') patch.owner_member_id = e.responsavelId
     if (e.estaPago === true && !linha.is_paid) {
       patch.is_paid = true
       patch.paid_date = hoje
