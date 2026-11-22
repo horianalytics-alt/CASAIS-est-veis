@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DialogoConta } from '@/components/ajustes/dialogo-conta'
 import { BotaoArquivarConta } from '@/components/carteira/botao-arquivar-conta'
+import { BotaoExcluirConta } from '@/components/ajustes/botao-excluir-conta'
 import { AJUSTES_CONTAS } from '@/features/ajustes/copy'
 import { TIPOS_DE_CONTA } from '@/features/transacoes/copy'
 import type { Database } from '@/types/database'
@@ -90,12 +91,12 @@ export default async function PaginaAjustesContas() {
               key={conta.id}
               className="flex items-center justify-between p-4 transition-colors"
             >
-              <div className="flex items-center gap-3">
-                <div className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg border border-border">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="bg-muted text-foreground flex size-9 shrink-0 items-center justify-center rounded-lg border border-border">
                   <Icone className="size-4.5" aria-hidden="true" />
                 </div>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-foreground text-sm font-semibold">
                       {conta.name}
                     </span>
@@ -119,7 +120,7 @@ export default async function PaginaAjustesContas() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 <DialogoConta
                   familiaId={familiaId}
                   contaParaEditar={conta}
@@ -130,10 +131,16 @@ export default async function PaginaAjustesContas() {
                   }
                 />
                 {conta.type !== 'investimento' && (
-                  <BotaoArquivarConta
-                    contaId={conta.id}
-                    estaArquivada={arquivada}
-                  />
+                  <>
+                    <BotaoArquivarConta
+                      contaId={conta.id}
+                      estaArquivada={arquivada}
+                    />
+                    <BotaoExcluirConta
+                      contaId={conta.id}
+                      nomeDaConta={conta.name}
+                    />
+                  </>
                 )}
               </div>
             </div>
