@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import type { Database } from '@/types/database'
 import {
   COLUNAS_LINHA_EDITAVEL,
   MENSAGENS_EDICAO as M,
@@ -79,7 +80,9 @@ const recusa = (mensagem: string, campo: string) => falha(mensagem, { [campo]: [
  * tipo final diferente de despesa zera os 3; rótulo exige ehFutil=true no
  * mesmo pedido (erro em camposComErro.rotuloDoFutil).
  */
-export async function atualizarLancamento(input: EntradaAtualizarLancamento): Promise<ResultadoAction<void>> {
+export async function atualizarLancamento(
+  input: EntradaAtualizarLancamento,
+): Promise<ResultadoAction<Database['public']['Tables']['transactions']['Row']>> {
   const analise = esquemaAtualizarLancamento.safeParse(input)
   if (!analise.success) return falhaDeValidacao(analise.error)
   const e = analise.data
@@ -116,14 +119,18 @@ export async function atualizarLancamento(input: EntradaAtualizarLancamento): Pr
     .update(plano.patch)
     .eq('id', e.id)
     .eq('family_id', familyId)
-    .select('id')
-  if (error) return falha(traduzErroDoBanco(error))
-  // Apagada entre a leitura e o UPDATE.
-  if ((data ?? []).length === 0) return falha(M.NAO_ENCONTRADO)
+    .select('*')
+    .single()
+  if (error) {
+    // .single() lança PGRST116 quando não encontra linha
+    if (error.code === 'PGRST116') return falha(M.NAO_ENCONTRADO)
+    return falha(traduzErroDoBanco(error))
+  }
+  if (!data) return falha(M.NAO_ENCONTRADO)
 
   revalidar()
   agendarNotificacao(autorDaFamilia(autor, familyId), 'edicao', 1)
-  return sucesso()
+  return sucesso(data)
 }
 
 /**
