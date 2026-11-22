@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowRightLeft, Check, ChevronDown, CreditCard, Plus, Trash2 } from 'lucide-react'
+import { Check, ChevronDown, CreditCard, Plus, Trash2 } from 'lucide-react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { salvarLancamento, type EntradaDeLancamento, type Lancamento } from '@/actions/lancamento'
 import { criarRecorrencia, type EntradaCriarRecorrencia } from '@/actions/recorrencia'
@@ -49,10 +49,23 @@ export interface OpcaoDeGrupo {
   nome: string
 }
 
+export interface OpcaoDeMembro {
+  id: string
+  nome: string
+}
+
+export interface OpcaoDeFormaDePagamento {
+  id: string
+  nome: string
+}
+
 export interface FormLancamentoProps {
   contas: OpcaoDeConta[]
   categorias: OpcaoDeCategoria[]
   grupos?: OpcaoDeGrupo[]
+  membros?: OpcaoDeMembro[]
+  membroAtualId?: string
+  formasDePagamento?: OpcaoDeFormaDePagamento[]
   hoje: string
 }
 
@@ -66,6 +79,10 @@ interface CamposSimples {
   contaId: string
   contaDestinoId: string
   categoriaId: string
+  responsavelId: string
+  pagoPorId: string
+  formaDePagamentoId: string
+  observacao: string
   parcelas: number
   estaPago: boolean
   dataDoPagamento: string
@@ -83,6 +100,11 @@ interface ItemLote {
   contaId: string
   categoriaId: string
   estaPago: boolean
+  dataDoPagamento: string
+  formaDePagamentoId: string
+  observacao: string
+  responsavelId: string
+  pagoPorId: string
   ehBeneficio: boolean
   ehFutil: boolean
   rotuloDoFutil: string
@@ -93,6 +115,9 @@ interface CamposLote {
 }
 
 const SEM_CATEGORIA = '__sem_categoria__'
+const SEM_RESPONSAVEL = '__sem_responsavel__'
+const SEM_PAGADOR = '__sem_pagador__'
+const SEM_FORMA_PAGAMENTO = '__sem_forma_pagamento__'
 
 const OPCOES_DE_TIPO: { valor: TipoDoFormulario; rotulo: string }[] = [
   { valor: 'despesa', rotulo: LANCAR.despesa },
@@ -102,9 +127,19 @@ const OPCOES_DE_TIPO: { valor: TipoDoFormulario; rotulo: string }[] = [
 
 const OPCOES_DE_PARCELAS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24]
 
-function valoresIniciaisSimples(hoje: string, contas: OpcaoDeConta[]): CamposSimples {
+function valoresIniciaisSimples(
+  hoje: string,
+  contas: OpcaoDeConta[],
+  membros?: OpcaoDeMembro[],
+  membroAtualId?: string,
+): CamposSimples {
   const primeiraConta = contas[0]
   const ehCartaoPrimeira = primeiraConta?.tipo === 'cartao'
+  const pagadorPadrao =
+    membroAtualId && membros?.some((m) => m.id === membroAtualId)
+      ? membroAtualId
+      : SEM_PAGADOR
+
   return {
     tipo: 'despesa',
     descricao: '',
@@ -113,6 +148,10 @@ function valoresIniciaisSimples(hoje: string, contas: OpcaoDeConta[]): CamposSim
     contaId: primeiraConta?.id ?? '',
     contaDestinoId: contas[1]?.id ?? '',
     categoriaId: SEM_CATEGORIA,
+    responsavelId: SEM_RESPONSAVEL,
+    pagoPorId: pagadorPadrao,
+    formaDePagamentoId: SEM_FORMA_PAGAMENTO,
+    observacao: '',
     parcelas: 1,
     estaPago: ehCartaoPrimeira ? false : true,
     dataDoPagamento: hoje,
@@ -123,9 +162,19 @@ function valoresIniciaisSimples(hoje: string, contas: OpcaoDeConta[]): CamposSim
   }
 }
 
-function itemLoteVazio(hoje: string, contas: OpcaoDeConta[]): ItemLote {
+function itemLoteVazio(
+  hoje: string,
+  contas: OpcaoDeConta[],
+  membros?: OpcaoDeMembro[],
+  membroAtualId?: string,
+): ItemLote {
   const primeiraConta = contas[0]
   const ehCartaoPrimeira = primeiraConta?.tipo === 'cartao'
+  const pagadorPadrao =
+    membroAtualId && membros?.some((m) => m.id === membroAtualId)
+      ? membroAtualId
+      : SEM_PAGADOR
+
   return {
     tipo: 'despesa',
     descricao: '',
@@ -134,6 +183,11 @@ function itemLoteVazio(hoje: string, contas: OpcaoDeConta[]): ItemLote {
     contaId: primeiraConta?.id ?? '',
     categoriaId: SEM_CATEGORIA,
     estaPago: ehCartaoPrimeira ? false : true,
+    dataDoPagamento: hoje,
+    formaDePagamentoId: SEM_FORMA_PAGAMENTO,
+    observacao: '',
+    responsavelId: SEM_RESPONSAVEL,
+    pagoPorId: pagadorPadrao,
     ehBeneficio: false,
     ehFutil: false,
     rotuloDoFutil: '',
@@ -156,7 +210,15 @@ function destinoAposSalvar(dataISO: string, salvos: Lancamento[], quantidade: nu
   return `/inicio?${parametros.toString()}`
 }
 
-export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLancamentoProps) {
+export function FormLancamento({
+  contas,
+  categorias,
+  grupos = [],
+  membros = [],
+  membroAtualId,
+  formasDePagamento = [],
+  hoje,
+}: FormLancamentoProps) {
   const router = useRouter()
   const [modo, setModo] = useState<'simples' | 'lote'>('simples')
   const [pendente, iniciarEnvio] = useTransition()
@@ -179,7 +241,7 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
     getValues,
     reset,
   } = useForm<CamposSimples>({
-    defaultValues: valoresIniciaisSimples(hoje, contas),
+    defaultValues: valoresIniciaisSimples(hoje, contas, membros, membroAtualId),
   })
 
   const pagamentoEditado = useRef(false)
@@ -187,10 +249,10 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
   const deveReiniciar = useRef(false)
   // Props mais recentes para o reinício: `reset()` sem argumento voltaria aos
   // valores do PRIMEIRO render (conta arquivada/reordenada, `hoje` velho).
-  const propsAtuais = useRef({ hoje, contas })
+  const propsAtuais = useRef({ hoje, contas, membros, membroAtualId })
   useEffect(() => {
-    propsAtuais.current = { hoje, contas }
-  }, [hoje, contas])
+    propsAtuais.current = { hoje, contas, membros, membroAtualId }
+  }, [hoje, contas, membros, membroAtualId])
 
   useEffect(() => {
     const assinatura = watch((_valores, { name }) => {
@@ -230,6 +292,7 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
       setValue('repetirTodoMes', false)
     }
   }, [tipo, repetirTodoMes, setValue])
+
   // Rótulo de fatura ao vivo
   let rotuloFatura: string | null = null
   if (ehCartao && contaAtual && contaAtual.closing_day != null && data) {
@@ -255,6 +318,20 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
   const aoEnviarSimples = handleSubmit((valores) => {
     setResultado(null)
     iniciarEnvio(async () => {
+      const responsavelIdLimpo =
+        valores.tipo === 'transferencia' || valores.responsavelId === SEM_RESPONSAVEL || !valores.responsavelId
+          ? null
+          : valores.responsavelId
+      const pagoPorIdLimpo =
+        valores.tipo === 'transferencia' || valores.pagoPorId === SEM_PAGADOR || !valores.pagoPorId
+          ? null
+          : valores.pagoPorId
+      const formaDePagamentoIdLimpo =
+        valores.formaDePagamentoId === SEM_FORMA_PAGAMENTO || !valores.formaDePagamentoId
+          ? null
+          : valores.formaDePagamentoId
+      const observacaoLimpa = valores.observacao?.trim() || null
+
       if (valores.repetirTodoMes && (valores.tipo === 'despesa' || valores.tipo === 'receita')) {
         const ehDespesa = valores.tipo === 'despesa'
         const entradaRecorrencia: EntradaCriarRecorrencia = {
@@ -265,6 +342,10 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
           contaId: valores.contaId,
           categoriaId:
             valores.categoriaId === SEM_CATEGORIA ? null : valores.categoriaId,
+          responsavelId: responsavelIdLimpo,
+          pagoPorId: pagoPorIdLimpo,
+          formaDePagamentoId: formaDePagamentoIdLimpo,
+          observacao: observacaoLimpa,
           estaPago: ehContaCartao ? false : valores.estaPago,
           dataDoPagamento:
             !ehContaCartao && valores.estaPago ? valores.dataDoPagamento || null : null,
@@ -307,6 +388,10 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
           valores.tipo === 'transferencia' || valores.categoriaId === SEM_CATEGORIA
             ? null
             : valores.categoriaId,
+        responsavelId: responsavelIdLimpo,
+        pagoPorId: pagoPorIdLimpo,
+        formaDePagamentoId: formaDePagamentoIdLimpo,
+        observacao: observacaoLimpa,
         parcelas: ehDespesa ? valores.parcelas : 1,
         estaPago: ehContaCartao ? false : valores.estaPago,
         dataDoPagamento: !ehContaCartao && valores.estaPago ? valores.dataDoPagamento || null : null,
@@ -344,9 +429,13 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
     handleSubmit: handleSubmitLote,
     watch: watchLote,
     reset: resetLote,
+    setValue: setValueLote,
   } = useForm<CamposLote>({
     defaultValues: {
-      itens: [itemLoteVazio(hoje, contas), itemLoteVazio(hoje, contas)],
+      itens: [
+        itemLoteVazio(hoje, contas, membros, membroAtualId),
+        itemLoteVazio(hoje, contas, membros, membroAtualId),
+      ],
     },
   })
 
@@ -375,10 +464,13 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
       if (!deveReiniciar.current) return
       deveReiniciar.current = false
       pagamentoEditado.current = false
-      const { hoje: hojeAtual, contas: contasAtuais } = propsAtuais.current
-      reset(valoresIniciaisSimples(hojeAtual, contasAtuais))
+      const { hoje: hojeAtual, contas: contasAtuais, membros: membrosAtuais, membroAtualId: membroAtualIdAtual } = propsAtuais.current
+      reset(valoresIniciaisSimples(hojeAtual, contasAtuais, membrosAtuais, membroAtualIdAtual))
       resetLote({
-        itens: [itemLoteVazio(hojeAtual, contasAtuais), itemLoteVazio(hojeAtual, contasAtuais)],
+        itens: [
+          itemLoteVazio(hojeAtual, contasAtuais, membrosAtuais, membroAtualIdAtual),
+          itemLoteVazio(hojeAtual, contasAtuais, membrosAtuais, membroAtualIdAtual),
+        ],
       })
       setResultado(null)
       setConcluido(false)
@@ -404,9 +496,22 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
           valor: item.valor,
           data: item.data,
           contaId: item.contaId,
-          categoriaId: item.categoriaId === SEM_CATEGORIA ? null : item.categoriaId,
+          categoriaId: item.categoriaId === SEM_CATEGORIA ? null : (item.categoriaId || null),
           estaPago: estaPagoItem,
-          dataDoPagamento: estaPagoItem ? item.data || null : null,
+          dataDoPagamento: !ehCartaoItem && estaPagoItem ? item.dataDoPagamento || item.data || null : null,
+          formaDePagamentoId:
+            item.formaDePagamentoId === SEM_FORMA_PAGAMENTO || !item.formaDePagamentoId
+              ? null
+              : item.formaDePagamentoId,
+          observacao: item.observacao?.trim() || null,
+          responsavelId:
+            item.responsavelId === SEM_RESPONSAVEL || !item.responsavelId
+              ? null
+              : item.responsavelId,
+          pagoPorId:
+            item.pagoPorId === SEM_PAGADOR || !item.pagoPorId
+              ? null
+              : item.pagoPorId,
           parcelas: 1,
           ehBeneficio: ehDespesa ? item.ehBeneficio : false,
           ehFutil: ehDespesa ? item.ehFutil : false,
@@ -447,67 +552,71 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
         className="w-full"
       >
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="simples">{LANCAR.modoSimples}</TabsTrigger>
-          <TabsTrigger value="lote">{LANCAR.modoLote}</TabsTrigger>
+          <TabsTrigger
+            value="simples"
+            onClick={() => {
+              setResultado(null)
+              setModo('simples')
+            }}
+          >
+            {LANCAR.modoSimples}
+          </TabsTrigger>
+          <TabsTrigger
+            value="lote"
+            onClick={() => {
+              setResultado(null)
+              setModo('lote')
+            }}
+          >
+            {LANCAR.modoLote}
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
       {modo === 'simples' ? (
+        /* Formulário Simples */
         <form onSubmit={aoEnviarSimples} className="flex flex-col gap-[var(--esp-4)]" noValidate>
-          {/* Seletor de Tipo */}
-          <fieldset className="flex flex-col gap-[var(--esp-2)]">
-            <legend className="text-[length:var(--texto-corpo)] leading-[var(--texto-corpo-lh)] font-medium">
-              {LANCAR.tipoRotulo}
-            </legend>
-            <div className="mt-[var(--esp-2)] grid grid-cols-3 gap-[var(--esp-2)]">
-              {OPCOES_DE_TIPO.map((opcao) => (
-                <label
-                  key={opcao.valor}
-                  className={cn(
-                    'border-input has-[:focus-visible]:ring-ring/50 has-[:focus-visible]:border-ring flex min-h-[44px] cursor-pointer items-center justify-center rounded-xl border px-[var(--esp-2)] text-center text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)] font-medium has-[:focus-visible]:ring-3 sm:text-[length:var(--texto-corpo)] transition-all',
-                    tipo === opcao.valor && opcao.valor === 'despesa' && 'bg-despesa text-white border-despesa shadow-xs font-semibold',
-                    tipo === opcao.valor && opcao.valor === 'receita' && 'bg-receita text-white border-receita shadow-xs font-semibold',
-                    tipo === opcao.valor && opcao.valor === 'transferencia' && 'bg-transferencia text-white border-transferencia shadow-xs font-semibold',
-                    tipo !== opcao.valor && 'bg-background hover:bg-muted/50 text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  <input
-                    type="radio"
-                    value={opcao.valor}
-                    className="sr-only"
-                    {...register('tipo', {
-                      onChange: (e) => {
-                        const novoTipo = e.target.value
-                        // Transferência não tem categoria: o campo some e o envio a
-                        // ignora. Limpar aqui apagava a escolha de quem só passou por
-                        // Transferência e voltou. A incompatibilidade é julgada quando
-                        // o tipo de destino usa categoria (despesa ↔ receita).
-                        if (novoTipo === 'transferencia') return
-                        const atual = categorias.find((c) => c.id === getValues('categoriaId'))
-                        if (atual && atual.tipo !== novoTipo && atual.tipo !== 'todos') {
-                          setValue('categoriaId', SEM_CATEGORIA)
-                        }
-                      },
-                    })}
-                  />
-                  {opcao.rotulo}
-                </label>
-              ))}
+          {/* Tipo de lançamento (radio-group segmentado) */}
+          <div className="flex flex-col gap-[var(--esp-2)]">
+            <Label>{LANCAR.tipoRotulo}</Label>
+            <div
+              role="radiogroup"
+              aria-label={LANCAR.tipoRotulo}
+              className="grid grid-cols-3 gap-[var(--esp-2)]"
+            >
+              {OPCOES_DE_TIPO.map((opcao) => {
+                const ativo = tipo === opcao.valor
+                return (
+                  <button
+                    key={opcao.valor}
+                    type="button"
+                    role="radio"
+                    aria-checked={ativo}
+                    onClick={() => {
+                      setValue('tipo', opcao.valor)
+                      setValue('categoriaId', SEM_CATEGORIA)
+                    }}
+                    disabled={pendente}
+                    className={cn(
+                      'flex min-h-[44px] cursor-pointer items-center justify-center rounded-lg border text-[length:var(--texto-apoio)] font-medium transition-colors',
+                      ativo
+                        ? 'border-primary bg-primary text-primary-foreground font-semibold shadow-xs'
+                        : 'border-input bg-card text-muted-foreground hover:bg-muted hover:text-foreground',
+                    )}
+                  >
+                    {opcao.rotulo}
+                  </button>
+                )
+              })}
             </div>
-            <CampoErro id="erro-tipo" mensagens={erros?.tipo} />
-          </fieldset>
+          </div>
 
           {/* Descrição */}
           <div className="flex flex-col gap-[var(--esp-2)]">
             <Label htmlFor="descricao">{LANCAR.descricaoLabel}</Label>
             <Input
               id="descricao"
-              placeholder={
-                tipo === 'transferencia'
-                  ? 'Ex.: Transferência para reserva'
-                  : LANCAR.descricaoPlaceholder
-              }
-              autoComplete="off"
+              placeholder={LANCAR.descricaoPlaceholder}
               disabled={pendente}
               aria-invalid={erros?.descricao ? true : undefined}
               aria-describedby={erros?.descricao ? 'erro-descricao' : undefined}
@@ -519,23 +628,24 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
           {/* Valor */}
           <div className="flex flex-col gap-[var(--esp-2)]">
             <Label htmlFor="valor">{LANCAR.valorLabel}</Label>
-            <Input
-              id="valor"
-              inputMode="decimal"
-              placeholder={LANCAR.valorPlaceholder}
-              autoComplete="off"
-              className="font-mono num-tabular"
-              disabled={pendente}
-              aria-invalid={erros?.valor ? true : undefined}
-              aria-describedby={cn('ajuda-valor', erros?.valor && 'erro-valor')}
-              {...register('valor')}
-            />
-            <p
-              id="ajuda-valor"
-              className="text-muted-foreground text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)]"
-            >
-              {LANCAR.valorApoio}
-            </p>
+            <div className="relative">
+              <span
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[length:var(--texto-corpo)] font-medium text-muted-foreground"
+                aria-hidden="true"
+              >
+                R$
+              </span>
+              <Input
+                id="valor"
+                placeholder="0,00"
+                inputMode="decimal"
+                disabled={pendente}
+                className="pl-9 font-mono text-[length:var(--texto-corpo)] num-tabular"
+                aria-invalid={erros?.valor ? true : undefined}
+                aria-describedby={erros?.valor ? 'erro-valor' : undefined}
+                {...register('valor')}
+              />
+            </div>
             <CampoErro id="erro-valor" mensagens={erros?.valor} />
           </div>
 
@@ -550,7 +660,7 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
               aria-describedby={erros?.data ? 'erro-data' : undefined}
               {...register('data', {
                 onChange: (e) => {
-                  if (!pagamentoEditado.current && e.target.value) {
+                  if (!pagamentoEditado.current && estaPago) {
                     setValue('dataDoPagamento', e.target.value)
                   }
                 },
@@ -578,9 +688,9 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
                     <SelectValue placeholder={LANCAR.contaPlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
-                    {contas.map((conta) => (
-                      <SelectItem key={conta.id} value={conta.id}>
-                        {conta.nome}
+                    {contas.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nome}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -588,34 +698,22 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
               )}
             />
             <CampoErro id="erro-contaId" mensagens={erros?.contaId} />
+            {rotuloFatura && (
+              <p
+                role="status"
+                aria-live="polite"
+                className="text-muted-foreground flex items-center gap-[var(--esp-1)] text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)]"
+              >
+                <CreditCard className="size-3.5 shrink-0" aria-hidden="true" />
+                <span>{LANCAR.vaiParaFatura(rotuloFatura)}</span>
+              </p>
+            )}
           </div>
 
-          {/* Rótulo de fatura ao vivo (para cartão de crédito) */}
-          {rotuloFatura && tipo === 'despesa' ? (
-            <div className="border-border-input flex items-center gap-[var(--esp-2)] rounded-lg border bg-muted/40 px-[var(--esp-3)] py-[var(--esp-2)] text-[length:var(--texto-apoio)] leading-[var(--texto-apoio-lh)] text-foreground">
-              <CreditCard className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-              <span>
-                {LANCAR.vaiParaFatura(rotuloFatura)}{' '}
-                <span className="text-muted-foreground">
-                  (fechamento dia {contaAtual?.closing_day})
-                </span>
-                .
-              </span>
-            </div>
-          ) : null}
-
-          {/* Conta de Destino (somente para Transferência) */}
-          {/* `key` distinta em cada ponta: sem ela, se as duas ficarem com a mesma
-              forma, o React reaproveita o Select do Radix e o <select> nativo
-              escondido zera o campo ao trocar o tipo (ver dialogo-editar-lancamento). */}
+          {/* Conta de Destino (apenas para Transferência) */}
           {tipo === 'transferencia' ? (
-            <div key="campo-conta-destino" className="flex flex-col gap-[var(--esp-2)]">
-              <Label htmlFor="contaDestinoId">
-                <span className="flex items-center gap-[var(--esp-1)]">
-                  <ArrowRightLeft className="size-3.5" aria-hidden="true" />
-                  {LANCAR.contaDestinoLabel}
-                </span>
-              </Label>
+            <div className="flex flex-col gap-[var(--esp-2)]">
+              <Label htmlFor="contaDestinoId">{LANCAR.contaDestinoLabel}</Label>
               <Controller
                 control={control}
                 name="contaDestinoId"
@@ -625,14 +723,16 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
                       id="contaDestinoId"
                       className="w-full"
                       aria-invalid={erros?.contaDestinoId ? true : undefined}
-                      aria-describedby={erros?.contaDestinoId ? 'erro-contaDestinoId' : undefined}
+                      aria-describedby={
+                        erros?.contaDestinoId ? 'erro-contaDestinoId' : undefined
+                      }
                     >
                       <SelectValue placeholder={LANCAR.contaDestinoPlaceholder} />
                     </SelectTrigger>
                     <SelectContent>
-                      {contasDestinoDisponiveis.map((conta) => (
-                        <SelectItem key={conta.id} value={conta.id}>
-                          {conta.nome}
+                      {contasDestinoDisponiveis.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.nome}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -705,6 +805,82 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
               <CampoErro id="erro-categoriaId" mensagens={erros?.categoriaId} />
             </div>
           )}
+
+          {/* Responsável (apenas receita ou despesa e quando houver membros) */}
+          {tipo !== 'transferencia' && membros.length > 0 ? (
+            <div className="flex flex-col gap-[var(--esp-2)]">
+              <Label htmlFor="responsavelId">
+                Responsável <span className="text-muted-foreground font-normal">(opcional)</span>
+              </Label>
+              <Controller
+                control={control}
+                name="responsavelId"
+                render={({ field }) => (
+                  <Select
+                    value={field.value || SEM_RESPONSAVEL}
+                    onValueChange={field.onChange}
+                    disabled={pendente}
+                  >
+                    <SelectTrigger
+                      id="responsavelId"
+                      className="w-full"
+                      aria-invalid={erros?.responsavelId ? true : undefined}
+                      aria-describedby={erros?.responsavelId ? 'erro-responsavelId' : undefined}
+                    >
+                      <SelectValue placeholder="Sem responsável específico" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={SEM_RESPONSAVEL}>Sem responsável específico</SelectItem>
+                      {membros.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <CampoErro id="erro-responsavelId" mensagens={erros?.responsavelId} />
+            </div>
+          ) : null}
+
+          {/* Pago por (apenas receita ou despesa e quando houver membros) */}
+          {tipo !== 'transferencia' && membros.length > 0 ? (
+            <div className="flex flex-col gap-[var(--esp-2)]">
+              <Label htmlFor="pagoPorId">
+                Pago por
+              </Label>
+              <Controller
+                control={control}
+                name="pagoPorId"
+                render={({ field }) => (
+                  <Select
+                    value={field.value || SEM_PAGADOR}
+                    onValueChange={field.onChange}
+                    disabled={pendente}
+                  >
+                    <SelectTrigger
+                      id="pagoPorId"
+                      className="w-full"
+                      aria-invalid={erros?.pagoPorId ? true : undefined}
+                      aria-describedby={erros?.pagoPorId ? 'erro-pagoPorId' : undefined}
+                    >
+                      <SelectValue placeholder="Selecione quem pagou" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={SEM_PAGADOR}>Sem pagador específico</SelectItem>
+                      {membros.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <CampoErro id="erro-pagoPorId" mensagens={erros?.pagoPorId} />
+            </div>
+          ) : null}
 
           {/* Repetir todo mês (somente para Despesa ou Receita, mutuamente exclusivo com Parcelas) */}
           {(tipo === 'despesa' || tipo === 'receita') && parcelas <= 1 ? (
@@ -852,6 +1028,50 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
 
               {maisDetalhesAberto ? (
                 <div className="border-input flex flex-col gap-[var(--esp-3)] border-t p-[var(--esp-3)]">
+                  {formasDePagamento.length > 0 ? (
+                    <div className="flex flex-col gap-[var(--esp-2)]">
+                      <Label htmlFor="formaDePagamentoId">
+                        Forma de pagamento <span className="text-muted-foreground font-normal">(opcional)</span>
+                      </Label>
+                      <Controller
+                        control={control}
+                        name="formaDePagamentoId"
+                        render={({ field }) => (
+                          <Select
+                            value={field.value || SEM_FORMA_PAGAMENTO}
+                            onValueChange={field.onChange}
+                            disabled={pendente}
+                          >
+                            <SelectTrigger id="formaDePagamentoId" className="w-full">
+                              <SelectValue placeholder="Sem forma de pagamento" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={SEM_FORMA_PAGAMENTO}>Sem forma de pagamento</SelectItem>
+                              {formasDePagamento.map((f) => (
+                                <SelectItem key={f.id} value={f.id}>
+                                  {f.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </div>
+                  ) : null}
+
+                  <div className="flex flex-col gap-[var(--esp-2)]">
+                    <Label htmlFor="observacao">
+                      Observação <span className="text-muted-foreground font-normal">(opcional)</span>
+                    </Label>
+                    <Input
+                      id="observacao"
+                      maxLength={500}
+                      placeholder="Observação (opcional)"
+                      disabled={pendente}
+                      {...register('observacao')}
+                    />
+                  </div>
+
                   <Controller
                     control={control}
                     name="ehBeneficio"
@@ -937,7 +1157,7 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
               type="button"
               variant="outline"
               size="toque"
-              onClick={() => adicionarItemLote(itemLoteVazio(hoje, contas))}
+              onClick={() => adicionarItemLote(itemLoteVazio(hoje, contas, membros, membroAtualId))}
               disabled={pendente}
               className="gap-[var(--esp-1)]"
             >
@@ -952,6 +1172,8 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
               const ehDespesaItem = (itemAtual?.tipo ?? item.tipo) === 'despesa'
               const ehFutilItem = Boolean(itemAtual?.ehFutil)
               const detalheAberto = Boolean(detalhesLoteAbertos[index])
+              const contaDoItem = contas.find((c) => c.id === (itemAtual?.contaId ?? item.contaId))
+              const ehCartaoItem = contaDoItem?.tipo === 'cartao'
 
               return (
                 <div
@@ -1025,7 +1247,18 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
                       control={controlLote}
                       name={`itens.${index}.contaId`}
                       render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange} disabled={pendente}>
+                        <Select
+                          value={field.value}
+                          onValueChange={(novaContaId) => {
+                            field.onChange(novaContaId)
+                            const contaEscolhida = contas.find((c) => c.id === novaContaId)
+                            if (contaEscolhida?.tipo === 'cartao') {
+                              setValueLote(`itens.${index}.estaPago`, false)
+                              setValueLote(`itens.${index}.dataDoPagamento`, '')
+                            }
+                          }}
+                          disabled={pendente}
+                        >
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Conta" />
                           </SelectTrigger>
@@ -1040,6 +1273,160 @@ export function FormLancamento({ contas, categorias, grupos = [], hoje }: FormLa
                       )}
                     />
                   </div>
+
+                  {/* Status Pago e Data do Pagamento (ocultos em conta cartão) */}
+                  {!ehCartaoItem ? (
+                    <div className="flex flex-col gap-[var(--esp-2)]">
+                      <Controller
+                        control={controlLote}
+                        name={`itens.${index}.estaPago`}
+                        render={({ field }) => (
+                          <label className="border-input flex min-h-[40px] cursor-pointer items-center gap-[var(--esp-3)] rounded-lg border px-[var(--esp-3)] bg-background">
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={(marcado) => {
+                                const pago = marcado === true
+                                field.onChange(pago)
+                                if (!pago) {
+                                  setValueLote(`itens.${index}.dataDoPagamento`, '')
+                                } else if (!itemAtual?.dataDoPagamento) {
+                                  setValueLote(`itens.${index}.dataDoPagamento`, itemAtual?.data || hoje)
+                                }
+                              }}
+                              disabled={pendente}
+                            />
+                            <span className="text-[length:var(--texto-apoio)]">
+                              {ehDespesaItem ? LANCAR.statusRotuloDespesa : LANCAR.statusRotuloReceita}
+                            </span>
+                          </label>
+                        )}
+                      />
+
+                      {itemAtual?.estaPago ? (
+                        <div className="flex flex-col gap-1">
+                          <Label htmlFor={`dataDoPagamento-${index}`} className="text-xs">
+                            {ehDespesaItem ? LANCAR.dataPagamentoLabelDespesa : LANCAR.dataPagamentoLabelReceita}
+                          </Label>
+                          <Input
+                            id={`dataDoPagamento-${index}`}
+                            type="date"
+                            disabled={pendente}
+                            {...registerLote(`itens.${index}.dataDoPagamento`)}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {/* Forma de pagamento e Observação */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-[var(--esp-2)]">
+                    {formasDePagamento.length > 0 ? (
+                      <div className="flex flex-col gap-1">
+                        <Label htmlFor={`formaDePagamento-${index}`} className="text-xs">
+                          Forma de pagamento
+                        </Label>
+                        <Controller
+                          control={controlLote}
+                          name={`itens.${index}.formaDePagamentoId`}
+                          render={({ field }) => (
+                            <Select
+                              value={field.value || SEM_FORMA_PAGAMENTO}
+                              onValueChange={field.onChange}
+                              disabled={pendente}
+                            >
+                              <SelectTrigger id={`formaDePagamento-${index}`} className="w-full">
+                                <SelectValue placeholder="Forma de pagamento" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={SEM_FORMA_PAGAMENTO}>Sem forma de pagamento</SelectItem>
+                                {formasDePagamento.map((f) => (
+                                  <SelectItem key={f.id} value={f.id}>
+                                    {f.nome}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+                    ) : null}
+
+                    <div className={cn('flex flex-col gap-1', formasDePagamento.length === 0 && 'sm:col-span-2')}>
+                      <Label htmlFor={`observacao-${index}`} className="text-xs">
+                        Observação
+                      </Label>
+                      <Input
+                        id={`observacao-${index}`}
+                        maxLength={500}
+                        placeholder="Observação (opcional)"
+                        disabled={pendente}
+                        {...registerLote(`itens.${index}.observacao`)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Responsável e Pago por (quando houver membros) */}
+                  {membros.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-[var(--esp-2)]">
+                      <div className="flex flex-col gap-1">
+                        <Label htmlFor={`responsavel-${index}`} className="text-xs">
+                          Responsável
+                        </Label>
+                        <Controller
+                          control={controlLote}
+                          name={`itens.${index}.responsavelId`}
+                          render={({ field }) => (
+                            <Select
+                              value={field.value || SEM_RESPONSAVEL}
+                              onValueChange={field.onChange}
+                              disabled={pendente}
+                            >
+                              <SelectTrigger id={`responsavel-${index}`} className="w-full">
+                                <SelectValue placeholder="Sem responsável" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={SEM_RESPONSAVEL}>Sem responsável</SelectItem>
+                                {membros.map((m) => (
+                                  <SelectItem key={m.id} value={m.id}>
+                                    {m.nome}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <Label htmlFor={`pagoPor-${index}`} className="text-xs">
+                          Pago por
+                        </Label>
+                        <Controller
+                          control={controlLote}
+                          name={`itens.${index}.pagoPorId`}
+                          render={({ field }) => (
+                            <Select
+                              value={field.value || SEM_PAGADOR}
+                              onValueChange={field.onChange}
+                              disabled={pendente}
+                            >
+                              <SelectTrigger id={`pagoPor-${index}`} className="w-full">
+                                <SelectValue placeholder="Quem pagou?" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={SEM_PAGADOR}>Sem pagador específico</SelectItem>
+                                {membros.map((m) => (
+                                  <SelectItem key={m.id} value={m.id}>
+                                    {m.nome}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
 
                   {/* Mais detalhes por linha do lote (apenas Despesa, recolhido por padrão) */}
                   {ehDespesaItem ? (

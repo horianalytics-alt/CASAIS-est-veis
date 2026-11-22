@@ -34,7 +34,7 @@ export default async function PaginaLancar() {
   const { data: idDoMembro } = await supabase.rpc('get_user_member_id_self')
   if (!idDoMembro) redirect('/onboarding')
 
-  const [contas, categorias, grupos] = await Promise.all([
+  const [contas, categorias, grupos, membros, formasDePagamento] = await Promise.all([
     supabase
       .from('accounts')
       .select('id, name, type, closing_day, due_day')
@@ -50,17 +50,27 @@ export default async function PaginaLancar() {
       .select('id, name, sort_order')
       .order('sort_order', { ascending: true })
       .order('name', { ascending: true }),
+    supabase
+      .from('family_members')
+      .select('id, display_name')
+      .order('display_name', { ascending: true }),
+    supabase
+      .from('payment_methods')
+      .select('id, name')
+      .is('archived_at', null)
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true }),
   ])
 
   const listaDeContas = (contas.data ?? [])
     .filter((c) => c.type !== 'investimento')
     .map((c) => ({
-    id: c.id,
-    nome: c.name,
-    tipo: c.type,
-    closing_day: c.closing_day,
-    due_day: c.due_day,
-  }))
+      id: c.id,
+      nome: c.name,
+      tipo: c.type,
+      closing_day: c.closing_day,
+      due_day: c.due_day,
+    }))
   const listaDeCategorias = (categorias.data ?? []).map((c) => ({
     id: c.id,
     nome: c.name,
@@ -70,6 +80,14 @@ export default async function PaginaLancar() {
   const listaDeGrupos = (grupos.data ?? []).map((g) => ({
     id: g.id,
     nome: g.name,
+  }))
+  const listaDeMembros = (membros.data ?? []).map((m) => ({
+    id: m.id,
+    nome: m.display_name,
+  }))
+  const listaDeFormas = (formasDePagamento.data ?? []).map((f) => ({
+    id: f.id,
+    nome: f.name,
   }))
 
   return (
@@ -99,6 +117,9 @@ export default async function PaginaLancar() {
             contas={listaDeContas}
             categorias={listaDeCategorias}
             grupos={listaDeGrupos}
+            membros={listaDeMembros}
+            membroAtualId={idDoMembro ?? undefined}
+            formasDePagamento={listaDeFormas}
             hoje={hojeEmSaoPaulo()}
           />
         </ScrollReveal>
