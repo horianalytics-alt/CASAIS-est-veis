@@ -203,6 +203,13 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
 - **Dono:** Estrutura, em migration NOVA (nunca ALTER na 00018), junto com a limpeza de U+200F e Hangul filler já pendente, e o mesmo ajuste em `esquemas-investimentos.ts`.
 - **Quando:** antes de ligar a aba Investimentos.
 
+### P-017 — Edição em massa (`DialogoEditarEmMassa`) sem seletores de forma de pagamento e responsável na UI
+- **Origem:** Rodada 16 (Briefing linha 234 e Sentinela Achado Baixo).
+- **O quê:** Na Rodada 16, o backend (`esquemaAtualizarEmMassa` e `planejarEdicaoEmMassa`) foi totalmente preparado para receber `formaDePagamentoId` e `responsavelId`, mas a interface visual (`DialogoEditarEmMassa`) ainda não expõe os dois campos para alteração em lote.
+- **Severidade:** BAIXA. Não gera perda de dados e não é impeditivo para produção.
+- **Dono:** Fachada (adicionar seletores no modal de edição em massa).
+- **Quando:** próxima rodada de UI/transações.
+
 ---
 
 ## Fora de escopo por decisão registrada
