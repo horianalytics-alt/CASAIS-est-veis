@@ -149,19 +149,12 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
   props, filtrar no diálogo (mesmo padrão que `form-lancamento.tsx` já
   usa para o formulário de criar).
 
-### P-010 — Sem Server Action para criar/editar orçamento por categoria
-- **Origem:** Dash, entrega de `/analises` (orçamento/patrimônio/simulador),
-  2026-10-14.
-- **O quê:** o card de progresso de orçamento (`v_orcamento_progresso`) já
-  lê e desenha certo, mas não existe NENHUMA forma de escrever em
-  `category_budgets` — nem Server Action, nem tela. Em produção, o card
-  sempre aparece vazio até isso existir.
-- **Severidade:** ALTA para o produto (feature inteira inutilizável), mas
-  sem risco de segurança.
-- **Próximo passo:** Estrutura cria `src/actions/orcamentos.ts`
-  (`definirOrcamento`/`excluirOrcamento`, mesmo padrão de
-  `categorias.ts`); Fachada ou Dash constrói a tela (sugestão do Dash:
-  Ajustes > Categorias).
+### P-010 — ~~Sem Server Action para criar/editar orçamento por categoria~~ — RESOLVIDO
+- **Origem:** Dash, entrega de `/analises`, 2026-10-14.
+- **Resolvido em:** rodada posterior (verificado pelo Maestro em 2026-11-22).
+- **Estado atual:** `src/actions/orcamentos.ts` tem `definirOrcamento` e `excluirOrcamento`;
+  `GerenciadorOrcamentos` está renderizado em `/ajustes/categorias`; `GraficoOrcamento` lê
+  `v_orcamento_progresso` em `/analises`. Feature completamente funcional.
 
 ### P-011 — Paleta categórica reprova no validador do dataviz
 - **Origem:** Dash, mesma entrega.
@@ -203,12 +196,11 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
 - **Dono:** Estrutura, em migration NOVA (nunca ALTER na 00018), junto com a limpeza de U+200F e Hangul filler já pendente, e o mesmo ajuste em `esquemas-investimentos.ts`.
 - **Quando:** antes de ligar a aba Investimentos.
 
-### P-017 — Edição em massa (`DialogoEditarEmMassa`) sem seletores de forma de pagamento e responsável na UI
+### P-017 — Edição em massa (`DialogoEditarEmMassa`) sem seletores de forma de pagamento e responsável na UI — RESOLVIDO
 - **Origem:** Rodada 16 (Briefing linha 234 e Sentinela Achado Baixo).
-- **O quê:** Na Rodada 16, o backend (`esquemaAtualizarEmMassa` e `planejarEdicaoEmMassa`) foi totalmente preparado para receber `formaDePagamentoId` e `responsavelId`, mas a interface visual (`DialogoEditarEmMassa`) ainda não expõe os dois campos para alteração em lote.
-- **Severidade:** BAIXA. Não gera perda de dados e não é impeditivo para produção.
-- **Dono:** Fachada (adicionar seletores no modal de edição em massa).
-- **Quando:** próxima rodada de UI/transações.
+- **O quê:** Na Rodada 16, o backend (`esquemaAtualizarEmMassa` e `planejarEdicaoEmMassa`) foi totalmente preparado para receber `formaDePagamentoId` e `responsavelId`, mas a interface visual (`DialogoEditarEmMassa`) ainda não expunha os dois campos para alteração em lote.
+- **Resolução:** Implementado na Rodada 17 com os seletores correspondentes, sentinela `_none`, guard contra transferências para `responsavelId` e cobertura com testes unitários em `dialogo-editar-em-massa.test.tsx`.
+- **Status:** Fechado na Rodada 17.
 
 ---
 
