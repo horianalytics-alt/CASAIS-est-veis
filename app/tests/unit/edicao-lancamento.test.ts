@@ -435,4 +435,86 @@ describe('planejarEdicaoEmMassa', () => {
     )
     expect(r).toEqual({ ok: false, erro: M.ACERTO, campo: 'ids' })
   })
+
+  it('formaDePagamentoId e responsavelId em edição em massa', () => {
+    const FORMA = '66666666-6666-4666-8666-666666666666'
+    const RESP = '77777777-7777-4777-8777-777777777777'
+    const r = planejarEdicaoEmMassa(
+      [l('a'), l('b', { type: 'transferencia', to_account_id: CONTA2 })],
+      { ids: ['a', 'b'], formaDePagamentoId: FORMA, responsavelId: RESP },
+      null,
+      HOJE,
+    )
+    expect(r).toEqual({
+      ok: true,
+      grupos: [
+        { ids: ['a'], patch: { payment_method_id: FORMA, owner_member_id: RESP } },
+        { ids: ['b'], patch: { payment_method_id: FORMA } },
+      ],
+    })
+  })
+})
+
+describe('esquemaAtualizarLancamento e montarPatchIndividual — formaDePagamentoId e responsavelId', () => {
+  const FORMA = '66666666-6666-4666-8666-666666666666'
+  const RESP = '77777777-7777-4777-8777-777777777777'
+
+  it('aceita uuid válido ou null para formaDePagamentoId e responsavelId', () => {
+    const r = esquemaAtualizarLancamento.safeParse({
+      ...base,
+      formaDePagamentoId: FORMA,
+      responsavelId: RESP,
+    })
+    expect(r.success).toBe(true)
+    if (r.success) {
+      expect(r.data.formaDePagamentoId).toBe(FORMA)
+      expect(r.data.responsavelId).toBe(RESP)
+    }
+
+    const rNull = esquemaAtualizarLancamento.safeParse({
+      ...base,
+      formaDePagamentoId: null,
+      responsavelId: null,
+    })
+    expect(rNull.success).toBe(true)
+    if (rNull.success) {
+      expect(rNull.data.formaDePagamentoId).toBeNull()
+      expect(rNull.data.responsavelId).toBeNull()
+    }
+  })
+
+  it('recusa valor não uuid em formaDePagamentoId e responsavelId', () => {
+    expect(errosDe({ ...base, formaDePagamentoId: 'invalido' }, 'formaDePagamentoId')).toEqual([
+      'Escolha uma opção válida.',
+    ])
+    expect(errosDe({ ...base, responsavelId: 'invalido' }, 'responsavelId')).toEqual([
+      'Escolha uma opção válida.',
+    ])
+  })
+
+  it('montarPatchIndividual grava formaDePagamentoId e responsavelId quando informados', () => {
+    const r = montarPatchIndividual(
+      { id: ID, type: 'despesa', account_id: CONTA, to_account_id: null, date: '2026-10-15', is_paid: false, settlement_to_member_id: null },
+      esquemaAtualizarLancamento.parse({ ...base, formaDePagamentoId: FORMA, responsavelId: RESP }),
+      { closing_day: null },
+    )
+    expect(r.ok && r.patch.payment_method_id).toBe(FORMA)
+    expect(r.ok && r.patch.owner_member_id).toBe(RESP)
+  })
+
+  it('montarPatchIndividual zera owner_member_id para transferência mesmo com responsavelId informado', () => {
+    const r = montarPatchIndividual(
+      { id: ID, type: 'despesa', account_id: CONTA, to_account_id: null, date: '2026-10-15', is_paid: false, settlement_to_member_id: null },
+      esquemaAtualizarLancamento.parse({ ...base, tipo: 'transferencia', contaDestinoId: CONTA2, responsavelId: RESP }),
+      { closing_day: null },
+    )
+    expect(r.ok && r.patch.owner_member_id).toBeNull()
+  })
+
+  it('esquemaAtualizarEmMassa aceita apenas formaDePagamentoId ou apenas responsavelId', () => {
+    const r1 = esquemaAtualizarEmMassa.safeParse({ ids: [ID], formaDePagamentoId: FORMA })
+    expect(r1.success).toBe(true)
+    const r2 = esquemaAtualizarEmMassa.safeParse({ ids: [ID], responsavelId: RESP })
+    expect(r2.success).toBe(true)
+  })
 })

@@ -216,3 +216,101 @@ describe('DialogoEditarLancamento — benefício e gasto fútil', () => {
     })
   })
 })
+
+describe('DialogoEditarLancamento — forma de pagamento e responsável', () => {
+  afterEach(cleanup)
+
+  beforeEach(() => {
+    atualizarLancamento.mockReset()
+    atualizarLancamento.mockResolvedValue({ ok: true, dados: undefined })
+  })
+
+  const MEMBRO2 = '55555555-5555-4555-8555-555555555555'
+  const FORMA = '66666666-6666-4666-8666-666666666666'
+
+  it('não exibe forma de pagamento nem responsável se não houver opções suficientes', () => {
+    render(
+      <DialogoEditarLancamento
+        aberto
+        onOpenChange={() => {}}
+        transacao={linha()}
+        contas={[{ id: CONTA, name: 'Conta' }]}
+        categorias={[]}
+        membros={[{ id: MEMBRO, display_name: 'Heitor' }]}
+      />,
+    )
+    expect(screen.queryByLabelText(/forma de pagamento/i)).toBeNull()
+    expect(screen.queryByLabelText(/responsável/i)).toBeNull()
+  })
+
+  it('exibe forma de pagamento e responsável quando há opções disponíveis', () => {
+    render(
+      <DialogoEditarLancamento
+        aberto
+        onOpenChange={() => {}}
+        transacao={linha({ payment_method_id: FORMA, owner_member_id: MEMBRO2 })}
+        contas={[{ id: CONTA, name: 'Conta' }]}
+        categorias={[]}
+        membros={[
+          { id: MEMBRO, display_name: 'Heitor' },
+          { id: MEMBRO2, display_name: 'Parceira' },
+        ]}
+        formasDePagamento={[{ id: FORMA, name: 'Cartão de Crédito' }]}
+      />,
+    )
+    expect(screen.getByLabelText(/forma de pagamento/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/responsável/i)).toBeInTheDocument()
+  })
+
+  it('oculta forma de pagamento e responsável quando tipo é transferência', () => {
+    render(
+      <DialogoEditarLancamento
+        aberto
+        onOpenChange={() => {}}
+        transacao={linha({ type: 'transferencia' })}
+        contas={[
+          { id: CONTA, name: 'Conta 1' },
+          { id: '99999999-9999-4999-8999-999999999999', name: 'Conta 2' },
+        ]}
+        categorias={[]}
+        membros={[
+          { id: MEMBRO, display_name: 'Heitor' },
+          { id: MEMBRO2, display_name: 'Parceira' },
+        ]}
+        formasDePagamento={[{ id: FORMA, name: 'Cartão de Crédito' }]}
+      />,
+    )
+    expect(screen.queryByLabelText(/forma de pagamento/i)).toBeNull()
+    expect(screen.queryByLabelText(/responsável/i)).toBeNull()
+  })
+
+  it('envia formaDePagamentoId e responsavelId em atualizarLancamento e onSalvo', async () => {
+    const onSalvo = vi.fn()
+    render(
+      <DialogoEditarLancamento
+        aberto
+        onOpenChange={() => {}}
+        transacao={linha({ payment_method_id: FORMA, owner_member_id: MEMBRO2 })}
+        contas={[{ id: CONTA, name: 'Conta' }]}
+        categorias={[]}
+        membros={[
+          { id: MEMBRO, display_name: 'Heitor' },
+          { id: MEMBRO2, display_name: 'Parceira' },
+        ]}
+        formasDePagamento={[{ id: FORMA, name: 'Cartão de Crédito' }]}
+        onSalvo={onSalvo}
+      />,
+    )
+    salvar()
+    await waitFor(() => expect(atualizarLancamento).toHaveBeenCalledTimes(1))
+    expect(atualizarLancamento.mock.calls[0][0]).toMatchObject({
+      formaDePagamentoId: FORMA,
+      responsavelId: MEMBRO2,
+    })
+    expect(onSalvo).toHaveBeenCalledTimes(1)
+    expect(onSalvo.mock.calls[0][0]).toMatchObject({
+      payment_method_id: FORMA,
+      owner_member_id: MEMBRO2,
+    })
+  })
+})
