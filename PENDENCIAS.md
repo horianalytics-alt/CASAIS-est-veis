@@ -184,12 +184,14 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
 - **Ação do Heitor:** apagar à mão no dashboard do Supabase, se a v1 tinha
   projeto próprio.
 
-### P-016 — Excluir conta permanentemente (hoje só arquiva)
+### P-016 — Excluir conta permanentemente (hoje só arquiva) — RESOLVIDO
 - **Origem:** Heitor, 2026-11-22 — "não tem como excluir um cartão que já foi criado, só arquivar; futuramente vai ser péssimo encontrar conta ativa em meio a várias arquivadas".
 - **O quê:** a tela `ajustes/contas` tem botão de arquivar (`BotaoArquivarConta`) mas não de excluir. Conta com transações vinculadas não pode ser excluída sem decisão arquitetural: exclusão física destrói histórico; exclusão com verificação ("conta sem transações pode ser apagada") é a rota mais segura.
-- **Dono:** Estrutura (Server Action `excluirConta` com verificação de transações vinculadas + guard de constraint FK) + Fachada (botão de excluir com diálogo de confirmação, só visível para contas sem transações ou arquivadas sem movimentação).
-- **Quando:** próxima rodada de manutenção.
-- **Restrição importante:** conta com transações NÃO pode ser apagada — o histórico é dado do usuário. A Action deve verificar antes e devolver erro claro se houver transações vinculadas.
+- **Resolução:** Implementado na Rodada 18:
+  - Server Action `excluirConta` em `src/actions/contas.ts` capturando código PostgreSQL `23503` (FK violation com `ON DELETE RESTRICT`) e retornando mensagem amigável: "Esta conta não pode ser excluída porque tem lançamentos vinculados. Arquive-a em vez de excluir."
+  - Componente client `BotaoExcluirConta` em `src/components/ajustes/botao-excluir-conta.tsx` com diálogo de confirmação destrutivo e exibição de erro.
+  - Integrado em `/ajustes/contas/page.tsx` para todas as contas ativas/arquivadas (exceto investimentos).
+- **Status:** Fechado na Rodada 18.
 
 ### P-015 — Nome de caixinha "invisível" passa (Sentinela N1, BAIXO, CONFIRMADO)
 - **O quê:** nome só com U+2800 (Braille em branco) ou só com U+0301 (acento solto) é aceito pelo Zod e pela RPC `carteira_criar_caixinha`. Evidência: `docs/auditoria/evidencias/carteira-r2/sonda-zod-nome.out.txt`.
