@@ -17,6 +17,8 @@ import { PrevisaoFixos } from '@/components/analises/previsao-fixos'
 import { GraficoOrcamento } from '@/components/analises/grafico-orcamento'
 import { GraficoPatrimonio } from '@/components/analises/grafico-patrimonio'
 import { SimuladorFutil } from '@/components/analises/simulador-futil'
+import { KpisPagamento } from '@/components/analises/kpis-pagamento'
+import { KpisOrcamentoFixos } from '@/components/analises/kpis-orcamento-fixos'
 import { ScrollReveal } from '@/components/ui/scroll-reveal'
 
 export const metadata: Metadata = { title: ANALISES.titulo }
@@ -44,7 +46,7 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
   const mes = ehMesValido(mesPedido) ? mesPedido : mesAtual
   const { inicio, fim } = limitesDoMes(mes)
 
-  const [resumos, categorias, contas, transacoesDoMes, metas, orcamentos, patrimonio] = await Promise.all([
+  const [resumos, categorias, contas, transacoesDoMes, metas, orcamentos, patrimonio, formasDePagamento, membros] = await Promise.all([
     supabase
       .from('v_monthly_summary')
       .select('*')
@@ -53,7 +55,7 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
     supabase.from('accounts').select('id, name').is('archived_at', null),
     supabase
       .from('transactions')
-      .select('id, date, amount, type, description, account_id, category_id, is_paid, is_benefit, is_futile, futile_label')
+      .select('id, date, amount, type, description, account_id, category_id, is_paid, is_benefit, is_futile, futile_label, payment_method_id, paid_by_member_id, recurrence_months')
       .gte('date', inicio)
       .lte('date', fim)
       .order('date', { ascending: false }),
@@ -73,6 +75,13 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
       .lte('month', mes)
       .order('month', { ascending: false })
       .limit(12),
+    supabase
+      .from('payment_methods')
+      .select('id, name')
+      .is('archived_at', null),
+    supabase
+      .from('family_members')
+      .select('id, display_name'),
   ])
 
   const listaCategorias = categorias.data ?? []
@@ -80,6 +89,12 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
 
   const listaContas = contas.data ?? []
   const mapaContas = new Map(listaContas.map((c) => [c.id, c.name]))
+
+  const listaFormasPagamento = formasDePagamento.data ?? []
+  const mapaFormasPagamento = new Map(listaFormasPagamento.map((f) => [f.id, f.name]))
+
+  const listaMembros = membros.data ?? []
+  const mapaMembros = new Map(listaMembros.map((m) => [m.id, m.display_name]))
 
   const transacoes = transacoesDoMes.data ?? []
 
@@ -159,7 +174,52 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
     .map(([rotulo, total]) => ({ rotulo, total }))
     .sort((a, b) => b.total - a.total)
 
-  // 4. Metas por conta
+  // 4. Novos KPIs da Rodada 23
+  // KPI 1: Ticket médio (despesas pagas)
+  const despesasPagas = transacoes.filter((t) => t.type === 'despesa' && t.is_paid)
+  const totalDespesasPagas = despesasPagas.reduce((soma, t) => soma + Number(t.amount), 0)
+  const ticketMedio = despesasPagas.length > 0 ? totalDespesasPagas / despesasPagas.length : 0
+
+  // KPI 2: Rosca de forma de pagamento (despesas pagas)
+  const gastosPorFormaPagamento = new Map<string, number>()
+  for (const t of despesasPagas) {
+    const nomeForma = t.payment_method_id
+      ? mapaFormasPagamento.get(t.payment_method_id) ?? 'Sem forma'
+      : 'Sem forma'
+    gastosPorFormaPagamento.set(nomeForma, (gastosPorFormaPagamento.get(nomeForma) ?? 0) + Number(t.amount))
+  }
+  const itensFormaPagamento = Array.from(gastosPorFormaPagamento.entries())
+    .map(([nome, valor]) => ({ nome, valor }))
+    .sort((a, b) => b.valor - a.valor)
+
+  // KPI 3: Quem pagou mais (despesas pagas)
+  const gastosPorMembro = new Map<string, number>()
+  for (const t of despesasPagas) {
+    const nomeMembro = mapaMembros.get(t.paid_by_member_id) ?? 'Membro'
+    gastosPorMembro.set(nomeMembro, (gastosPorMembro.get(nomeMembro) ?? 0) + Number(t.amount))
+  }
+  const itensPorMembro = Array.from(gastosPorMembro.entries())
+    .map(([nome, valor]) => ({ nome, valor }))
+    .sort((a, b) => b.valor - a.valor)
+
+  // KPI 4: Fixos vs. variáveis (despesas do mês)
+  const despesasDoMes = transacoes.filter((t) => t.type === 'despesa')
+  const totalDespesas = despesasDoMes.reduce((soma, t) => soma + Number(t.amount), 0)
+  const totalFixos = despesasDoMes
+    .filter((t) => t.recurrence_months !== null && t.recurrence_months !== undefined && t.recurrence_months > 0)
+    .reduce((soma, t) => soma + Number(t.amount), 0)
+  const totalVariaveis = totalDespesas - totalFixos
+  const percentualFixos = totalDespesas > 0 ? (totalFixos / totalDespesas) * 100 : 0
+
+  // KPI 5: % do orçamento total consumido
+  const listaOrcamentos = orcamentos.data ?? []
+  const orcamentoTotalDefinido = listaOrcamentos.reduce((soma, o) => soma + Number(o.budget_amount), 0)
+  const orcamentoTotalGasto = listaOrcamentos.reduce((soma, o) => soma + Number(o.spent_amount), 0)
+  const percentualOrcamentoConsumido = orcamentoTotalDefinido > 0
+    ? (orcamentoTotalGasto / orcamentoTotalDefinido) * 100
+    : 0
+
+  // 5. Metas por conta
   const metasInfo = (metas.data ?? []).map((m) => ({
     contaNome: mapaContas.get(m.account_id) ?? 'Conta',
     saldoAtual: 0, // Saldo inicial/atual
@@ -280,6 +340,30 @@ export default async function PaginaAnalises({ searchParams }: PropsDaPagina) {
           anoMes={mes}
           transacoes={transacoes}
           contas={listaContas.map((c) => ({ id: c.id, nome: c.name }))}
+        />
+      </ScrollReveal>
+
+      {/* KPIs de pagamento: ticket médio, forma de pagamento, quem pagou mais */}
+      <ScrollReveal replayOnScroll>
+        <KpisPagamento
+          ticketMedio={ticketMedio}
+          itensFormaPagamento={itensFormaPagamento.slice(0, 10)}
+          itensPorMembro={itensPorMembro.slice(0, 10)}
+          totalDespesasPagas={totalDespesasPagas}
+          mesRotulo={rotuloDoMes(mes)}
+        />
+      </ScrollReveal>
+
+      {/* KPIs de orçamento: fixos vs. variáveis, % do orçamento total */}
+      <ScrollReveal replayOnScroll>
+        <KpisOrcamentoFixos
+          totalFixos={totalFixos}
+          totalVariaveis={totalVariaveis}
+          percentualFixos={percentualFixos}
+          orcamentoTotalDefinido={orcamentoTotalDefinido}
+          orcamentoTotalGasto={orcamentoTotalGasto}
+          percentualOrcamentoConsumido={percentualOrcamentoConsumido}
+          mesRotulo={rotuloDoMes(mes)}
         />
       </ScrollReveal>
     </main>
