@@ -58,6 +58,7 @@ const OPCOES_DE_TIPO: ReadonlyArray<{ valor: TipoLancamento; rotulo: string; cla
 export interface ItemSelectOpcao {
   id: string
   name: string
+  type?: string
 }
 
 export interface MembroOpcao {
@@ -132,6 +133,13 @@ export function DialogoEditarLancamento({
   const [ehBeneficio, setEhBeneficio] = React.useState(false)
   const [ehFutil, setEhFutil] = React.useState(false)
   const [rotuloFutil, setRotuloFutil] = React.useState('')
+
+  // Filtro de categorias por tipo (P-012 / Rodada 20)
+  const categoriasDoTipo = React.useMemo(() => {
+    return categorias.filter(
+      (c) => !c.type || c.type === tipo || c.type === 'todos',
+    )
+  }, [categorias, tipo])
 
   // Estados de confirmação para "Corrigir meses futuros"
   const [dialogoCorrigirAberto, setDialogoCorrigirAberto] = React.useState(false)
@@ -245,6 +253,11 @@ export function DialogoEditarLancamento({
     if (novoTipo === 'transferencia' && (!contaDestinoId || contaDestinoId === contaId)) {
       const outra = contas.find((c) => c.id !== contaId)?.id || ''
       setContaDestinoId(outra)
+    }
+
+    const catAtual = categorias.find((c) => c.id === categoriaId)
+    if (catAtual?.type && catAtual.type !== novoTipo && catAtual.type !== 'todos') {
+      setCategoriaId('')
     }
   }
 
@@ -615,7 +628,7 @@ export function DialogoEditarLancamento({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__nenhuma__">Sem categoria</SelectItem>
-                    {categorias.map((cat) => (
+                    {categoriasDoTipo.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
                       </SelectItem>
