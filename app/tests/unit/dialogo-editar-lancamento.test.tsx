@@ -314,3 +314,89 @@ describe('DialogoEditarLancamento — forma de pagamento e responsável', () => 
     })
   })
 })
+
+describe('DialogoEditarLancamento — filtro de categoria por tipo (Rodada 20 / P-012)', () => {
+  afterEach(cleanup)
+
+  beforeEach(() => {
+    atualizarLancamento.mockReset()
+    atualizarLancamento.mockResolvedValue({ ok: true, dados: undefined })
+  })
+
+  const CAT_DESPESA = 'aaaaaaaa-1111-4111-8111-111111111111'
+  const CAT_RECEITA = 'bbbbbbbb-2222-4222-8222-222222222222'
+  const CAT_TODOS = 'cccccccc-3333-4333-8333-333333333333'
+
+  const categoriasTeste = [
+    { id: CAT_DESPESA, name: 'Alimentação', type: 'despesa' },
+    { id: CAT_RECEITA, name: 'Salário', type: 'receita' },
+    { id: CAT_TODOS, name: 'Geral', type: 'todos' },
+  ]
+
+  it('exibe apenas categorias de despesa e "todos" quando o tipo é despesa', () => {
+    render(
+      <DialogoEditarLancamento
+        aberto
+        onOpenChange={() => {}}
+        transacao={linha({ type: 'despesa', category_id: CAT_DESPESA })}
+        contas={[{ id: CONTA, name: 'Conta' }]}
+        categorias={categoriasTeste}
+        membros={[{ id: MEMBRO, display_name: 'Heitor' }]}
+      />,
+    )
+
+    expect(screen.getAllByText('Alimentação').length).toBeGreaterThan(0)
+    expect(screen.getByText('Geral')).toBeInTheDocument()
+    expect(screen.queryByText('Salário')).toBeNull()
+  })
+
+  it('ao mudar o tipo de despesa para receita, limpa categoria incompatível e filtra para categorias de receita', async () => {
+    render(
+      <DialogoEditarLancamento
+        aberto
+        onOpenChange={() => {}}
+        transacao={linha({ type: 'despesa', category_id: CAT_DESPESA })}
+        contas={[{ id: CONTA, name: 'Conta' }]}
+        categorias={categoriasTeste}
+        membros={[{ id: MEMBRO, display_name: 'Heitor' }]}
+      />,
+    )
+
+    // Inicialmente com categoria de despesa
+    expect(screen.getAllByText('Alimentação').length).toBeGreaterThan(0)
+
+    // Troca para Receita
+    fireEvent.click(screen.getByRole('radio', { name: 'Receita' }))
+
+    // Salário e Geral devem estar presentes, Alimentação não
+    expect(screen.getAllByText('Salário').length).toBeGreaterThan(0)
+    expect(screen.getByText('Geral')).toBeInTheDocument()
+    expect(screen.queryByText('Alimentação')).toBeNull()
+
+    // A categoriaId anterior (Alimentação) deve ter sido limpa (placeholder "Sem categoria")
+    salvar()
+    await waitFor(() => expect(atualizarLancamento).toHaveBeenCalledTimes(1))
+    expect(atualizarLancamento.mock.calls[0][0].categoriaId).toBeNull()
+  })
+
+  it('preserva categoria do tipo "todos" ao alternar de despesa para receita', async () => {
+    render(
+      <DialogoEditarLancamento
+        aberto
+        onOpenChange={() => {}}
+        transacao={linha({ type: 'despesa', category_id: CAT_TODOS })}
+        contas={[{ id: CONTA, name: 'Conta' }]}
+        categorias={categoriasTeste}
+        membros={[{ id: MEMBRO, display_name: 'Heitor' }]}
+      />,
+    )
+
+    // Troca para Receita
+    fireEvent.click(screen.getByRole('radio', { name: 'Receita' }))
+
+    // Categoria do tipo "todos" não deve ser limpa
+    salvar()
+    await waitFor(() => expect(atualizarLancamento).toHaveBeenCalledTimes(1))
+    expect(atualizarLancamento.mock.calls[0][0].categoriaId).toBe(CAT_TODOS)
+  })
+})
