@@ -133,7 +133,7 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
   `ResultadoAction<void>` por `ResultadoAction<Lancamento>`
   (`Database['public']['Tables']['transactions']['Row']`).
 
-### P-012 — Diálogo de editar lançamento não filtra categoria por tipo
+### P-012 — Diálogo de editar lançamento não filtra categoria por tipo — RESOLVIDO
 - **Origem:** Fachada, achado colateral na correção do bug de troca de
   tipo, 2026-10-15.
 - **O quê:** `dialogo-editar-lancamento.tsx` lista TODAS as categorias da
@@ -142,12 +142,13 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
   pode ficar selecionada depois de trocar o tipo para receita, e a
   action salva assim — ela só confere se a categoria existe na família,
   não se o tipo bate.
-- **Severidade:** BAIXA/MÉDIA — dado fica logicamente inconsistente
-  (categoria de despesa numa receita), mas não é falha de segurança nem
-  perda de dado.
-- **Correção:** incluir `type` na query de `/inicio`, propagar pelas
-  props, filtrar no diálogo (mesmo padrão que `form-lancamento.tsx` já
-  usa para o formulário de criar).
+- **Resolução:** Resolvido na Rodada 20:
+  - Adicionado `type` na query de categorias em `src/app/(app)/(principal)/inicio/page.tsx` e propagado até o diálogo via `listaCategorias`.
+  - Atualizada interface `ItemSelectOpcao` com `type?: string`.
+  - Adicionado filtro `categoriasDoTipo` em `src/components/transacoes/dialogo-editar-lancamento.tsx` (`!c.type || c.type === tipo || c.type === 'todos'`).
+  - Limpeza automática de categorias incompatíveis ao mudar de tipo (`setCategoriaId('')`).
+  - Testes unitários cobrindo o comportamento em `dialogo-editar-lancamento.test.tsx`.
+- **Status:** Fechado na Rodada 20.
 
 ### P-010 — ~~Sem Server Action para criar/editar orçamento por categoria~~ — RESOLVIDO
 - **Origem:** Dash, entrega de `/analises`, 2026-10-14.
