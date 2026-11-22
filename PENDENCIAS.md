@@ -70,29 +70,17 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
 
 ## Dívida técnica conhecida
 
-### P-007 — Tipo de conta mutável fora da Server Action
+### P-007 — ~~Tipo de conta mutável fora da Server Action~~ — RESOLVIDO
 - **Origem:** Sentinela, auditoria R4 (`docs/auditoria/sentinela-r4.md`, seção 5).
-- **O quê:** `editarConta` corretamente ignora o campo `tipo`, mas o mesmo
-  usuário consegue mudar o `type` de uma conta via PostgREST direto
-  (`accounts.update({ type: ... })`) — a regra "tipo não muda depois de
-  criada" existe só na Action, não como constraint no banco.
-- **Severidade:** MÉDIA. Sem exploração real hoje (só a Action escreve).
-- **Sugestão:** trigger `BEFORE UPDATE` em `accounts` rejeitando mudança de
-  `type`, ou aceitar o risco e documentar.
+- **Resolvido em:** migration `00016_carteira_investimento.sql` (verificado pelo Maestro em 2026-11-22).
+- **Estado atual:** trigger `trg_accounts_carteira_congela` (`BEFORE UPDATE ON public.accounts`) rejeita mudança de `type`, `initial_balance` e `family_id` via `accounts_carteira_congela()`. Proteção existe no banco, não só na Action.
 
-### P-008 — Índice único de nome normalizado tem brechas
+### P-008 — ~~Índice único de nome normalizado tem brechas~~ — RESOLVIDO
 - **Origem:** Sentinela, auditoria R4 (seção 6).
-- **O quê:** o índice único do banco em `categories`/`payment_methods`
-  bloqueia só variantes com espaço simples nas pontas + case. Tab, espaço
-  duplo interno, acento e zero-width space passam como nomes "diferentes"
-  no banco, mesmo sendo a mesma palavra visualmente. A Server Action já
-  normaliza certo (`chaveDeComparacao()`); o índice do banco não acompanha.
-- **Severidade:** MÉDIA. Sem exploração real hoje (só a Action escreve).
-- **Sugestão:** alinhar a expressão do índice com a mesma normalização de
-  `chaveDeComparacao()` (remover diacríticos, colapsar espaço, tratar
-  zero-width/tab).
+- **Resolvido em:** migration `00011_grupos_categoria_e_nome_normalizado.sql` (verificado pelo Maestro em 2026-11-22).
+- **Estado atual:** função `chave_nome()` criada no banco (PostgreSQL) normaliza o nome antes da indexação. Índices `uq_categories_family_name` e `uq_payment_methods_family_name` usam `chave_nome(name)` como expressão. `chaveDeComparacao()` no código TypeScript usa a mesma normalização. Proteção existe tanto no banco quanto na Action.
 
-### P-009 — Arredondamento de ponto flutuante em valores monetários
+### P-009 — Arredondamento de ponto flutuante em valores monetários — EM ANDAMENTO (Rodada 22)
 - **Origem:** Sentinela, auditoria R4 (seção 8).
 - **O quê:** `Math.round(numero * 100) / 100` em
   `app/src/actions/lancamento.ts` erra na borda de 0,005 por causa de
@@ -101,6 +89,7 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
   decimais bem na borda — exposição rara, mas o valor salvo pode divergir
   do digitado por 1 centavo, em silêncio.
 - **Severidade:** BAIXA. Correção simples (arredondamento decimal-safe).
+- **Status:** Briefing RODADA22 criado em 2026-11-22. Aguardando execução pelo Antigravity.
 
 ### P-014 — Projeção da caixinha parte só do saldo confirmado, não do estimado
 - **Origem:** Dash, plano `dash-grafico-projecao-caixinha.md` (M-4), 2026-10-26.
@@ -116,22 +105,18 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
   gráfico tipo "projeção não inclui rendimento ainda não confirmado",
   decisão de produto, não técnica.
 
-### P-013 — atualizarLancamento devolve só o id, não a linha completa
+### P-013 — ~~atualizarLancamento devolve só o id, não a linha completa~~ — RESOLVIDO
 - **Origem:** Fachada, achado durante a correção de VR/VA e gasto fútil
   no diálogo de editar, 2026-10-16.
-- **O quê:** a action termina em `.select('id')` em vez de `.select('*')`.
+- **O quê:** a action terminava em `.select('id')` em vez de `.select('*').single()`.
   Depois de editar, a lista local (`lista-transacoes-interativa.tsx`)
-  faz merge com o que a Action devolveu, mas sem `invoice_year`/
-  `invoice_month`/`owner_member_id`/`owner_share` atualizados o item
-  pode ficar com esses campos desatualizados até a próxima
-  `router.refresh()` — mais visível em itens carregados via scroll
-  infinito.
-- **Severidade:** BAIXA/MÉDIA — o banco está sempre correto, é só a
-  lista em memória do navegador que pode mostrar dado velho
-  temporariamente.
-- **Correção:** trocar `.select('id')` por `.select('*').single()` e
-  `ResultadoAction<void>` por `ResultadoAction<Lancamento>`
-  (`Database['public']['Tables']['transactions']['Row']`).
+  fazia merge com objeto manual do formulário, deixando `invoice_year`,
+  `invoice_month` e `owner_share` desatualizados em itens do scroll infinito.
+- **Resolução:** Resolvido na Rodada 21:
+  - `src/actions/editar-lancamento.ts`: assinatura de `atualizarLancamento` alterada para devolver `Promise<ResultadoAction<Database['public']['Tables']['transactions']['Row']>>`, fazendo `.select('*').single()`, tratando `PGRST116` como `M.NAO_ENCONTRADO` e devolvendo `sucesso(data)`.
+  - `src/components/transacoes/dialogo-editar-lancamento.tsx`: merge local agora consome diretamente `onSalvo?.(resposta.dados)`.
+  - Testes unitários atualizados em `app/tests/unit/dialogo-editar-lancamento.test.tsx` garantindo propagação das colunas calculadas pelo backend.
+- **Status:** Fechado na Rodada 21.
 
 ### P-012 — Diálogo de editar lançamento não filtra categoria por tipo — RESOLVIDO
 - **Origem:** Fachada, achado colateral na correção do bug de troca de
@@ -157,16 +142,10 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
   `GerenciadorOrcamentos` está renderizado em `/ajustes/categorias`; `GraficoOrcamento` lê
   `v_orcamento_progresso` em `/analises`. Feature completamente funcional.
 
-### P-011 — Paleta categórica reprova no validador do dataviz
+### P-011 — ~~Paleta categórica reprova no validador do dataviz~~ — RESOLVIDO
 - **Origem:** Dash, mesma entrega.
-- **O quê:** `node scripts/validate_palette.js` reprova a paleta de
-  `src/styles/chart-palette.ts` nos 8 slots, claro e escuro (banda de
-  luminância e piso de croma). Só a série 1 (`#2F6DB5` claro,
-  `#6FA8E8` escuro) passa em todas as checagens — e é a única usada nos
-  gráficos desta entrega (linha única, barra de cor constante).
-- **Severidade:** BAIXA hoje (série 1 passa), mas bloqueia usar mais de 1
-  hue categórico em gráfico futuro sem re-trabalhar a paleta.
-- **Próximo passo:** Vitrine re-faz o passo da paleta categórica.
+- **Resolvido em:** retrabalho da paleta em `src/styles/chart-palette.ts` em 2026-10-15 (verificado pelo Maestro em 2026-11-22).
+- **Estado atual:** comentário no arquivo confirma "ALL CHECKS PASS" para todos os 8 slots em light e dark. Paleta validada pela skill `dataviz`.
 
 ### P-004 — 5 vulnerabilidades `npm audit` de severidade alta
 - **Cadeia:** `braces` → `micromatch` → `fast-glob` → `@next/eslint-plugin-next`
