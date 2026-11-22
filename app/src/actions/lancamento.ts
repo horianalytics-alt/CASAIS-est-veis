@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { isValidISODate } from '@/lib/format'
+import { isValidISODate, arredondarMoeda } from '@/lib/format'
 import { limitesDoMes } from '@/lib/hoje'
 import { agendarNotificacao, resolverAutorDoPush } from '@/lib/push/notificar'
 import {
@@ -82,7 +82,8 @@ const valor = z
     }
 
     // numeric(14,2): mais de 2 casas seria arredondado pelo banco em silêncio.
-    return Math.round(numero * 100) / 100
+    // numeric(14,2): arredondamento decimal-safe (P-009).
+    return arredondarMoeda(numero)
   })
 
 /**

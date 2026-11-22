@@ -11,7 +11,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
-import { isValidISODate } from '@/lib/format'
+import { isValidISODate, arredondarMoeda } from '@/lib/format'
 // Importado pelo efeito colateral: é este módulo que registra o mapa de erros
 // em português do Zod, exatamente como acontece em toda action.
 import '@/actions/resultado'
@@ -61,7 +61,7 @@ const valor = z
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Esse valor é alto demais.' })
       return z.NEVER
     }
-    return Math.round(numero * 100) / 100
+    return arredondarMoeda(numero)
   })
 
 const esquemaItem = z
@@ -109,6 +109,8 @@ describe('CHECK amount > 0 — o sinal vem do tipo, nao do valor', () => {
     [0.01, 0.01],
     [99_999_999.99, 99_999_999.99],
     ['10,005', 10.01], // numeric(14,2): arredonda aqui, não no banco
+    [1.005, 1.01], // P-009: borda de ponto flutuante binário
+    [10.075, 10.08], // P-009: borda de ponto flutuante binário
   ]
 
   for (const [entrada, esperado] of devemPassar) {

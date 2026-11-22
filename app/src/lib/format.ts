@@ -31,6 +31,21 @@ export function parseBRLInput(input: string): number {
   return Number.isNaN(parsed) ? NaN : parsed
 }
 
+/**
+ * Arredondamento decimal-safe para valores monetários (2 casas decimais).
+ *
+ * Em ponto flutuante IEEE-754 binário, valores como 1.005 e 10.075 são armazenados
+ * como 1.00499999999999989... e 10.0749999999999992..., fazendo tanto Math.round(n * 100) / 100
+ * quanto n.toFixed(2) arredondarem para baixo (1.00 e 10.07).
+ *
+ * Esta função utiliza o algoritmo decimal de notação exponencial (padrão MDN), deslocando a vírgula
+ * decimal antes do arredondamento para garantir precisão exata:
+ * 1.005 -> 1.01 e 10.075 -> 10.08.
+ */
+export function arredondarMoeda(numero: number): number {
+  return Number(Math.round(Number(`${numero}e2`)) + 'e-2')
+}
+
 export function todayISO(): string {
   const now = new Date()
   const year = now.getFullYear()

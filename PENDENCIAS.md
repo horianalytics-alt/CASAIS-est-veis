@@ -80,16 +80,17 @@ depende de decisão do Heitor. Atualizado a cada entrega aceita.
 - **Resolvido em:** migration `00011_grupos_categoria_e_nome_normalizado.sql` (verificado pelo Maestro em 2026-11-22).
 - **Estado atual:** função `chave_nome()` criada no banco (PostgreSQL) normaliza o nome antes da indexação. Índices `uq_categories_family_name` e `uq_payment_methods_family_name` usam `chave_nome(name)` como expressão. `chaveDeComparacao()` no código TypeScript usa a mesma normalização. Proteção existe tanto no banco quanto na Action.
 
-### P-009 — Arredondamento de ponto flutuante em valores monetários — EM ANDAMENTO (Rodada 22)
+### P-009 — ~~Arredondamento de ponto flutuante em valores monetários~~ — RESOLVIDO
 - **Origem:** Sentinela, auditoria R4 (seção 8).
 - **O quê:** `Math.round(numero * 100) / 100` em
-  `app/src/actions/lancamento.ts` erra na borda de 0,005 por causa de
-  ponto flutuante binário (`1.005 → 1` em vez de `1.01`/`1.00`;
-  `10.075 → 10.07` em vez de `10.08`). Só afeta quem digitar 3+ casas
-  decimais bem na borda — exposição rara, mas o valor salvo pode divergir
-  do digitado por 1 centavo, em silêncio.
-- **Severidade:** BAIXA. Correção simples (arredondamento decimal-safe).
-- **Status:** Briefing RODADA22 criado em 2026-11-22. Aguardando execução pelo Antigravity.
+  `app/src/actions/lancamento.ts` errava na borda de 0,005 por causa de
+  ponto flutuante binário (`1.005 → 1` em vez de `1.01`;
+  `10.075 → 10.07` em vez de `10.08`).
+- **Resolução:** Resolvido na Rodada 22:
+  - Criada função `arredondarMoeda(numero: number): number` em `src/lib/format.ts` utilizando notação exponencial decimal (`Number(Math.round(Number(numero + 'e2')) + 'e-2')`), eliminando a distorção binária IEEE-754.
+  - Aplicada em `src/actions/lancamento.ts` (linha 85) e no espelho de validação em `tests/unit/lancamento-validacao.test.ts`.
+  - Criada suíte unitária dedicada em `tests/unit/arredondamento.test.ts` cobrindo todos os casos de borda (`1.005 -> 1.01`, `10.075 -> 10.08`, `1.004 -> 1.00`, `100.0 -> 100.0`, `0.1 + 0.2 -> 0.3`).
+- **Status:** Fechado na Rodada 22.
 
 ### P-014 — Projeção da caixinha parte só do saldo confirmado, não do estimado
 - **Origem:** Dash, plano `dash-grafico-projecao-caixinha.md` (M-4), 2026-10-26.
