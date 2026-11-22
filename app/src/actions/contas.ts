@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 import {
   TIPOS_CONTA,
   esquemaArquivar,
@@ -143,6 +144,35 @@ export async function arquivarConta(input: { id: string; arquivar: boolean }): P
     .eq('family_id', ctx.familyId)
     .select('id')
   if (error) return falha(traduzErroDoBanco(error))
+  if ((data ?? []).length === 0) return falha(NAO_ENCONTRADA)
+
+  revalidar()
+  return sucesso()
+}
+
+export async function excluirConta(input: { id: string }): Promise<ResultadoAction<void>> {
+  const analise = z.object({ id: z.string().uuid('Conta inválida.') }).safeParse(input)
+  if (!analise.success) return falhaDeValidacao(analise.error)
+  const { id } = analise.data
+
+  const contexto = await obterContextoDaFamilia()
+  if (!contexto.ok) return contexto.resultado
+  const { ctx } = contexto
+
+  const { data, error } = await ctx.supabase
+    .from('accounts')
+    .delete()
+    .eq('id', id)
+    .eq('family_id', ctx.familyId)
+    .select('id')
+
+  if (error) {
+    // 23503 = FK violation: conta tem transações vinculadas (ON DELETE RESTRICT).
+    if (error.code === '23503') {
+      return falha('Esta conta não pode ser excluída porque tem lançamentos vinculados. Arquive-a em vez de excluir.')
+    }
+    return falha(traduzErroDoBanco(error))
+  }
   if ((data ?? []).length === 0) return falha(NAO_ENCONTRADA)
 
   revalidar()
