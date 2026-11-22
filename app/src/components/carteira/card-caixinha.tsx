@@ -53,6 +53,7 @@ export function CardCaixinha({
   className,
 }: CardCaixinhaProps) {
   const [confirmando, setConfirmando] = React.useState(false)
+  const [erroConfirmacao, setErroConfirmacao] = React.useState<string | null>(null)
   const { ref, inView } = useInView<HTMLElement>({ threshold: 0.08, replayOnScroll: true })
 
   const hoje = hojeEmSaoPaulo()
@@ -208,12 +209,14 @@ export function CardCaixinha({
               onClick={async () => {
                 if (!aoConfirmarRendimento) return
                 setConfirmando(true)
+                setErroConfirmacao(null)
                 hapticFeedback.medium()
                 try {
                   await aoConfirmarRendimento(caixinha.id, proximoPendente.competencia.slice(0, 7))
                   hapticFeedback.success()
-                } catch {
+                } catch (err) {
                   hapticFeedback.warning()
+                  setErroConfirmacao(err instanceof Error ? err.message : 'Não foi possível confirmar o rendimento.')
                 } finally {
                   setConfirmando(false)
                 }
@@ -227,6 +230,9 @@ export function CardCaixinha({
               )}
             </Button>
           </div>
+          {erroConfirmacao && (
+            <p className="text-xs text-destructive mt-1">{erroConfirmacao}</p>
+          )}
         </div>
       )}
 

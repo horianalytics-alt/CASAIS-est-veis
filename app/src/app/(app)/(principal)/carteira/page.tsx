@@ -121,7 +121,7 @@ export default async function PaginaCarteira({ searchParams }: PaginaCarteiraPro
   let finalResumo = resumoCarteira
   let finalProjecao = dadosProjecao
 
-  if (params.fixture && (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_FEATURE_INVESTIMENTOS === 'true')) {
+  if (params.fixture && process.env.NODE_ENV === 'development') {
     if (params.fixture === 'caixinhas' || params.fixture === 'pendentes' || params.fixture === 'erro') {
       finalResumo = MOCK_CARTEIRA_INVESTIMENTO
       if (params.fixture === 'caixinhas') {

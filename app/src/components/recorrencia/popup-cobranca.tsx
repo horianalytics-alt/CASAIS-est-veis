@@ -138,11 +138,12 @@ export function PopUpCobranca({ cobrancasIniciais, familyId }: PopUpCobrancaProp
       } else {
         hapticFeedback.selection()
       }
-      setFila((antiga) => antiga.filter((c) => c.id !== itemAtual.id))
+      setFila((antiga) => {
+        const nova = antiga.filter((c) => c.id !== itemAtual.id)
+        if (nova.length === 0) router.refresh()
+        return nova
+      })
       setConfirmandoPagamento(false)
-      if (fila.length <= 1) {
-        router.refresh()
-      }
     } else {
       tocarSomErro()
       hapticFeedback.warning()
