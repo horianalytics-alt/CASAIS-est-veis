@@ -74,7 +74,7 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
       .order('date', { ascending: false })
       .order('created_at', { ascending: false })
       .range(0, LIMITE_INICIAL - 1),
-    supabase.from('categories').select('id, name'),
+    supabase.from('categories').select('id, name, type'),
     supabase.from('families').select('id').single(),
     supabase.from('family_members').select('id, display_name'),
     idNovo
@@ -246,7 +246,7 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
                 mapaContas={mapaContas}
                 mapaCategorias={mapaCategorias}
                 listaContas={listaDeContas.map((c) => ({ id: c.account_id ?? '', name: c.name ?? '' }))}
-                listaCategorias={(categorias.data ?? []).map((c) => ({ id: c.id, name: c.name }))}
+                listaCategorias={(categorias.data ?? []).map((c) => ({ id: c.id, name: c.name, type: c.type }))}
                 listaFormasDePagamento={formasDePagamento}
                 idDestacado={idNovo}
                 totalContagem={total}

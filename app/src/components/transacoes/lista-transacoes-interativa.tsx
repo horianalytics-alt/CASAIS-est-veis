@@ -49,7 +49,7 @@ export interface ListaTransacoesInterativaProps {
   mapaContas: Record<string, string>
   mapaCategorias: Record<string, string>
   listaContas?: Array<{ id: string; name: string }>
-  listaCategorias?: Array<{ id: string; name: string }>
+  listaCategorias?: Array<{ id: string; name: string; type?: string }>
   listaFormasDePagamento?: Array<{ id: string; name: string }>
   idDestacado?: string | null
   totalContagem?: number
