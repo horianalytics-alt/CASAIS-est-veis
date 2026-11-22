@@ -42,6 +42,7 @@ export interface DialogoEditarEmMassaProps {
   contas: ItemSelectOpcao[]
   categorias: ItemSelectOpcao[]
   membros: MembroOpcao[]
+  formasDePagamento?: ItemSelectOpcao[]
   temTransferenciaNaSelecao?: boolean
   onSalvo?: (atualizados: number, total: number) => void
 }
@@ -53,6 +54,7 @@ export function DialogoEditarEmMassa({
   contas,
   categorias,
   membros,
+  formasDePagamento,
   temTransferenciaNaSelecao = false,
   onSalvo,
 }: DialogoEditarEmMassaProps) {
@@ -73,6 +75,12 @@ export function DialogoEditarEmMassa({
   const [mudarStatus, setMudarStatus] = React.useState(false)
   const [statusPago, setStatusPago] = React.useState<'pago' | 'pendente'>('pago')
 
+  const [mudarFormaPagamento, setMudarFormaPagamento] = React.useState(false)
+  const [formaDePagamentoId, setFormaDePagamentoId] = React.useState<string>('')
+
+  const [mudarResponsavel, setMudarResponsavel] = React.useState(false)
+  const [responsavelId, setResponsavelId] = React.useState<string>('')
+
   // Limpa estados ao reabrir
   React.useEffect(() => {
     if (aberto) {
@@ -84,15 +92,26 @@ export function DialogoEditarEmMassa({
       setMembroId(membros[0]?.id ?? '')
       setMudarStatus(false)
       setStatusPago('pago')
+      setMudarFormaPagamento(false)
+      setFormaDePagamentoId(formasDePagamento?.[0]?.id ?? '')
+      setMudarResponsavel(false)
+      setResponsavelId(membros[0]?.id ?? '')
       setErro(null)
     }
-  }, [aberto, categorias, contas, membros])
+  }, [aberto, categorias, contas, membros, formasDePagamento])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErro(null)
 
-    if (!mudarCategoria && !mudarConta && !mudarMembro && !mudarStatus) {
+    if (
+      !mudarCategoria &&
+      !mudarConta &&
+      !mudarMembro &&
+      !mudarStatus &&
+      !mudarFormaPagamento &&
+      !mudarResponsavel
+    ) {
       setErro('Selecione pelo menos um campo para alterar em lote.')
       return
     }
@@ -107,6 +126,11 @@ export function DialogoEditarEmMassa({
       return
     }
 
+    if (mudarResponsavel && temTransferenciaNaSelecao) {
+      setErro('Transferências não têm responsável. Tire as transferências da seleção.')
+      return
+    }
+
     if (mudarConta && !contaId) {
       setErro('Selecione uma conta para aplicar.')
       return
@@ -114,6 +138,11 @@ export function DialogoEditarEmMassa({
 
     if (mudarMembro && !membroId) {
       setErro('Selecione quem realizou o pagamento.')
+      return
+    }
+
+    if (mudarResponsavel && !responsavelId) {
+      setErro('Selecione o responsável pelo gasto.')
       return
     }
 
@@ -138,6 +167,12 @@ export function DialogoEditarEmMassa({
         }
         if (mudarStatus) {
           input.estaPago = statusPago === 'pago'
+        }
+        if (mudarFormaPagamento) {
+          input.formaDePagamentoId = formaDePagamentoId === '_none' ? null : (formaDePagamentoId || null)
+        }
+        if (mudarResponsavel && !temTransferenciaNaSelecao) {
+          input.responsavelId = responsavelId || undefined
         }
 
         const resposta = await atualizarLancamentosEmMassa(input)
@@ -365,6 +400,98 @@ export function DialogoEditarEmMassa({
             )}
           </div>
 
+          {/* Opção 5: Alterar Forma de pagamento */}
+          {formasDePagamento && formasDePagamento.length > 0 && (
+            <div
+              className={cn(
+                'rounded-xl border p-3 flex flex-col gap-2.5 transition-colors',
+                mudarFormaPagamento ? 'border-primary/50 bg-primary/5' : 'border-border/70 bg-muted/20',
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="check-mudar-forma"
+                  checked={mudarFormaPagamento}
+                  onCheckedChange={(c) => setMudarFormaPagamento(Boolean(c))}
+                />
+                <Label htmlFor="check-mudar-forma" className="text-xs font-semibold cursor-pointer">
+                  Alterar Forma de pagamento
+                </Label>
+              </div>
+              {mudarFormaPagamento && (
+                <div className="pl-6 pt-1">
+                  <Select
+                    value={formaDePagamentoId || '_none'}
+                    onValueChange={(v) => setFormaDePagamentoId(v === '_none' ? '' : v)}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">Nenhuma</SelectItem>
+                      {formasDePagamento.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Opção 6: Alterar Responsável */}
+          {membros.length > 1 && (
+            <div
+              className={cn(
+                'rounded-xl border p-3 flex flex-col gap-2.5 transition-colors',
+                temTransferenciaNaSelecao && 'opacity-60 bg-muted/10',
+                !temTransferenciaNaSelecao && mudarResponsavel && 'border-primary/50 bg-primary/5',
+                !temTransferenciaNaSelecao && !mudarResponsavel && 'border-border/70 bg-muted/20',
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="check-mudar-resp"
+                  checked={!temTransferenciaNaSelecao && mudarResponsavel}
+                  disabled={temTransferenciaNaSelecao}
+                  onCheckedChange={(c) => setMudarResponsavel(Boolean(c))}
+                />
+                <Label
+                  htmlFor="check-mudar-resp"
+                  className={cn(
+                    'text-xs font-semibold',
+                    temTransferenciaNaSelecao ? 'cursor-not-allowed text-muted-foreground' : 'cursor-pointer',
+                  )}
+                >
+                  Alterar Responsável
+                </Label>
+              </div>
+              {temTransferenciaNaSelecao && (
+                <p className="text-[11px] text-muted-foreground pl-6">
+                  A seleção inclui transferências. Transferências não têm responsável.
+                </p>
+              )}
+              {!temTransferenciaNaSelecao && mudarResponsavel && (
+                <div className="pl-6 pt-1">
+                  <Select value={responsavelId} onValueChange={setResponsavelId}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Selecione o responsável" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {membros.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.display_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          )}
+
           <DialogFooter className="mt-2 gap-2 sm:gap-0">
             <Button
               type="button"
@@ -379,7 +506,15 @@ export function DialogoEditarEmMassa({
               type="submit"
               variant="default"
               size="toque"
-              disabled={pendente || (!mudarCategoria && !mudarConta && !mudarMembro && !mudarStatus)}
+              disabled={
+                pendente ||
+                (!mudarCategoria &&
+                  !mudarConta &&
+                  !mudarMembro &&
+                  !mudarStatus &&
+                  !mudarFormaPagamento &&
+                  !mudarResponsavel)
+              }
               className="gap-2"
             >
               {pendente ? (

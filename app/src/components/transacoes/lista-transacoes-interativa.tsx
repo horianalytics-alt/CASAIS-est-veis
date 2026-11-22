@@ -794,6 +794,7 @@ export function ListaTransacoesInterativa({
         contas={contasDisponiveis}
         categorias={categoriasDisponiveis}
         membros={membros}
+        formasDePagamento={listaFormasDePagamento}
         temTransferenciaNaSelecao={temTransferenciaNaSelecao}
         onSalvo={(atualizados, total) => {
           if (atualizados === total) {
