@@ -2,11 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import {
+  esquemaAlterarRegra,
   esquemaAlterarValorRecorrencia,
   esquemaCriarRecorrencia,
   esquemaEncerrarRecorrencia,
   esquemaResponderCobranca,
   primeiroDiaDoMes,
+  type AlteracaoDeRegraParseada,
+  type EntradaAlterarRegra,
   type EntradaAlterarValorRecorrencia,
   type EntradaCriarRecorrencia,
   type EntradaEncerrarRecorrencia,
@@ -15,8 +18,11 @@ import {
 import { agendarNotificacao, resolverAutorDoPush } from '@/lib/push/notificar'
 import { obterContextoDaFamilia } from './contexto-familia'
 import { falha, falhaDeValidacao, sucesso, traduzErroDoBanco, type ResultadoAction } from './resultado'
+import type { Json } from '@/types/database'
 
 export type {
+  AlteracaoDeRegraParseada,
+  EntradaAlterarRegra,
   EntradaAlterarValorRecorrencia,
   EntradaCriarRecorrencia,
   EntradaEncerrarRecorrencia,
@@ -208,4 +214,80 @@ export async function encerrarRecorrencia(
 
   revalidar()
   return sucesso({ removidos: data ?? 0 })
+}
+
+/**
+ * Altera qualquer subconjunto das 12 chaves da regra (descrição, valor, conta,
+ * responsável etc.) e os lançamentos pendentes a partir de `aPartirDe`.
+ * Plano: docs/planos/estrutura-alterar-regra.md, §4.2.
+ */
+export async function alterarRegra(
+  input: EntradaAlterarRegra,
+): Promise<ResultadoAction<{ alteradosNaRegra: number; alteradosEmLancamentos: number }>> {
+  const analise = esquemaAlterarRegra.safeParse(input)
+  if (!analise.success) return falhaDeValidacao(analise.error)
+  const e: AlteracaoDeRegraParseada = analise.data
+
+  const contexto = await obterContextoDaFamilia()
+  if (!contexto.ok) return contexto.resultado
+  const { supabase } = contexto.ctx
+
+  // Monta p_campos só com as chaves presentes (undefined = ausente = não mexe).
+  // null vai como null (apaga o campo). Plano §4.2.
+  const p_campos: Record<string, Json> = {}
+  if (e.descricao           !== undefined) p_campos['description']        = e.descricao
+  if (e.valor               !== undefined) p_campos['amount']             = e.valor
+  if (e.contaId             !== undefined) p_campos['account_id']         = e.contaId
+  if (e.categoriaId         !== undefined) p_campos['category_id']        = e.categoriaId ?? null
+  if (e.formaDePagamentoId  !== undefined) p_campos['payment_method_id']  = e.formaDePagamentoId ?? null
+  if (e.responsavelId       !== undefined) p_campos['owner_member_id']    = e.responsavelId ?? null
+  if (e.cotaDoResponsavel   !== undefined) p_campos['owner_share']        = e.cotaDoResponsavel ?? null
+  if (e.pagoPorId           !== undefined) p_campos['paid_by_member_id']  = e.pagoPorId
+  if (e.observacao          !== undefined) p_campos['notes']              = e.observacao ?? null
+  if (e.ehBeneficio         !== undefined) p_campos['is_benefit']         = e.ehBeneficio
+  if (e.ehFutil             !== undefined) p_campos['is_futile']          = e.ehFutil
+  if (e.rotuloDoFutil       !== undefined) p_campos['futile_label']       = e.rotuloDoFutil ?? null
+
+  const { data, error } = await supabase.rpc('recorrencia_alterar_regra', {
+    p_regra_id: e.regraId,
+    p_campos,
+    p_a_partir: primeiroDiaDoMes(e.aPartirDe),
+  })
+
+  if (error) {
+    const msg = traduzErroDoBanco(error)
+    // Mapa mensagem → campo (plano §4.2).
+    if (
+      msg.startsWith('Conta não encontrada nesta família') ||
+      msg.startsWith('A carteira de investimento não aceita recorrência') ||
+      msg.startsWith('Esta conta está arquivada') ||
+      msg.startsWith('Receita recorrente não pode ser no cartão')
+    ) return falha(msg, { contaId: [msg] })
+    if (msg.startsWith('Responsável não encontrado nesta família') ||
+        msg.startsWith('Escolha de quem é a cota'))
+      return falha(msg, { responsavelId: [msg] })
+    if (msg.startsWith('Quem paga não foi encontrado nesta família'))
+      return falha(msg, { pagoPorId: [msg] })
+    if (msg.startsWith('Categoria não encontrada nesta família'))
+      return falha(msg, { categoriaId: [msg] })
+    if (msg.startsWith('Forma de pagamento não encontrada nesta família'))
+      return falha(msg, { formaDePagamentoId: [msg] })
+    if (msg.startsWith('Marque como fútil para usar o rótulo'))
+      return falha(msg, { rotuloDoFutil: [msg] })
+    if (msg.startsWith('Benefício e fútil só valem para saída'))
+      return falha(msg, { formulario: [msg] })
+    if (msg.startsWith('Valor inválido'))
+      return falha(msg, { valor: [msg] })
+    if (msg.startsWith('Mês inválido'))
+      return falha(msg, { aPartirDe: [msg] })
+    if (msg.startsWith('Descreva o lançamento'))
+      return falha(msg, { descricao: [msg] })
+    return falha(msg)
+  }
+
+  const linha = Array.isArray(data) ? data[0] : null
+  if (!linha) return falha('Não foi possível concluir. Tente de novo em instantes.')
+
+  revalidar()
+  return sucesso({ alteradosNaRegra: linha.alterados_na_regra, alteradosEmLancamentos: linha.alterados_em_transacoes })
 }

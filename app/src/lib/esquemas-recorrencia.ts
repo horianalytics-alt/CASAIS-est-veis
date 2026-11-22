@@ -159,3 +159,81 @@ export const esquemaEncerrarRecorrencia = z.object({
 })
 
 export type EntradaEncerrarRecorrencia = z.input<typeof esquemaEncerrarRecorrencia>
+
+// ---------------------------------------------------------------------------
+// esquemaAlterarRegra — altera qualquer subconjunto das 12 chaves da regra.
+// Plano: docs/planos/estrutura-alterar-regra.md, §4.1.
+// ---------------------------------------------------------------------------
+
+/** Chaves opcionais que podem ir ao banco. Usada no refine e na montagem de p_campos. */
+export const CAMPOS_DA_REGRA = [
+  'descricao',
+  'valor',
+  'contaId',
+  'categoriaId',
+  'formaDePagamentoId',
+  'responsavelId',
+  'cotaDoResponsavel',
+  'pagoPorId',
+  'observacao',
+  'ehBeneficio',
+  'ehFutil',
+  'rotuloDoFutil',
+] as const
+
+type CampoDaRegra = (typeof CAMPOS_DA_REGRA)[number]
+
+/** Campo de texto opcional: undefined = não mexe; '' ou só espaços = null (apaga). */
+const textoOpcional = (max: number, msg: string) =>
+  z
+    .string({ invalid_type_error: 'Texto inválido.' })
+    .trim()
+    .max(max, msg)
+    .nullish()
+    .transform((t) => (t === undefined ? undefined : t ? t : null))
+
+export const esquemaAlterarRegra = z
+  .object({
+    regraId: uuid,
+    /** 'YYYY-MM': só os lançamentos pendentes deste mês em diante. */
+    aPartirDe: mesISO,
+    descricao: z
+      .string({ invalid_type_error: 'Descreva o lançamento.' })
+      .trim()
+      .min(1, 'Descreva o lançamento.')
+      .max(120, 'A descrição pode ter no máximo 120 caracteres.')
+      .optional(),
+    valor: valorEmReais.optional(),
+    contaId: uuid.optional(),
+    categoriaId: uuid.nullable().optional(),
+    formaDePagamentoId: uuid.nullable().optional(),
+    responsavelId: uuid.nullable().optional(),
+    cotaDoResponsavel: z
+      .number({ invalid_type_error: 'A cota vai de 0 a 1.' })
+      .min(0, 'A cota vai de 0 a 1.')
+      .max(1, 'A cota vai de 0 a 1.')
+      .nullable()
+      .optional(),
+    pagoPorId: uuid.optional(),
+    observacao: textoOpcional(500, 'Observação longa demais.'),
+    ehBeneficio: z.boolean({ invalid_type_error: 'Informe se foi pago com benefício.' }).optional(),
+    ehFutil: z.boolean({ invalid_type_error: 'Informe se é um gasto fútil.' }).optional(),
+    rotuloDoFutil: textoOpcional(60, 'Use no máximo 60 caracteres.'),
+  })
+  .refine((e) => CAMPOS_DA_REGRA.some((c) => (e as Record<CampoDaRegra, unknown>)[c] !== undefined), {
+    message: 'Escolha ao menos um campo para alterar.',
+    path: ['formulario'],
+  })
+  // rr_cota_exige_responsavel: cota com responsável explicitamente apagado no mesmo pedido.
+  .refine((e) => e.cotaDoResponsavel == null || e.responsavelId !== null, {
+    message: 'Escolha de quem é a cota.',
+    path: ['responsavelId'],
+  })
+  // rr_rotulo_exige_futil: mesmo arranjo de esquemas-edicao-lancamento.ts:120-123.
+  .refine((e) => e.rotuloDoFutil == null || e.ehFutil === true, {
+    message: 'Marque como fútil para usar o rótulo.',
+    path: ['rotuloDoFutil'],
+  })
+
+export type EntradaAlterarRegra = z.input<typeof esquemaAlterarRegra>
+export type AlteracaoDeRegraParseada = z.output<typeof esquemaAlterarRegra>

@@ -1,4 +1,3 @@
-
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
@@ -813,6 +812,11 @@ isOneToOne: false
                            },
 "pay_invoice":
 { Args: { "p_card_account_id": string,"p_date"?: string,"p_from_account_id": string,"p_invoice_month": number,"p_invoice_year": number }; Returns: string
+                           },
+"recorrencia_alterar_regra":
+{ Args: { "p_a_partir": string,"p_campos": Json,"p_regra_id": string }; Returns: {
+              "alterados_em_transacoes": number,"alterados_na_regra": number
+            }[]
                            },
 "recorrencia_alterar_valor":
 { Args: { "p_a_partir": string,"p_regra_id": string,"p_valor": number }; Returns: number
