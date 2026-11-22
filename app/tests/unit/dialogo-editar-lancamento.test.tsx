@@ -13,6 +13,9 @@ const atualizarLancamento = vi.fn()
 vi.mock('@/actions/editar-lancamento', () => ({
   atualizarLancamento: (...args: unknown[]) => atualizarLancamento(...args),
 }))
+vi.mock('@/actions/recorrencia', () => ({
+  alterarRegra: vi.fn(),
+}))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 
 import { DialogoEditarLancamento } from '@/components/transacoes/dialogo-editar-lancamento'

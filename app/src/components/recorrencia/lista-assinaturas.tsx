@@ -14,7 +14,7 @@ import {
   PowerOff,
   Repeat,
 } from 'lucide-react'
-import { alterarValorRecorrencia, encerrarRecorrencia } from '@/actions/recorrencia'
+import { alterarRegra, alterarValorRecorrencia, encerrarRecorrencia } from '@/actions/recorrencia'
 import { ValorMonetario, type TipoDeValor } from '@/components/financeiro/valor-monetario'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -29,6 +29,13 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { AJUSTES_ASSINATURAS } from '@/features/ajustes/copy'
 import { tocarSomErro, tocarSomSucesso } from '@/features/sons/sons'
 import { hapticFeedback } from '@/lib/haptics'
@@ -72,9 +79,54 @@ export function ListaAssinaturas({
   const [regraEncerrar, setRegraEncerrar] = React.useState<RegraRecorrente | null>(null)
   const [ultimoMes, setUltimoMes] = React.useState(mesAtual)
 
+  // Diálogo Corrigir Regra Completa
+  const [regraCorrigir, setRegraCorrigir] = React.useState<RegraRecorrente | null>(null)
+  const [descricaoCorrecao, setDescricaoCorrecao] = React.useState('')
+  const [contaCorrecao, setContaCorrecao] = React.useState('')
+  const [mesCorrecao, setMesCorrecao] = React.useState(mesAtual)
+  const [pendenteCorrecao, setPendenteCorrecao] = React.useState(false)
+  const [erroCorrecao, setErroCorrecao] = React.useState<string | null>(null)
+
   const [pendente, setPendente] = React.useState(false)
   const [erroModal, setErroModal] = React.useState<string | null>(null)
   const [toastMensagem, setToastMensagem] = React.useState<string | null>(null)
+
+  function abrirCorrecaoRegra(regra: RegraRecorrente) {
+    setRegraCorrigir(regra)
+    setDescricaoCorrecao(regra.description)
+    setContaCorrecao(regra.account_id)
+    setMesCorrecao(mesAtual)
+    setErroCorrecao(null)
+  }
+
+  async function handleSalvarCorrecaoRegra(e: React.FormEvent) {
+    e.preventDefault()
+    if (!regraCorrigir) return
+
+    setPendenteCorrecao(true)
+    setErroCorrecao(null)
+
+    const res = await alterarRegra({
+      regraId: regraCorrigir.id,
+      aPartirDe: mesCorrecao,
+      descricao: descricaoCorrecao.trim() || undefined,
+      contaId: contaCorrecao || undefined,
+    })
+
+    setPendenteCorrecao(false)
+    if (res.ok) {
+      tocarSomSucesso()
+      hapticFeedback.success()
+      setToastMensagem(`${res.dados.alteradosEmLancamentos} lançamentos corrigidos!`)
+      setRegraCorrigir(null)
+      router.refresh()
+      setTimeout(() => setToastMensagem(null), 4000)
+    } else {
+      tocarSomErro()
+      hapticFeedback.warning()
+      setErroCorrecao(res.erro)
+    }
+  }
 
   function abrirEdicao(regra: RegraRecorrente) {
     setRegraEditar(regra)
@@ -254,6 +306,16 @@ export function ListaAssinaturas({
                       type="button"
                       variant="outline"
                       size="sm"
+                      onClick={() => abrirCorrecaoRegra(r)}
+                      className="h-8 text-xs gap-1.5"
+                    >
+                      <Repeat className="size-3.5" aria-hidden="true" />
+                      Corrigir regra
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
                       onClick={() => abrirEdicao(r)}
                       className="h-8 text-xs gap-1.5"
                     >
@@ -407,6 +469,100 @@ export function ListaAssinaturas({
                 </Button>
                 <Button type="submit" size="toque" disabled={pendente}>
                   {pendente ? 'Salvando…' : 'Salvar novo valor'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Diálogo Corrigir Regra Completa */}
+      {regraCorrigir && (
+        <Dialog open={Boolean(regraCorrigir)} onOpenChange={(aberto) => !aberto && setRegraCorrigir(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-2">
+                <div className="bg-primary/10 text-primary flex size-8 items-center justify-center rounded-lg border border-primary/20">
+                  <Repeat className="size-4" aria-hidden="true" />
+                </div>
+                <div>
+                  <DialogTitle className="text-base font-semibold">Corrigir regra</DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                    Altere os dados da assinatura e aplique aos lançamentos futuros.
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <form onSubmit={handleSalvarCorrecaoRegra} className="flex flex-col gap-4 py-1 text-xs">
+              {erroCorrecao && (
+                <Alert variant="destructive" className="py-2.5">
+                  <AlertCircle className="size-4" />
+                  <AlertDescription className="text-xs">{erroCorrecao}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="desc-correcao" className="text-xs font-medium">
+                  Descrição
+                </Label>
+                <Input
+                  id="desc-correcao"
+                  value={descricaoCorrecao}
+                  onChange={(e) => setDescricaoCorrecao(e.target.value)}
+                  disabled={pendenteCorrecao}
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="conta-correcao" className="text-xs font-medium">
+                  Conta
+                </Label>
+                <Select
+                  value={contaCorrecao}
+                  onValueChange={setContaCorrecao}
+                  disabled={pendenteCorrecao}
+                >
+                  <SelectTrigger id="conta-correcao" className="w-full">
+                    <SelectValue placeholder="Escolha a conta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {contas.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="mes-correcao" className="text-xs font-medium">
+                  A partir do mês
+                </Label>
+                <Input
+                  id="mes-correcao"
+                  type="month"
+                  value={mesCorrecao}
+                  onChange={(e) => setMesCorrecao(e.target.value)}
+                  disabled={pendenteCorrecao}
+                  required
+                />
+              </div>
+
+              <DialogFooter className="pt-2 gap-2 sm:gap-0">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="toque"
+                  disabled={pendenteCorrecao}
+                  onClick={() => setRegraCorrigir(null)}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" size="toque" disabled={pendenteCorrecao}>
+                  {pendenteCorrecao ? 'Salvando…' : 'Salvar alterações'}
                 </Button>
               </DialogFooter>
             </form>

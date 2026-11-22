@@ -2,8 +2,11 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Pencil, Check, Loader2, AlertCircle, Info } from 'lucide-react'
+import { Pencil, Check, Loader2, AlertCircle, Info, Repeat } from 'lucide-react'
 import { atualizarLancamento } from '@/actions/editar-lancamento'
+import { alterarRegra } from '@/actions/recorrencia'
+import { tocarSomErro, tocarSomSucesso } from '@/features/sons/sons'
+import { hapticFeedback } from '@/lib/haptics'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -123,6 +126,57 @@ export function DialogoEditarLancamento({
   const [ehBeneficio, setEhBeneficio] = React.useState(false)
   const [ehFutil, setEhFutil] = React.useState(false)
   const [rotuloFutil, setRotuloFutil] = React.useState('')
+
+  // Estados de confirmação para "Corrigir meses futuros"
+  const [dialogoCorrigirAberto, setDialogoCorrigirAberto] = React.useState(false)
+  const [pendenteCorrigir, setPendenteCorrigir] = React.useState(false)
+  const [erroCorrigir, setErroCorrigir] = React.useState<string | null>(null)
+  const [toastSucesso, setToastSucesso] = React.useState<string | null>(null)
+
+  async function handleConfirmarCorrigir() {
+    if (!transacao?.recurring_rule_id) return
+    setPendenteCorrigir(true)
+    setErroCorrigir(null)
+
+    const ehDespesa = tipo === 'despesa'
+    const futilFinal = ehDespesa && ehFutil
+    const descLimpa = descricao.trim()
+    const observacaoFinal = observacao.trim() || null
+    const rotuloFinal = futilFinal ? rotuloFutil.trim() || null : null
+
+    try {
+      const res = await alterarRegra({
+        regraId: transacao.recurring_rule_id,
+        aPartirDe: data.slice(0, 7),
+        descricao: descLimpa || undefined,
+        contaId: contaId || undefined,
+        categoriaId: tipo === 'transferencia' ? null : (categoriaId ? categoriaId : null),
+        pagoPorId: membroId || undefined,
+        observacao: observacaoFinal,
+        ehBeneficio: ehDespesa ? ehBeneficio : false,
+        ehFutil: ehDespesa ? ehFutil : false,
+        rotuloDoFutil: rotuloFinal,
+      })
+
+      setPendenteCorrigir(false)
+      if (res.ok) {
+        tocarSomSucesso()
+        hapticFeedback.success()
+        const qtd = res.dados.alteradosEmLancamentos
+        setToastSucesso(`${qtd} lançamento${qtd !== 1 ? 's' : ''} corrigido${qtd !== 1 ? 's' : ''}`)
+        setDialogoCorrigirAberto(false)
+        router.refresh()
+        setTimeout(() => setToastSucesso(null), 4000)
+      } else {
+        tocarSomErro()
+        hapticFeedback.warning()
+        setErroCorrigir(res.erro)
+      }
+    } catch (err: unknown) {
+      setPendenteCorrigir(false)
+      setErroCorrigir(err instanceof Error ? err.message : 'Erro ao corrigir meses futuros.')
+    }
+  }
 
   // Erro de campo some quando AQUELE campo muda; o aviso geral some junto
   // quando não sobra nenhum erro de campo (L-013 do caderno). Chamar no
@@ -313,7 +367,8 @@ export function DialogoEditarLancamento({
   }
 
   return (
-    <Dialog open={aberto} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={aberto} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
@@ -330,9 +385,26 @@ export function DialogoEditarLancamento({
         </DialogHeader>
 
         {transacao?.recurring_rule_id ? (
-          <div className="flex items-center gap-2 rounded-lg border border-border/80 bg-muted/40 p-2.5 text-xs text-muted-foreground">
-            <Info className="size-4 shrink-0 text-primary" aria-hidden="true" />
-            <span>Este lançamento faz parte de uma assinatura. Editá-lo altera só este mês.</span>
+          <div className="flex flex-col gap-2 rounded-lg border border-border/80 bg-muted/40 p-2.5 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Info className="size-4 shrink-0 text-primary" aria-hidden="true" />
+              <span>Este lançamento faz parte de uma assinatura. Editá-lo altera só este mês.</span>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setErroCorrigir(null)
+                  setDialogoCorrigirAberto(true)
+                }}
+                className="h-7 text-xs gap-1.5"
+              >
+                <Repeat className="size-3.5" aria-hidden="true" />
+                Corrigir meses futuros
+              </Button>
+            </div>
           </div>
         ) : null}
 
@@ -744,5 +816,66 @@ export function DialogoEditarLancamento({
         </form>
       </DialogContent>
     </Dialog>
+
+    {/* Diálogo de confirmação: Corrigir meses futuros */}
+    <Dialog open={dialogoCorrigirAberto} onOpenChange={setDialogoCorrigirAberto}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <Repeat className="size-4" aria-hidden="true" />
+            </div>
+            <div>
+              <DialogTitle className="text-base font-semibold">Corrigir meses futuros</DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground mt-1">
+                Vai aplicar as informações que você acabou de salvar (responsável, conta, categoria, forma de pagamento) em todos os meses futuros pendentes desta assinatura, a partir de {data.slice(0, 7)}.
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        {erroCorrigir && (
+          <Alert variant="destructive" className="py-2.5">
+            <AlertCircle className="size-4" />
+            <AlertDescription className="text-xs">{erroCorrigir}</AlertDescription>
+          </Alert>
+        )}
+
+        <DialogFooter className="flex flex-row justify-end gap-2 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setDialogoCorrigirAberto(false)}
+            disabled={pendenteCorrigir}
+          >
+            Só este mês
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleConfirmarCorrigir}
+            disabled={pendenteCorrigir}
+          >
+            {pendenteCorrigir ? 'Corrigindo…' : 'Corrigir'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* Toast Feedback */}
+    {toastSucesso ? (
+      <div
+        role="status"
+        aria-live="polite"
+        className="fixed bottom-20 right-4 z-50 flex items-center gap-2.5 rounded-xl border border-border/80 bg-card px-4 py-3 shadow-lg text-xs font-medium text-foreground animate-in fade-in slide-in-from-bottom-3 duration-200"
+      >
+        <div className="flex size-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <Check className="size-3.5" />
+        </div>
+        <span>{toastSucesso}</span>
+      </div>
+    ) : null}
+    </>
   )
 }
