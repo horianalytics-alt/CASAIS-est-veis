@@ -62,6 +62,31 @@ function linha(sobre: Partial<Transacao> = {}): Transacao {
   }
 }
 
+function mockSucessoComLinha(input?: Record<string, unknown>) {
+  return {
+    ok: true as const,
+    dados: linha({
+      id: (input?.id as string) ?? '44444444-4444-4444-8444-444444444444',
+      type: (input?.tipo as Transacao['type']) ?? 'despesa',
+      description: (input?.descricao as string) ?? 'Mercado',
+      amount: (input?.valor as number) ?? 47.9,
+      date: (input?.data as string) ?? '2026-10-10',
+      account_id: (input?.contaId as string) ?? CONTA,
+      to_account_id: (input?.contaDestinoId as string | null) ?? null,
+      category_id: (input?.categoriaId as string | null) ?? null,
+      paid_by_member_id: (input?.pagoPorId as string) ?? MEMBRO,
+      payment_method_id: (input?.formaDePagamentoId as string | null) ?? null,
+      owner_member_id: (input?.responsavelId as string | null) ?? null,
+      is_paid: (input?.estaPago as boolean) ?? false,
+      paid_date: (input?.dataDoPagamento as string | null) ?? null,
+      notes: (input?.observacao as string | null) ?? null,
+      is_benefit: (input?.ehBeneficio as boolean) ?? false,
+      is_futile: (input?.ehFutil as boolean) ?? false,
+      futile_label: (input?.rotuloDoFutil as string | null) ?? null,
+    }),
+  }
+}
+
 function abrir(transacao: Transacao, onSalvo?: (s: unknown) => void) {
   return render(
     <DialogoEditarLancamento
@@ -84,7 +109,9 @@ describe('DialogoEditarLancamento — benefício e gasto fútil', () => {
 
   beforeEach(() => {
     atualizarLancamento.mockReset()
-    atualizarLancamento.mockResolvedValue({ ok: true, dados: undefined })
+    atualizarLancamento.mockImplementation((input: Record<string, unknown>) =>
+      Promise.resolve(mockSucessoComLinha(input)),
+    )
   })
 
   it('pré-preenche os 3 campos com o que a linha tem', () => {
@@ -161,6 +188,26 @@ describe('DialogoEditarLancamento — benefício e gasto fútil', () => {
     })
   })
 
+  it('onSalvo recebe campos calculados pelo servidor como invoice_year/month e owner_share (P-013)', async () => {
+    const onSalvo = vi.fn()
+    atualizarLancamento.mockResolvedValueOnce({
+      ok: true,
+      dados: linha({
+        invoice_year: 2026,
+        invoice_month: 11,
+        owner_share: 50,
+      }),
+    })
+    abrir(linha(), onSalvo)
+    salvar()
+    await waitFor(() => expect(onSalvo).toHaveBeenCalledTimes(1))
+    expect(onSalvo.mock.calls[0][0]).toMatchObject({
+      invoice_year: 2026,
+      invoice_month: 11,
+      owner_share: 50,
+    })
+  })
+
   it('mostra o erro de campo do rótulo e o apaga, com o aviso geral, ao digitar nele', async () => {
     atualizarLancamento.mockResolvedValue({
       ok: false,
@@ -222,7 +269,9 @@ describe('DialogoEditarLancamento — forma de pagamento e responsável', () => 
 
   beforeEach(() => {
     atualizarLancamento.mockReset()
-    atualizarLancamento.mockResolvedValue({ ok: true, dados: undefined })
+    atualizarLancamento.mockImplementation((input: Record<string, unknown>) =>
+      Promise.resolve(mockSucessoComLinha(input)),
+    )
   })
 
   const MEMBRO2 = '55555555-5555-4555-8555-555555555555'
@@ -320,7 +369,9 @@ describe('DialogoEditarLancamento — filtro de categoria por tipo (Rodada 20 / 
 
   beforeEach(() => {
     atualizarLancamento.mockReset()
-    atualizarLancamento.mockResolvedValue({ ok: true, dados: undefined })
+    atualizarLancamento.mockImplementation((input: Record<string, unknown>) =>
+      Promise.resolve(mockSucessoComLinha(input)),
+    )
   })
 
   const CAT_DESPESA = 'aaaaaaaa-1111-4111-8111-111111111111'
