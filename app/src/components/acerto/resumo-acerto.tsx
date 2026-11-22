@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import type { Database } from '@/types/database'
 import type { SettlementTransfer } from '@/lib/settlement'
+import type { RegistroAcerto } from '@/features/acerto/tipos'
 import { ValorSaldo } from '@/components/financeiro/valor-saldo'
 import { ValorMonetario } from '@/components/financeiro/valor-monetario'
 import { Badge } from '@/components/ui/badge'
@@ -27,12 +28,14 @@ export interface ResumoAcertoProps {
   linhas: LinhaAcerto[]
   regra: string
   transferencia: SettlementTransfer | null
+  historico?: RegistroAcerto[]
 }
 
 export function ResumoAcerto({
   linhas,
   regra,
   transferencia,
+  historico = [],
 }: ResumoAcertoProps) {
   const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.1, replayOnScroll: true })
   const devedor = transferencia
@@ -219,6 +222,34 @@ export function ResumoAcerto({
           })}
         </div>
       </section>
+
+      {/* Histórico de acertos */}
+      {historico.length > 0 && (
+        <section aria-labelledby="titulo-historico" className="flex flex-col gap-3">
+          <h3 id="titulo-historico" className="text-foreground text-base font-semibold">
+            Histórico de acertos
+          </h3>
+          <div className="bg-card border-border/80 divide-border divide-y rounded-xl border shadow-xs overflow-hidden">
+            {historico.map((registro) => (
+              <div key={registro.id} className="flex items-center justify-between p-4 text-sm">
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-medium text-foreground">
+                    {registro.pagadorNome} → {registro.receptorNome}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(registro.date + 'T12:00:00').toLocaleDateString('pt-BR', {
+                      day: '2-digit',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+                <ValorMonetario valor={registro.amount} tipo="transferencia" />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Nota Explicativa */}
       <div className="bg-muted/40 border-border/60 flex items-start gap-2.5 rounded-lg border p-4 text-xs text-muted-foreground">
