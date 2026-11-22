@@ -16,6 +16,7 @@ export type PaletaId = "cedro" | "ardosia" | "terra" | "ameixa";
 
 export const CHAVE_MODO = "fad.modo";
 export const CHAVE_PALETA = "fad.paleta";
+export const CHAVE_COR_CUSTOM = "fad.cor-custom";
 
 export const MODO_PADRAO: ModoId = "sistema";
 export const PALETA_PADRAO: PaletaId = "cedro";
@@ -42,4 +43,27 @@ export function ehPaletaId(valor: unknown): valor is PaletaId {
 
 export function ehModoId(valor: unknown): valor is ModoId {
   return MODOS.some((m) => m === valor);
+}
+
+/**
+ * Calcula a luminância relativa sRGB de uma cor hexadecimal conforme a recomendação WCAG 2.1.
+ * Retorna valor entre 0 (preto absoluto) e 1 (branco absoluto).
+ * Usado para decidir se o texto de contraste sobre o --primary deve ser branco (< 0.179) ou escuro (>= 0.179).
+ */
+export function luminanciaRelativa(hex: string): number {
+  let limpo = hex.replace('#', '').trim();
+  if (limpo.length === 3) {
+    limpo = limpo
+      .split('')
+      .map((c) => c + c)
+      .join('');
+  }
+  if (limpo.length !== 6) return 0;
+  const r = parseInt(limpo.slice(0, 2), 16) / 255;
+  const g = parseInt(limpo.slice(2, 4), 16) / 255;
+  const b = parseInt(limpo.slice(4, 6), 16) / 255;
+
+  const linear = (c: number) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
 }
