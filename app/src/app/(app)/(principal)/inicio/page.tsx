@@ -59,7 +59,7 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
   const qtdSalva =
     Number.isFinite(qtdNumero) && qtdNumero >= 1 && qtdNumero <= 50 ? qtdNumero : 1
 
-  const [resumos, contas, lancamentos, categorias, resFamilia, resMembros, resNovo] = await Promise.all([
+  const [resumos, contas, lancamentos, categorias, resFamilia, resMembros, resNovo, resFormasPagamento] = await Promise.all([
     supabase.from('v_monthly_summary').select('*').order('month', { ascending: false }),
     supabase
       .from('v_account_balances')
@@ -84,6 +84,12 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
           .eq('id', idNovo)
           .maybeSingle()
       : Promise.resolve(null),
+    supabase
+      .from('payment_methods')
+      .select('id, name')
+      .is('archived_at', null)
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true }),
   ])
 
   const linhaNova = resNovo?.data ?? null
@@ -117,6 +123,10 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
   const membros = (resMembros.data ?? []).map((m) => ({
     id: m.id,
     display_name: m.display_name,
+  }))
+  const formasDePagamento = (resFormasPagamento.data ?? []).map((f) => ({
+    id: f.id,
+    name: f.name,
   }))
 
   const hrefDoMes = (m: string) => (m === mesAtual ? '/inicio' : `/inicio?mes=${m}`)
@@ -237,6 +247,7 @@ export default async function PaginaInicio({ searchParams }: PropsDaPagina) {
                 mapaCategorias={mapaCategorias}
                 listaContas={listaDeContas.map((c) => ({ id: c.account_id ?? '', name: c.name ?? '' }))}
                 listaCategorias={(categorias.data ?? []).map((c) => ({ id: c.id, name: c.name }))}
+                listaFormasDePagamento={formasDePagamento}
                 idDestacado={idNovo}
                 totalContagem={total}
                 mes={mes}

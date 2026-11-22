@@ -72,6 +72,7 @@ export interface DialogoEditarLancamentoProps {
   contas: ItemSelectOpcao[]
   categorias: ItemSelectOpcao[]
   membros: MembroOpcao[]
+  formasDePagamento?: ItemSelectOpcao[]
   onSalvo?: (salvo: LancamentoSalvo) => void
 }
 
@@ -87,6 +88,8 @@ export type LancamentoSalvo = Pick<
   | 'to_account_id'
   | 'category_id'
   | 'paid_by_member_id'
+  | 'payment_method_id'
+  | 'owner_member_id'
   | 'is_paid'
   | 'paid_date'
   | 'notes'
@@ -102,6 +105,7 @@ export function DialogoEditarLancamento({
   contas,
   categorias,
   membros,
+  formasDePagamento,
   onSalvo,
 }: DialogoEditarLancamentoProps) {
   const router = useRouter()
@@ -117,6 +121,8 @@ export function DialogoEditarLancamento({
   const [contaId, setContaId] = React.useState('')
   const [contaDestinoId, setContaDestinoId] = React.useState('')
   const [categoriaId, setCategoriaId] = React.useState<string>('')
+  const [formaDePagamentoId, setFormaDePagamentoId] = React.useState<string>('')
+  const [responsavelId, setResponsavelId] = React.useState<string>('')
   const [membroId, setMembroId] = React.useState('')
   const [estaPago, setEstaPago] = React.useState(false)
   const [dataPagamento, setDataPagamento] = React.useState(todayISO())
@@ -220,6 +226,8 @@ export function DialogoEditarLancamento({
           '',
       )
       setCategoriaId(transacao.category_id || '')
+      setFormaDePagamentoId(transacao.payment_method_id || '')
+      setResponsavelId(transacao.owner_member_id || '')
       setMembroId(transacao.paid_by_member_id || membros[0]?.id || '')
       setEstaPago(Boolean(transacao.is_paid))
       setDataPagamento(transacao.paid_date || transacao.date || todayISO())
@@ -320,6 +328,8 @@ export function DialogoEditarLancamento({
         contaDestinoId: tipo === 'transferencia' ? contaDestinoId : undefined,
         categoriaId: tipo === 'transferencia' ? undefined : (categoriaId || null),
         pagoPorId: membroId,
+        formaDePagamentoId: formaDePagamentoId || null,
+        responsavelId: tipo === 'transferencia' ? null : (responsavelId || null),
         estaPago,
         dataDoPagamento: estaPago ? dataPagamento : null,
         observacao: observacaoFinal,
@@ -352,6 +362,8 @@ export function DialogoEditarLancamento({
         to_account_id: tipo === 'transferencia' ? contaDestinoId : null,
         category_id: tipo === 'transferencia' ? null : categoriaId || null,
         paid_by_member_id: membroId,
+        payment_method_id: formaDePagamentoId || null,
+        owner_member_id: tipo === 'transferencia' ? null : (responsavelId || null),
         is_paid: estaPago,
         paid_date: estaPago ? dataPagamento : null,
         notes: observacaoFinal,
@@ -616,6 +628,85 @@ export function DialogoEditarLancamento({
               </div>
             )}
           </div>
+
+          {/* 4b. Forma de pagamento */}
+          {formasDePagamento && formasDePagamento.length > 0 && tipo !== 'transferencia' && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-forma-pagamento" className="text-xs font-medium">
+                Forma de pagamento
+              </Label>
+              <Select
+                value={formaDePagamentoId || '_none'}
+                onValueChange={(v) => {
+                  setFormaDePagamentoId(v === '_none' ? '' : v)
+                  limparErroDoCampo('formaDePagamentoId')
+                }}
+              >
+                <SelectTrigger
+                  id="edit-forma-pagamento"
+                  className="h-9 text-xs"
+                  aria-invalid={camposComErro.formaDePagamentoId ? true : undefined}
+                  aria-describedby={
+                    camposComErro.formaDePagamentoId ? 'edit-forma-pagamento-erro' : undefined
+                  }
+                >
+                  <SelectValue placeholder="Selecione (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">Nenhuma</SelectItem>
+                  {formasDePagamento.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {camposComErro.formaDePagamentoId && (
+                <CampoErro
+                  id="edit-forma-pagamento-erro"
+                  mensagens={camposComErro.formaDePagamentoId}
+                />
+              )}
+            </div>
+          )}
+
+          {/* 4c. Responsável */}
+          {membros.length > 1 && tipo !== 'transferencia' && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-responsavel" className="text-xs font-medium">
+                Responsável
+              </Label>
+              <Select
+                value={responsavelId || '_none'}
+                onValueChange={(v) => {
+                  setResponsavelId(v === '_none' ? '' : v)
+                  limparErroDoCampo('responsavelId')
+                }}
+              >
+                <SelectTrigger
+                  id="edit-responsavel"
+                  className="h-9 text-xs"
+                  aria-invalid={camposComErro.responsavelId ? true : undefined}
+                  aria-describedby={
+                    camposComErro.responsavelId ? 'edit-responsavel-erro' : undefined
+                  }
+                >
+                  <SelectValue placeholder="Selecione (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">Nenhum</SelectItem>
+                  {membros.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {camposComErro.responsavelId && (
+                <CampoErro id="edit-responsavel-erro" mensagens={camposComErro.responsavelId} />
+              )}
+            </div>
+          )}
 
           {/* 5. Quem pagou */}
           {membros.length > 0 && (

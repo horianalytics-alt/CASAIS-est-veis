@@ -50,6 +50,7 @@ export interface ListaTransacoesInterativaProps {
   mapaCategorias: Record<string, string>
   listaContas?: Array<{ id: string; name: string }>
   listaCategorias?: Array<{ id: string; name: string }>
+  listaFormasDePagamento?: Array<{ id: string; name: string }>
   idDestacado?: string | null
   totalContagem?: number
   mes?: string
@@ -64,6 +65,7 @@ export function ListaTransacoesInterativa({
   mapaCategorias,
   listaContas,
   listaCategorias,
+  listaFormasDePagamento,
   idDestacado,
   totalContagem,
   mes,
@@ -772,6 +774,7 @@ export function ListaTransacoesInterativa({
         contas={contasDisponiveis}
         categorias={categoriasDisponiveis}
         membros={membros}
+        formasDePagamento={listaFormasDePagamento}
         onSalvo={(salvo) => {
           // Itens da cauda ("carregar mais") não são trocados pelo
           // router.refresh(); sem isto, reabrir o diálogo neles mostraria e
